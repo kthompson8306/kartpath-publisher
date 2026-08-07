@@ -10,6 +10,12 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: publications
+    description: Publication bootstrap and theme operations
+  - name: auth
+    description: Authenticated staff identity and access
+  - name: storage
+    description: Media upload preparation
 paths:
   /healthz:
     get:
@@ -24,7 +30,88 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /publications/{slug}:
+    get:
+      operationId: getPublicationBySlug
+      tags: [publications]
+      summary: Get a publication's public configuration
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Publication configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Publication"
+        "404":
+          description: Publication not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /me:
+    get:
+      operationId: getCurrentUser
+      tags: [auth]
+      summary: Get the current authenticated staff user and access
+      security:
+        - clerkSession: []
+      responses:
+        "200":
+          description: Current staff identity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentUser"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /storage/uploads/request-url:
+    post:
+      operationId: requestStorageUploadUrl
+      tags: [storage]
+      summary: Request a presigned object upload URL
+      security:
+        - clerkSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StorageUploadInput"
+      responses:
+        "200":
+          description: Presigned upload details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StorageUpload"
+        "400":
+          description: Invalid upload metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 components:
+  securitySchemes:
+    clerkSession:
+      type: apiKey
+      in: cookie
+      name: __session
   schemas:
     HealthStatus:
       type: object
@@ -33,4 +120,152 @@ components:
           type: string
       required:
         - status
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+    Publication:
+      type: object
+      properties:
+        id:
+          type: string
+        slug:
+          type: string
+        name:
+          type: string
+        shortName:
+          type: string
+        description:
+          type: string
+        domain:
+          type: ["string", "null"]
+        timezone:
+          type: string
+        locale:
+          type: string
+        logoMediaId:
+          type: ["string", "null"]
+        faviconMediaId:
+          type: ["string", "null"]
+        settings:
+          $ref: "#/components/schemas/PublicationSettings"
+      required:
+        - id
+        - slug
+        - name
+        - shortName
+        - description
+        - domain
+        - timezone
+        - locale
+        - logoMediaId
+        - faviconMediaId
+        - settings
+    PublicationSettings:
+      type: object
+      properties:
+        themeTokens:
+          type: object
+          additionalProperties: true
+        navigationItems:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        enabledContentTypes:
+          type: array
+          items:
+            type: string
+        defaultSeoTitle:
+          type: string
+        defaultMetaDescription:
+          type: string
+        socialLinks:
+          type: object
+          additionalProperties:
+            type: string
+        contactEmail:
+          type: ["string", "null"]
+      required:
+        - themeTokens
+        - navigationItems
+        - enabledContentTypes
+        - defaultSeoTitle
+        - defaultMetaDescription
+        - socialLinks
+        - contactEmail
+    UserPublicationAccess:
+      type: object
+      properties:
+        publicationId:
+          type: string
+        publicationSlug:
+          type: string
+        role:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+      required:
+        - publicationId
+        - publicationSlug
+        - role
+        - permissions
+    CurrentUser:
+      type: object
+      properties:
+        id:
+          type: string
+        authProviderSubject:
+          type: string
+        email:
+          type: string
+        displayName:
+          type: string
+        status:
+          type: string
+        access:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserPublicationAccess"
+      required:
+        - id
+        - authProviderSubject
+        - email
+        - displayName
+        - status
+        - access
+    StorageUploadInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        size:
+          type: number
+          minimum: 1
+        contentType:
+          type: string
+          minLength: 1
+      required:
+        - name
+        - size
+        - contentType
+    StorageUpload:
+      type: object
+      properties:
+        uploadURL:
+          type: string
+        objectPath:
+          type: string
+        expiresInSeconds:
+          type: number
+      required:
+        - uploadURL
+        - objectPath
+        - expiresInSeconds
 

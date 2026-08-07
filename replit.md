@@ -1,6 +1,6 @@
-# [Project name]
+# KartPath Digital Publishing Platform
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Multi-tenant publishing infrastructure, beginning with the Life Around Senoia local publication.
 
 ## Run & Operate
 
@@ -16,21 +16,29 @@ _Replace the heading above with the project's name, and this line with one sente
 - pnpm workspaces, Node.js 24, TypeScript 5.9
 - API: Express 5
 - DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
+- Validation: Zod, `drizzle-zod`
 - API codegen: Orval (from OpenAPI spec)
 - Build: esbuild (CJS bundle)
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `lib/api-spec/openapi.yaml` — foundation API contract
+- `lib/api-client-react` and `lib/api-zod` — generated API clients and validators
+- `lib/db/src/schema/platform.ts` — tenant, identity, access, media, and audit schema
+- `lib/db/src/seed.ts` — LAS and tenant-isolation foundation fixtures
+- `artifacts/api-server/src` — Clerk-aware API and object-storage routes
+- `artifacts/kartpath-las/src` — LAS public shell, branded Clerk auth, and staff foundation
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- The schema is tenant-aware from the beginning; LAS is the only active publication workflow in the first release.
+- Managed Clerk handles browser authentication with session cookies; local Postgres rows handle publication access and authorization.
+- App Storage owns uploaded bytes; Postgres stores normalized object paths and media metadata.
+- M0 stops before editorial CRUD, ingestion, advertising, and Publication #2 UI work.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+Life Around Senoia is a place-rooted local publication. The current release establishes its editorial visual language, public publication shell, staff sign-in surface, staff access context, and platform foundation before content workflows are introduced.
 
 ## User preferences
 
@@ -38,7 +46,10 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Run `pnpm --filter @workspace/api-spec run codegen` after OpenAPI changes.
+- Run `pnpm --filter @workspace/db run push` before seeding a fresh development database.
+- Run `pnpm --filter @workspace/db run seed` to create the LAS and isolation fixtures.
+- Clerk development-key warnings in the browser are expected; production keys are managed at publish time.
 
 ## Pointers
 

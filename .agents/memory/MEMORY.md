@@ -1,0 +1,1 @@
+- [KartPath foundation](kartpath-foundation.md) — M0 uses managed Clerk, tenant-scoped Postgres tables, and App Storage object paths as the platform boundary.
