@@ -107,9 +107,7 @@ function SignUpPage() {
 }
 
 function HomeRedirect() {
-  const { isSignedIn, isLoaded } = useAuth();
-  if (!isLoaded) return <PublicHome />;
-  return isSignedIn ? <Redirect to="/staff" /> : <PublicHome />;
+  return <PublicHome />;
 }
 
 function Router() {
