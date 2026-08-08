@@ -14,7 +14,9 @@
     "push": "drizzle-kit push --config ./drizzle.config.ts",
     "push-force": "drizzle-kit push --force --config ./drizzle.config.ts",
     "seed": "tsx src/seed.ts",
-    "bootstrap-access": "tsx src/bootstrap-access.ts"
+    "bootstrap-access": "tsx src/bootstrap-access.ts",
+    "verify": "tsx src/verify.ts",
+    "rebuild-test": "tsx src/rebuild-test.ts"
   },
   "dependencies": {
     "drizzle-orm": "catalog:",
