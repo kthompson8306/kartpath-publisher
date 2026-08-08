@@ -20,12 +20,20 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ContentItem,
+  ContentItemList,
+  CreateContentItem,
   CurrentUser,
+  DeleteContentItemParams,
   Error,
+  GetContentItemParams,
   HealthStatus,
+  ListContentItemsParams,
   Publication,
+  PublishContentItem,
   StorageUpload,
-  StorageUploadInput
+  StorageUploadInput,
+  UpdateContentItem
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -356,5 +364,473 @@ export const useRequestStorageUploadUrl = <TError = ErrorType<Error>,
         TContext
       > => {
       return useMutation(getRequestStorageUploadUrlMutationOptions(options));
+    }
+
+export const getListContentItemsUrl = (params: ListContentItemsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/editorial/content-items?${stringifiedParams}` : `/api/editorial/content-items`
+}
+
+/**
+ * @summary List publication content items
+ */
+export const listContentItems = async (params: ListContentItemsParams, options?: Parameters<typeof customFetch>[1]): Promise<ContentItemList> => {
+
+  return customFetch<ContentItemList>(getListContentItemsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListContentItemsQueryKey = (params?: ListContentItemsParams,) => {
+    return [
+    `/api/editorial/content-items`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListContentItemsQueryOptions = <TData = Awaited<ReturnType<typeof listContentItems>>, TError = ErrorType<Error>>(params: ListContentItemsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listContentItems>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListContentItemsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listContentItems>>> = ({ signal }) => listContentItems(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listContentItems>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListContentItemsQueryResult = NonNullable<Awaited<ReturnType<typeof listContentItems>>>
+export type ListContentItemsQueryError = ErrorType<Error>
+
+
+/**
+ * @summary List publication content items
+ */
+
+export function useListContentItems<TData = Awaited<ReturnType<typeof listContentItems>>, TError = ErrorType<Error>>(
+ params: ListContentItemsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listContentItems>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListContentItemsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateContentItemUrl = () => {
+
+
+
+
+  return `/api/editorial/content-items`
+}
+
+/**
+ * @summary Create a draft content item
+ */
+export const createContentItem = async (createContentItem: CreateContentItem, options?: Parameters<typeof customFetch>[1]): Promise<ContentItem> => {
+
+  return customFetch<ContentItem>(getCreateContentItemUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createContentItem)
+  }
+);}
+
+
+
+
+
+export const getCreateContentItemMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createContentItem>>, TError,{data: BodyType<CreateContentItem>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createContentItem>>, TError,{data: BodyType<CreateContentItem>}, TContext> => {
+
+const mutationKey = ['createContentItem'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createContentItem>>, {data: BodyType<CreateContentItem>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createContentItem(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateContentItemMutationResult = NonNullable<Awaited<ReturnType<typeof createContentItem>>>
+    export type CreateContentItemMutationBody = BodyType<CreateContentItem>
+    export type CreateContentItemMutationError = ErrorType<Error>
+
+    /**
+ * @summary Create a draft content item
+ */
+export const useCreateContentItem = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createContentItem>>, TError,{data: BodyType<CreateContentItem>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createContentItem>>,
+        TError,
+        {data: BodyType<CreateContentItem>},
+        TContext
+      > => {
+      return useMutation(getCreateContentItemMutationOptions(options));
+    }
+
+export const getGetContentItemUrl = (id: string,
+    params: GetContentItemParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/editorial/content-items/${id}?${stringifiedParams}` : `/api/editorial/content-items/${id}`
+}
+
+/**
+ * @summary Get a publication content item
+ */
+export const getContentItem = async (id: string,
+    params: GetContentItemParams, options?: Parameters<typeof customFetch>[1]): Promise<ContentItem> => {
+
+  return customFetch<ContentItem>(getGetContentItemUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetContentItemQueryKey = (id: string,
+    params?: GetContentItemParams,) => {
+    return [
+    `/api/editorial/content-items/${id}`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetContentItemQueryOptions = <TData = Awaited<ReturnType<typeof getContentItem>>, TError = ErrorType<Error>>(id: string,
+    params: GetContentItemParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getContentItem>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetContentItemQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getContentItem>>> = ({ signal }) => getContentItem(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getContentItem>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetContentItemQueryResult = NonNullable<Awaited<ReturnType<typeof getContentItem>>>
+export type GetContentItemQueryError = ErrorType<Error>
+
+
+/**
+ * @summary Get a publication content item
+ */
+
+export function useGetContentItem<TData = Awaited<ReturnType<typeof getContentItem>>, TError = ErrorType<Error>>(
+ id: string,
+    params: GetContentItemParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getContentItem>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetContentItemQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateContentItemUrl = (id: string,) => {
+
+
+
+
+  return `/api/editorial/content-items/${id}`
+}
+
+/**
+ * @summary Update a publication content item
+ */
+export const updateContentItem = async (id: string,
+    updateContentItem: UpdateContentItem, options?: Parameters<typeof customFetch>[1]): Promise<ContentItem> => {
+
+  return customFetch<ContentItem>(getUpdateContentItemUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateContentItem)
+  }
+);}
+
+
+
+
+
+export const getUpdateContentItemMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateContentItem>>, TError,{id: string;data: BodyType<UpdateContentItem>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateContentItem>>, TError,{id: string;data: BodyType<UpdateContentItem>}, TContext> => {
+
+const mutationKey = ['updateContentItem'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateContentItem>>, {id: string;data: BodyType<UpdateContentItem>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateContentItem(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateContentItemMutationResult = NonNullable<Awaited<ReturnType<typeof updateContentItem>>>
+    export type UpdateContentItemMutationBody = BodyType<UpdateContentItem>
+    export type UpdateContentItemMutationError = ErrorType<Error>
+
+    /**
+ * @summary Update a publication content item
+ */
+export const useUpdateContentItem = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateContentItem>>, TError,{id: string;data: BodyType<UpdateContentItem>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateContentItem>>,
+        TError,
+        {id: string;data: BodyType<UpdateContentItem>},
+        TContext
+      > => {
+      return useMutation(getUpdateContentItemMutationOptions(options));
+    }
+
+export const getDeleteContentItemUrl = (id: string,
+    params: DeleteContentItemParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/editorial/content-items/${id}?${stringifiedParams}` : `/api/editorial/content-items/${id}`
+}
+
+/**
+ * @summary Delete a publication content item
+ */
+export const deleteContentItem = async (id: string,
+    params: DeleteContentItemParams, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeleteContentItemUrl(id,params),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteContentItemMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteContentItem>>, TError,{id: string;params: DeleteContentItemParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteContentItem>>, TError,{id: string;params: DeleteContentItemParams}, TContext> => {
+
+const mutationKey = ['deleteContentItem'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteContentItem>>, {id: string;params: DeleteContentItemParams}> = (props) => {
+          const {id,params} = props ?? {};
+
+          return  deleteContentItem(id,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteContentItemMutationResult = NonNullable<Awaited<ReturnType<typeof deleteContentItem>>>
+
+    export type DeleteContentItemMutationError = ErrorType<Error>
+
+    /**
+ * @summary Delete a publication content item
+ */
+export const useDeleteContentItem = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteContentItem>>, TError,{id: string;params: DeleteContentItemParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteContentItem>>,
+        TError,
+        {id: string;params: DeleteContentItemParams},
+        TContext
+      > => {
+      return useMutation(getDeleteContentItemMutationOptions(options));
+    }
+
+export const getPublishContentItemUrl = (id: string,) => {
+
+
+
+
+  return `/api/editorial/content-items/${id}/publish`
+}
+
+/**
+ * @summary Publish or unpublish a content item
+ */
+export const publishContentItem = async (id: string,
+    publishContentItem: PublishContentItem, options?: Parameters<typeof customFetch>[1]): Promise<ContentItem> => {
+
+  return customFetch<ContentItem>(getPublishContentItemUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(publishContentItem)
+  }
+);}
+
+
+
+
+
+export const getPublishContentItemMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof publishContentItem>>, TError,{id: string;data: BodyType<PublishContentItem>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof publishContentItem>>, TError,{id: string;data: BodyType<PublishContentItem>}, TContext> => {
+
+const mutationKey = ['publishContentItem'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof publishContentItem>>, {id: string;data: BodyType<PublishContentItem>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  publishContentItem(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PublishContentItemMutationResult = NonNullable<Awaited<ReturnType<typeof publishContentItem>>>
+    export type PublishContentItemMutationBody = BodyType<PublishContentItem>
+    export type PublishContentItemMutationError = ErrorType<Error>
+
+    /**
+ * @summary Publish or unpublish a content item
+ */
+export const usePublishContentItem = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof publishContentItem>>, TError,{id: string;data: BodyType<PublishContentItem>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof publishContentItem>>,
+        TError,
+        {id: string;data: BodyType<PublishContentItem>},
+        TContext
+      > => {
+      return useMutation(getPublishContentItemMutationOptions(options));
     }
 

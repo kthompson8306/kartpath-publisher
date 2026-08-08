@@ -88,3 +88,219 @@ export const RequestStorageUploadUrlResponse = zod.object({
 })
 
 
+/**
+ * @summary List publication content items
+ */
+export const listContentItemsQueryPublicationIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$');
+
+
+export const ListContentItemsQueryParams = zod.object({
+  "publicationId": zod.coerce.string().regex(listContentItemsQueryPublicationIdRegExp),
+  "status": zod.enum(['draft', 'published']).optional(),
+  "contentType": zod.enum(['featured-family', 'nonprofit-spotlight', 'young-achiever', 'pet-of-the-month', 'business-listing', 'event']).optional()
+})
+
+export const ListContentItemsResponseItem = zod.object({
+  "id": zod.string(),
+  "publicationId": zod.string(),
+  "contentType": zod.enum(['featured-family', 'nonprofit-spotlight', 'young-achiever', 'pet-of-the-month', 'business-listing', 'event']),
+  "status": zod.enum(['draft', 'published']),
+  "slug": zod.string(),
+  "title": zod.string(),
+  "summary": zod.string(),
+  "body": zod.string(),
+  "details": zod.record(zod.string(), zod.string()),
+  "coverMediaId": zod.string().nullable(),
+  "createdBy": zod.string().nullable(),
+  "updatedBy": zod.string().nullable(),
+  "publishedAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListContentItemsResponse = zod.array(ListContentItemsResponseItem)
+
+
+/**
+ * @summary Create a draft content item
+ */
+export const createContentItemBodyPublicationIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$');
+
+
+export const createContentItemBodySlugRegExp = new RegExp('^[a-z0-9]+(?:-[a-z0-9]+)*$');
+
+
+
+
+
+export const CreateContentItemBody = zod.object({
+  "publicationId": zod.string().regex(createContentItemBodyPublicationIdRegExp),
+  "contentType": zod.enum(['featured-family', 'nonprofit-spotlight', 'young-achiever', 'pet-of-the-month', 'business-listing', 'event']),
+  "slug": zod.string().min(1).regex(createContentItemBodySlugRegExp),
+  "title": zod.string().min(1),
+  "summary": zod.string().min(1),
+  "body": zod.string().min(1),
+  "details": zod.record(zod.string(), zod.string()),
+  "coverMediaId": zod.string().nullable()
+})
+
+export const CreateContentItemResponse = zod.object({
+  "id": zod.string(),
+  "publicationId": zod.string(),
+  "contentType": zod.enum(['featured-family', 'nonprofit-spotlight', 'young-achiever', 'pet-of-the-month', 'business-listing', 'event']),
+  "status": zod.enum(['draft', 'published']),
+  "slug": zod.string(),
+  "title": zod.string(),
+  "summary": zod.string(),
+  "body": zod.string(),
+  "details": zod.record(zod.string(), zod.string()),
+  "coverMediaId": zod.string().nullable(),
+  "createdBy": zod.string().nullable(),
+  "updatedBy": zod.string().nullable(),
+  "publishedAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Get a publication content item
+ */
+export const getContentItemPathIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$');
+
+
+export const GetContentItemParams = zod.object({
+  "id": zod.coerce.string().regex(getContentItemPathIdRegExp)
+})
+
+export const getContentItemQueryPublicationIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$');
+
+
+export const GetContentItemQueryParams = zod.object({
+  "publicationId": zod.coerce.string().regex(getContentItemQueryPublicationIdRegExp)
+})
+
+export const GetContentItemResponse = zod.object({
+  "id": zod.string(),
+  "publicationId": zod.string(),
+  "contentType": zod.enum(['featured-family', 'nonprofit-spotlight', 'young-achiever', 'pet-of-the-month', 'business-listing', 'event']),
+  "status": zod.enum(['draft', 'published']),
+  "slug": zod.string(),
+  "title": zod.string(),
+  "summary": zod.string(),
+  "body": zod.string(),
+  "details": zod.record(zod.string(), zod.string()),
+  "coverMediaId": zod.string().nullable(),
+  "createdBy": zod.string().nullable(),
+  "updatedBy": zod.string().nullable(),
+  "publishedAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Update a publication content item
+ */
+export const updateContentItemPathIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$');
+
+
+export const UpdateContentItemParams = zod.object({
+  "id": zod.coerce.string().regex(updateContentItemPathIdRegExp)
+})
+
+export const updateContentItemBodyOnePublicationIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$');
+
+
+export const updateContentItemBodyOneSlugRegExp = new RegExp('^[a-z0-9]+(?:-[a-z0-9]+)*$');
+
+
+
+
+
+export const UpdateContentItemBody = zod.object({
+  "publicationId": zod.string().regex(updateContentItemBodyOnePublicationIdRegExp),
+  "contentType": zod.enum(['featured-family', 'nonprofit-spotlight', 'young-achiever', 'pet-of-the-month', 'business-listing', 'event']),
+  "slug": zod.string().min(1).regex(updateContentItemBodyOneSlugRegExp),
+  "title": zod.string().min(1),
+  "summary": zod.string().min(1),
+  "body": zod.string().min(1),
+  "details": zod.record(zod.string(), zod.string()),
+  "coverMediaId": zod.string().nullable()
+})
+
+export const UpdateContentItemResponse = zod.object({
+  "id": zod.string(),
+  "publicationId": zod.string(),
+  "contentType": zod.enum(['featured-family', 'nonprofit-spotlight', 'young-achiever', 'pet-of-the-month', 'business-listing', 'event']),
+  "status": zod.enum(['draft', 'published']),
+  "slug": zod.string(),
+  "title": zod.string(),
+  "summary": zod.string(),
+  "body": zod.string(),
+  "details": zod.record(zod.string(), zod.string()),
+  "coverMediaId": zod.string().nullable(),
+  "createdBy": zod.string().nullable(),
+  "updatedBy": zod.string().nullable(),
+  "publishedAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete a publication content item
+ */
+export const deleteContentItemPathIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$');
+
+
+export const DeleteContentItemParams = zod.object({
+  "id": zod.coerce.string().regex(deleteContentItemPathIdRegExp)
+})
+
+export const deleteContentItemQueryPublicationIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$');
+
+
+export const DeleteContentItemQueryParams = zod.object({
+  "publicationId": zod.coerce.string().regex(deleteContentItemQueryPublicationIdRegExp)
+})
+
+export const DeleteContentItemResponse = zod.void()
+
+
+/**
+ * @summary Publish or unpublish a content item
+ */
+export const publishContentItemPathIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$');
+
+
+export const PublishContentItemParams = zod.object({
+  "id": zod.coerce.string().regex(publishContentItemPathIdRegExp)
+})
+
+export const publishContentItemBodyPublicationIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$');
+
+
+export const PublishContentItemBody = zod.object({
+  "publicationId": zod.string().regex(publishContentItemBodyPublicationIdRegExp),
+  "status": zod.enum(['draft', 'published'])
+})
+
+export const PublishContentItemResponse = zod.object({
+  "id": zod.string(),
+  "publicationId": zod.string(),
+  "contentType": zod.enum(['featured-family', 'nonprofit-spotlight', 'young-achiever', 'pet-of-the-month', 'business-listing', 'event']),
+  "status": zod.enum(['draft', 'published']),
+  "slug": zod.string(),
+  "title": zod.string(),
+  "summary": zod.string(),
+  "body": zod.string(),
+  "details": zod.record(zod.string(), zod.string()),
+  "coverMediaId": zod.string().nullable(),
+  "createdBy": zod.string().nullable(),
+  "updatedBy": zod.string().nullable(),
+  "publishedAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+

@@ -2,6 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { clerkClient } from "@clerk/express";
 import {
   auditEventsTable,
+  contentItemsTable,
   db,
   publicationsTable,
   publicationSettingsTable,
@@ -106,6 +107,18 @@ export async function getUserPublicationAccess(
     )
     .limit(1);
   return result;
+}
+
+export function hasEditorialWriteAccess(permissions: string[]) {
+  return permissions.includes("content:write") || permissions.includes("publication:write");
+}
+
+export function hasEditorialReadAccess(permissions: string[]) {
+  return (
+    permissions.includes("publication:read") ||
+    permissions.includes("content:write") ||
+    permissions.includes("publication:write")
+  );
 }
 
 export async function recordAuditEvent(input: {

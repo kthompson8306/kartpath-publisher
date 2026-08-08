@@ -16,6 +16,8 @@ tags:
     description: Authenticated staff identity and access
   - name: storage
     description: Media upload preparation
+  - name: editorial
+    description: Publication-scoped editorial content management
 paths:
   /healthz:
     get:
@@ -106,7 +108,211 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /editorial/content-items:
+    get:
+      operationId: listContentItems
+      tags: [editorial]
+      summary: List publication content items
+      security:
+        - clerkSession: []
+      parameters:
+        - $ref: "#/components/parameters/PublicationIdQuery"
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/EditorialStatus"
+        - name: contentType
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/EditorialContentType"
+      responses:
+        "200":
+          description: Content items
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContentItemList"
+        "403":
+          description: Publication access denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      operationId: createContentItem
+      tags: [editorial]
+      summary: Create a draft content item
+      security:
+        - clerkSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateContentItem"
+      responses:
+        "201":
+          description: Created draft
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContentItem"
+        "400":
+          description: Invalid content item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Publication access denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Slug already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /editorial/content-items/{id}:
+    get:
+      operationId: getContentItem
+      tags: [editorial]
+      summary: Get a publication content item
+      security:
+        - clerkSession: []
+      parameters:
+        - $ref: "#/components/parameters/ContentItemIdPath"
+        - $ref: "#/components/parameters/PublicationIdQuery"
+      responses:
+        "200":
+          description: Content item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContentItem"
+        "403":
+          description: Publication access denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Content item not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    patch:
+      operationId: updateContentItem
+      tags: [editorial]
+      summary: Update a publication content item
+      security:
+        - clerkSession: []
+      parameters:
+        - $ref: "#/components/parameters/ContentItemIdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateContentItem"
+      responses:
+        "200":
+          description: Updated content item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContentItem"
+        "403":
+          description: Publication access denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Content item not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      operationId: deleteContentItem
+      tags: [editorial]
+      summary: Delete a publication content item
+      security:
+        - clerkSession: []
+      parameters:
+        - $ref: "#/components/parameters/ContentItemIdPath"
+        - $ref: "#/components/parameters/PublicationIdQuery"
+      responses:
+        "204":
+          description: Content item deleted
+        "403":
+          description: Publication access denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Content item not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /editorial/content-items/{id}/publish:
+    post:
+      operationId: publishContentItem
+      tags: [editorial]
+      summary: Publish or unpublish a content item
+      security:
+        - clerkSession: []
+      parameters:
+        - $ref: "#/components/parameters/ContentItemIdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublishContentItem"
+      responses:
+        "200":
+          description: Updated publication status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContentItem"
+        "403":
+          description: Publication access denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Content item not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 components:
+  parameters:
+    PublicationIdQuery:
+      name: publicationId
+      in: query
+      required: true
+      schema:
+        type: string
+        pattern: "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+    ContentItemIdPath:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
   securitySchemes:
     clerkSession:
       type: apiKey
@@ -272,4 +478,126 @@ components:
         - uploadURL
         - objectPath
         - expiresInSeconds
+    EditorialContentType:
+      type: string
+      enum:
+        - featured-family
+        - nonprofit-spotlight
+        - young-achiever
+        - pet-of-the-month
+        - business-listing
+        - event
+    EditorialStatus:
+      type: string
+      enum:
+        - draft
+        - published
+    ContentItem:
+      type: object
+      properties:
+        id:
+          type: string
+        publicationId:
+          type: string
+        contentType:
+          $ref: "#/components/schemas/EditorialContentType"
+        status:
+          $ref: "#/components/schemas/EditorialStatus"
+        slug:
+          type: string
+        title:
+          type: string
+        summary:
+          type: string
+        body:
+          type: string
+        details:
+          type: object
+          additionalProperties:
+            type: string
+        coverMediaId:
+          type: ["string", "null"]
+        createdBy:
+          type: ["string", "null"]
+        updatedBy:
+          type: ["string", "null"]
+        publishedAt:
+          type: ["string", "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - publicationId
+        - contentType
+        - status
+        - slug
+        - title
+        - summary
+        - body
+        - details
+        - coverMediaId
+        - createdBy
+        - updatedBy
+        - publishedAt
+        - createdAt
+        - updatedAt
+    ContentItemList:
+      type: array
+      items:
+        $ref: "#/components/schemas/ContentItem"
+    CreateContentItem:
+      type: object
+      properties:
+        publicationId:
+          type: string
+          pattern: "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+        contentType:
+          $ref: "#/components/schemas/EditorialContentType"
+        slug:
+          type: string
+          minLength: 1
+          pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        title:
+          type: string
+          minLength: 1
+        summary:
+          type: string
+          minLength: 1
+        body:
+          type: string
+          minLength: 1
+        details:
+          type: object
+          additionalProperties:
+            type: string
+        coverMediaId:
+          type: ["string", "null"]
+      required:
+        - publicationId
+        - contentType
+        - slug
+        - title
+        - summary
+        - body
+        - details
+        - coverMediaId
+    UpdateContentItem:
+      allOf:
+        - $ref: "#/components/schemas/CreateContentItem"
+    PublishContentItem:
+      type: object
+      properties:
+        publicationId:
+          type: string
+          pattern: "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+        status:
+          $ref: "#/components/schemas/EditorialStatus"
+      required:
+        - publicationId
+        - status
 

@@ -80,3 +80,104 @@ export interface StorageUpload {
   expiresInSeconds: number;
 }
 
+export type EditorialContentType = typeof EditorialContentType[keyof typeof EditorialContentType];
+
+
+export const EditorialContentType = {
+  'featured-family': 'featured-family',
+  'nonprofit-spotlight': 'nonprofit-spotlight',
+  'young-achiever': 'young-achiever',
+  'pet-of-the-month': 'pet-of-the-month',
+  'business-listing': 'business-listing',
+  event: 'event',
+} as const;
+
+export type EditorialStatus = typeof EditorialStatus[keyof typeof EditorialStatus];
+
+
+export const EditorialStatus = {
+  draft: 'draft',
+  published: 'published',
+} as const;
+
+export type ContentItemDetails = {[key: string]: string};
+
+export interface ContentItem {
+  id: string;
+  publicationId: string;
+  contentType: EditorialContentType;
+  status: EditorialStatus;
+  slug: string;
+  title: string;
+  summary: string;
+  body: string;
+  details: ContentItemDetails;
+  /** @nullable */
+  coverMediaId: string | null;
+  /** @nullable */
+  createdBy: string | null;
+  /** @nullable */
+  updatedBy: string | null;
+  /** @nullable */
+  publishedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ContentItemList = ContentItem[];
+
+export type CreateContentItemDetails = {[key: string]: string};
+
+export interface CreateContentItem {
+  /** @pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$ */
+  publicationId: string;
+  contentType: EditorialContentType;
+  /**
+     * @minLength 1
+     * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
+     */
+  slug: string;
+  /** @minLength 1 */
+  title: string;
+  /** @minLength 1 */
+  summary: string;
+  /** @minLength 1 */
+  body: string;
+  details: CreateContentItemDetails;
+  /** @nullable */
+  coverMediaId: string | null;
+}
+
+export type UpdateContentItem = CreateContentItem;
+
+export interface PublishContentItem {
+  /** @pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$ */
+  publicationId: string;
+  status: EditorialStatus;
+}
+
+export type PublicationIdQueryParameter = string;
+
+export type ListContentItemsParams = {
+/**
+ * @pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$
+ */
+publicationId: PublicationIdQueryParameter;
+status?: EditorialStatus;
+contentType?: EditorialContentType;
+};
+
+export type GetContentItemParams = {
+/**
+ * @pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$
+ */
+publicationId: PublicationIdQueryParameter;
+};
+
+export type DeleteContentItemParams = {
+/**
+ * @pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$
+ */
+publicationId: PublicationIdQueryParameter;
+};
+

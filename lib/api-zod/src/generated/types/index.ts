@@ -6,14 +6,27 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './contentItem';
+export * from './contentItemDetails';
+export * from './contentItemList';
+export * from './createContentItem';
+export * from './createContentItemDetails';
 export * from './currentUser';
+export * from './deleteContentItemParams';
+export * from './editorialContentType';
+export * from './editorialStatus';
 export * from './error';
+export * from './getContentItemParams';
 export * from './healthStatus';
+export * from './listContentItemsParams';
 export * from './publication';
+export * from './publicationIdQueryParameter';
 export * from './publicationSettings';
 export * from './publicationSettingsNavigationItemsItem';
 export * from './publicationSettingsSocialLinks';
 export * from './publicationSettingsThemeTokens';
+export * from './publishContentItem';
 export * from './storageUpload';
 export * from './storageUploadInput';
+export * from './updateContentItem';
 export * from './userPublicationAccess';
