@@ -26,3 +26,9 @@ Media bytes belong in App Storage; Postgres stores object paths and queryable me
 **Why:** Object storage is durable and avoids putting binary payloads in the relational database; auditability is required for editorial operations.
 
 **How to apply:** Use the presigned PUT flow and persist only the normalized `/objects/...` path plus media metadata.
+
+The current media upload request must not accept or ignore a caller-supplied publication scope: its publication must be explicitly selected and authorized, rather than silently falling back to the user's first publication access.
+
+**Why:** A real LAS admin request carrying the foundation-fixture publication ID returned a presigned URL and created LAS-owned media/audit rows, proving that ignoring the requested tenant can turn a cross-publication attempt into a misleading success.
+
+**How to apply:** Before issuing an upload URL or inserting media metadata, validate the requested publication against the authenticated user's access and reject missing or unauthorized publication context; never use first-access fallback for tenant-scoped mutations.
