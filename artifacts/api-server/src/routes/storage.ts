@@ -1,15 +1,15 @@
 import { Router, type IRouter } from "express";
 import { RequestStorageUploadUrlBody, RequestStorageUploadUrlResponse } from "@workspace/api-zod";
 import { db, mediaAssetsTable } from "@workspace/db";
-import { requirePermission, type AuthenticatedRequest } from "../lib/auth";
+import { requireStaff, type AuthenticatedRequest } from "../lib/auth";
 import { getObjectEntityUploadURL } from "../lib/objectStorage";
-import { recordAuditEvent } from "../lib/platform";
+import { getUserPublicationAccess, recordAuditEvent } from "../lib/platform";
 
 const router: IRouter = Router();
 
 router.post(
   "/storage/uploads/request-url",
-  requirePermission("media:write"),
+  requireStaff,
   async (req, res): Promise<void> => {
     const parsed = RequestStorageUploadUrlBody.safeParse(req.body);
     if (!parsed.success) {
@@ -19,9 +19,22 @@ router.post(
 
     const authenticatedReq = req as AuthenticatedRequest;
     const user = authenticatedReq.localUser;
-    const publicationId = authenticatedReq.publicationId;
-    if (!user || !publicationId) {
+    if (!user) {
       res.status(403).json({ error: "No publication access" });
+      return;
+    }
+
+    const requestedAccess = await getUserPublicationAccess(
+      user.id,
+      parsed.data.publicationId,
+    );
+    if (
+      !requestedAccess ||
+      !requestedAccess.permissions.includes("media:write")
+    ) {
+      res.status(403).json({
+        error: "No media upload access to requested publication",
+      });
       return;
     }
 
@@ -30,7 +43,7 @@ router.post(
       const [media] = await db
         .insert(mediaAssetsTable)
         .values({
-          publicationId,
+          publicationId: requestedAccess.publicationId,
           uploadedBy: user.id,
           objectPath: upload.objectPath,
           originalName: parsed.data.name,
@@ -41,7 +54,7 @@ router.post(
         .returning();
 
       await recordAuditEvent({
-        publicationId,
+        publicationId: requestedAccess.publicationId,
         userId: user.id,
         action: "media.upload.requested",
         entityType: "media_asset",

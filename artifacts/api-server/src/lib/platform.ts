@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { clerkClient } from "@clerk/express";
 import {
   auditEventsTable,
@@ -83,6 +83,27 @@ export async function getFirstUserPublicationAccess(userId: string) {
     })
     .from(userPublicationAccessTable)
     .where(eq(userPublicationAccessTable.userId, userId))
+    .limit(1);
+  return result;
+}
+
+export async function getUserPublicationAccess(
+  userId: string,
+  publicationId: string,
+) {
+  const [result] = await db
+    .select({
+      publicationId: userPublicationAccessTable.publicationId,
+      role: userPublicationAccessTable.role,
+      permissions: userPublicationAccessTable.permissions,
+    })
+    .from(userPublicationAccessTable)
+    .where(
+      and(
+        eq(userPublicationAccessTable.userId, userId),
+        eq(userPublicationAccessTable.publicationId, publicationId),
+      ),
+    )
     .limit(1);
   return result;
 }

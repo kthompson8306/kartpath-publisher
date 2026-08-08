@@ -68,12 +68,14 @@ export const GetCurrentUserResponse = zod.object({
 /**
  * @summary Request a presigned object upload URL
  */
+export const requestStorageUploadUrlBodyPublicationIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$');
 
 
 
 
 
 export const RequestStorageUploadUrlBody = zod.object({
+  "publicationId": zod.string().regex(requestStorageUploadUrlBodyPublicationIdRegExp),
   "name": zod.string().min(1),
   "size": zod.number().min(1),
   "contentType": zod.string().min(1)

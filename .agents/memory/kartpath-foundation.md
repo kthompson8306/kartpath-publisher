@@ -27,7 +27,7 @@ Media bytes belong in App Storage; Postgres stores object paths and queryable me
 
 **How to apply:** Use the presigned PUT flow and persist only the normalized `/objects/...` path plus media metadata.
 
-The current media upload request must not accept or ignore a caller-supplied publication scope: its publication must be explicitly selected and authorized, rather than silently falling back to the user's first publication access.
+Media upload requests require an explicit publication scope and authorize that exact publication before issuing a storage URL or writing metadata/audit rows; they must not fall back to the user's first publication access.
 
 **Why:** A real LAS admin request carrying the foundation-fixture publication ID returned a presigned URL and created LAS-owned media/audit rows, proving that ignoring the requested tenant can turn a cross-publication attempt into a misleading success.
 
