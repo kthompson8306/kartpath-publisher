@@ -18,18 +18,18 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "db:verify"
+args = "api:test"
 
 [[workflows.workflow]]
-name = "db:verify"
+name = "api:test"
 author = "agent"
-
-[workflows.workflow.metadata]
-isValidation = true
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd lib/db && pnpm rebuild-test"
+args = "cd lib/db && pnpm rebuild-test && cd ../../artifacts/api-server && pnpm test"
+
+[workflows.workflow.metadata]
+isValidation = true
 
 [agent]
 stack = "PNPM_WORKSPACE"
