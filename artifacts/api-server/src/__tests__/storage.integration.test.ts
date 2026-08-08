@@ -24,6 +24,7 @@ import {
   beforeAll,
   afterAll,
   beforeEach,
+  afterEach,
 } from "vitest";
 import supertest from "supertest";
 import { eq, and } from "drizzle-orm";
@@ -488,6 +489,205 @@ describe("POST /api/storage/uploads/request-url", () => {
         });
 
       expect(res.status).toBe(400);
+    });
+  });
+});
+
+// ── /complete endpoint tests ──────────────────────────────────────────────────
+//
+// These tests prove that POST /api/storage/uploads/:mediaId/complete performs
+// a real server-side HEAD check against GCS before marking the asset ready.
+// The GCS call is mocked via the global fetch stub — two sequential calls are
+// required per /complete request:
+//   1. Sidecar → signed GET URL
+//   2. HEAD against that signed URL → 200 (exists) or 404 (missing)
+//
+// The top-level beforeEach resets all mocks between tests.
+
+describe("POST /api/storage/uploads/:mediaId/complete — GCS HEAD verification", () => {
+  // Insert a fresh pending media_asset before each test so every case
+  // starts from the same clean state. Direct DB insert avoids an extra
+  // request-url fetch call that would complicate the mock sequencing.
+  let pendingMediaId = "";
+
+  beforeEach(async () => {
+    const [asset] = await db
+      .insert(mediaAssetsTable)
+      .values({
+        publicationId: lasPublicationId,
+        uploadedBy: testUserId,
+        objectPath: "/objects/uploads/test-complete-fixture",
+        originalName: "complete-test.jpg",
+        mimeType: "image/jpeg",
+        byteSize: 4096,
+        status: "pending",
+      })
+      .returning();
+    pendingMediaId = asset.id;
+  });
+
+  afterEach(async () => {
+    // Clean up the test asset so rows don't accumulate
+    await db
+      .delete(mediaAssetsTable)
+      .where(eq(mediaAssetsTable.id, pendingMediaId));
+  });
+
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+
+  /** Stub the two fetch calls needed for a successful HEAD check. */
+  function stubHeadCheckSuccess() {
+    // Call 1: sidecar signs a GET URL
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        signed_url: "https://storage.example.com/bucket/complete-test?sig=ok",
+      }),
+    } as Response);
+    // Call 2: HEAD against that signed URL — 200 means the object exists
+    mockFetch.mockResolvedValueOnce({ ok: true, status: 200 } as Response);
+  }
+
+  /** Stub the two fetch calls for a HEAD check where the file is missing. */
+  function stubHeadCheckMissing() {
+    // Call 1: sidecar still signs successfully
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        signed_url: "https://storage.example.com/bucket/missing?sig=gone",
+      }),
+    } as Response);
+    // Call 2: HEAD → 404 (object not present in bucket)
+    mockFetch.mockResolvedValueOnce({ ok: false, status: 404 } as Response);
+  }
+
+  // ── Happy path ───────────────────────────────────────────────────────────────
+
+  describe("file exists in GCS (HEAD returns 200)", () => {
+    it("returns 200 with status 'ready'", async () => {
+      signInAs(TEST_CLERK_SUBJECT, "storage-test@example.com", "Storage Test User");
+      stubHeadCheckSuccess();
+
+      const res = await supertest(app).post(
+        `/api/storage/uploads/${pendingMediaId}/complete`,
+      );
+
+      expect(res.status).toBe(200);
+      expect(res.body.status).toBe("ready");
+      expect(res.body.id).toBe(pendingMediaId);
+      expect(res.body.coverUrl).toMatch(/^\/api\/storage\/objects\//);
+    });
+
+    it("marks the media_asset row as 'ready' in the database", async () => {
+      signInAs(TEST_CLERK_SUBJECT, "storage-test@example.com", "Storage Test User");
+      stubHeadCheckSuccess();
+
+      await supertest(app).post(
+        `/api/storage/uploads/${pendingMediaId}/complete`,
+      );
+
+      const [asset] = await db
+        .select({ status: mediaAssetsTable.status })
+        .from(mediaAssetsTable)
+        .where(eq(mediaAssetsTable.id, pendingMediaId));
+
+      expect(asset?.status).toBe("ready");
+    });
+
+    it("records a media.upload.completed audit event", async () => {
+      signInAs(TEST_CLERK_SUBJECT, "storage-test@example.com", "Storage Test User");
+      stubHeadCheckSuccess();
+
+      await supertest(app).post(
+        `/api/storage/uploads/${pendingMediaId}/complete`,
+      );
+
+      const audit = await getLatestAuditEvent(testUserId, "media.upload.completed");
+      expect(audit).not.toBeNull();
+      expect(audit!.entityId).toBe(pendingMediaId);
+    });
+
+    it("is idempotent: returns 200 immediately for an already-ready asset without calling HEAD", async () => {
+      // First call: marks it ready
+      signInAs(TEST_CLERK_SUBJECT, "storage-test@example.com", "Storage Test User");
+      stubHeadCheckSuccess();
+      await supertest(app).post(`/api/storage/uploads/${pendingMediaId}/complete`);
+
+      // Reset mocks for the second call
+      mockAuthenticateRequest.mockReset();
+      mockGetUser.mockReset();
+      mockFetch.mockReset();
+
+      // Second call: asset is already ready — no fetch should occur
+      signInAs(TEST_CLERK_SUBJECT, "storage-test@example.com", "Storage Test User");
+      const res = await supertest(app).post(
+        `/api/storage/uploads/${pendingMediaId}/complete`,
+      );
+
+      expect(res.status).toBe(200);
+      expect(res.body.status).toBe("ready");
+      expect(mockFetch).not.toHaveBeenCalled(); // no HEAD needed for already-ready asset
+    });
+  });
+
+  // ── Failure path ──────────────────────────────────────────────────────────────
+
+  describe("file missing from GCS (HEAD returns 404)", () => {
+    it("returns 422 with a descriptive error — not silently marking it ready", async () => {
+      signInAs(TEST_CLERK_SUBJECT, "storage-test@example.com", "Storage Test User");
+      stubHeadCheckMissing();
+
+      const res = await supertest(app).post(
+        `/api/storage/uploads/${pendingMediaId}/complete`,
+      );
+
+      expect(res.status).toBe(422);
+      expect(res.body).toHaveProperty("error");
+      expect(res.body.error).toMatch(/upload not found/i);
+    });
+
+    it("leaves status as 'pending' in the database when HEAD check fails", async () => {
+      signInAs(TEST_CLERK_SUBJECT, "storage-test@example.com", "Storage Test User");
+      stubHeadCheckMissing();
+
+      await supertest(app).post(
+        `/api/storage/uploads/${pendingMediaId}/complete`,
+      );
+
+      const [asset] = await db
+        .select({ status: mediaAssetsTable.status })
+        .from(mediaAssetsTable)
+        .where(eq(mediaAssetsTable.id, pendingMediaId));
+
+      expect(asset?.status).toBe("pending"); // not silently promoted to ready
+    });
+
+    it("returns 422 when the sidecar itself fails (cannot generate a signed URL)", async () => {
+      signInAs(TEST_CLERK_SUBJECT, "storage-test@example.com", "Storage Test User");
+
+      // Sidecar fails — no signed URL returned
+      mockFetch.mockResolvedValueOnce({ ok: false, status: 503 } as Response);
+
+      const res = await supertest(app).post(
+        `/api/storage/uploads/${pendingMediaId}/complete`,
+      );
+
+      expect(res.status).toBe(422);
+      expect(res.body.error).toMatch(/upload not found/i);
+    });
+
+    it("returns 422 when checkObjectExists throws (network error treated as missing)", async () => {
+      signInAs(TEST_CLERK_SUBJECT, "storage-test@example.com", "Storage Test User");
+
+      // Simulate a network error on the sidecar call
+      mockFetch.mockRejectedValueOnce(new Error("ECONNREFUSED"));
+
+      const res = await supertest(app).post(
+        `/api/storage/uploads/${pendingMediaId}/complete`,
+      );
+
+      expect(res.status).toBe(422);
+      expect(res.body.error).toMatch(/upload not found/i);
     });
   });
 });

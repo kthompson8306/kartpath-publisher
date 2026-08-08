@@ -168,6 +168,38 @@ export const insertAuditEventSchema = createInsertSchema(auditEventsTable).omit(
   updatedAt: true,
 });
 
+export const staffInvitesTable = pgTable(
+  "staff_invites",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    publicationId: uuid("publication_id")
+      .notNull()
+      .references(() => publicationsTable.id, { onDelete: "cascade" }),
+    email: text("email").notNull(),
+    role: text("role").notNull(),
+    permissions: text("permissions").array().notNull(),
+    invitedByUserId: uuid("invited_by_user_id").references(() => usersTable.id, {
+      onDelete: "set null",
+    }),
+    status: text("status").notNull().default("pending"),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("staff_invites_publication_email_idx").on(
+      table.publicationId,
+      table.email,
+    ),
+  ],
+);
+
+export const insertStaffInviteSchema = createInsertSchema(staffInvitesTable).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type StaffInvite = typeof staffInvitesTable.$inferSelect;
+
 export type Publication = typeof publicationsTable.$inferSelect;
 export type PublicationSettings = typeof publicationSettingsTable.$inferSelect;
 export type User = typeof usersTable.$inferSelect;

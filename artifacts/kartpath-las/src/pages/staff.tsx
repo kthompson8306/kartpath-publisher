@@ -7,15 +7,20 @@ import {
   getGetContentItemQueryKey,
   getGetCurrentUserQueryKey,
   getListContentItemsQueryKey,
+  getListStaffRosterQueryKey,
   useCreateContentItem,
+  useCreateStaffInvite,
+  useCancelStaffInvite,
   useDeleteContentItem,
   useGetContentItem,
   useGetCurrentUser,
   useListContentItems,
+  useListStaffRoster,
   usePublishContentItem,
+  useRevokeStaffAccess,
   useUpdateContentItem,
 } from '@workspace/api-client-react';
-import type { ContentItem, CreateContentItem } from '@workspace/api-client-react';
+import type { ContentItem, CreateContentItem, StaffInviteRecord, StaffMember } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { LasMark, SectionKicker } from '@/components/las-brand';
 
@@ -630,6 +635,209 @@ function Editor({
   );
 }
 
+// ── Team management panel ─────────────────────────────────────────────────────
+
+function RoleLabel({ role }: { role: string }) {
+  return (
+    <span className={`inline-block px-1.5 py-0.5 font-meta text-[8px] uppercase tracking-[.12em] ${role === 'publication-admin' ? 'bg-[hsl(var(--brick)/.1)] text-[hsl(var(--brick))]' : 'bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]'}`}>
+      {role === 'publication-admin' ? 'Admin' : 'Editor'}
+    </span>
+  );
+}
+
+function TeamPanel({ publicationId, currentUserId }: { publicationId: string; currentUserId: string }) {
+  const queryClient = useQueryClient();
+  const rosterParams = { publicationId };
+  const rosterQuery = useListStaffRoster(rosterParams, {
+    query: { queryKey: getListStaffRosterQueryKey(rosterParams), retry: false },
+  });
+  const inviteMutation = useCreateStaffInvite();
+  const revokeMutation = useRevokeStaffAccess();
+  const cancelMutation = useCancelStaffInvite();
+
+  const [email, setEmail] = useState('');
+  const [role, setRole] = useState<'publication-admin' | 'editor'>('editor');
+  const [formError, setFormError] = useState('');
+  const [formFeedback, setFormFeedback] = useState('');
+
+  const members: StaffMember[] = rosterQuery.data?.members ?? [];
+  const invites: StaffInviteRecord[] = rosterQuery.data?.invites ?? [];
+  const mutating = inviteMutation.isPending || revokeMutation.isPending || cancelMutation.isPending;
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: getListStaffRosterQueryKey(rosterParams) });
+
+  const handleInvite = (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError('');
+    setFormFeedback('');
+    if (!email.trim()) { setFormError('Email is required.'); return; }
+    inviteMutation.mutate(
+      { data: { publicationId, email: email.trim(), role } },
+      {
+        onSuccess: (result) => {
+          const msg = result.result === 'granted'
+            ? `Access granted — ${email.trim()} can sign in now.`
+            : `Invite sent to ${email.trim()}. They'll get access the first time they sign in.`;
+          setFormFeedback(msg);
+          setEmail('');
+          void invalidate();
+        },
+        onError: (err: unknown) => setFormError((err as { error?: string })?.error ?? 'Failed to send invite.'),
+      },
+    );
+  };
+
+  const handleRevoke = (member: StaffMember) => {
+    if (!window.confirm(`Remove ${member.displayName || member.email}'s access? They will no longer be able to sign in to the CMS.`)) return;
+    setFormError('');
+    revokeMutation.mutate(
+      { userId: member.userId, params: { publicationId } },
+      {
+        onSuccess: () => void invalidate(),
+        onError: () => setFormError('Failed to remove staff member.'),
+      },
+    );
+  };
+
+  const handleCancel = (invite: StaffInviteRecord) => {
+    setFormError('');
+    cancelMutation.mutate(
+      { inviteId: invite.id, params: { publicationId } },
+      {
+        onSuccess: () => void invalidate(),
+        onError: () => setFormError('Failed to cancel invite.'),
+      },
+    );
+  };
+
+  return (
+    <div className="mt-7 max-w-2xl space-y-8">
+      {/* Invite form */}
+      <section aria-label="Invite staff member">
+        <SectionKicker>Add someone new</SectionKicker>
+        <h2 className="mt-1 font-display text-3xl font-semibold tracking-[-.04em]">Invite a staff member</h2>
+        <p className="mt-2 max-w-lg font-ui text-xs leading-5 text-[hsl(var(--muted-foreground))]">
+          Enter their email and role. If they already have an account they'll get access immediately. Otherwise we'll grant it the moment they sign up.
+        </p>
+        <form onSubmit={handleInvite} className="mt-5 space-y-3" data-testid="form-staff-invite">
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="fritz@example.com"
+              required
+              className="h-9 flex-1 border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-ui text-xs outline-none focus:border-[hsl(var(--brick))]"
+              data-testid="input-invite-email"
+            />
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value as 'publication-admin' | 'editor')}
+              className="h-9 appearance-none border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 pr-8 font-ui text-xs outline-none focus:border-[hsl(var(--brick))] sm:w-44"
+              data-testid="select-invite-role"
+            >
+              <option value="editor">Editor</option>
+              <option value="publication-admin">Admin</option>
+            </select>
+            <button
+              type="submit"
+              disabled={mutating}
+              className="inline-flex h-9 items-center gap-2 bg-[hsl(var(--pine))] px-4 font-ui text-[10px] font-bold uppercase tracking-[.12em] text-[hsl(var(--pine-foreground,#fff))] disabled:opacity-50"
+              data-testid="button-send-invite"
+            >
+              {inviteMutation.isPending ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
+              Send invite
+            </button>
+          </div>
+          {formError && (
+            <div className="flex items-start gap-2 border border-[hsl(var(--brick)/.4)] bg-[hsl(var(--brick)/.07)] px-3 py-2 font-ui text-xs text-[hsl(var(--brick))]" role="alert" data-testid="status-invite-error">
+              <CircleAlert size={14} className="mt-0.5 shrink-0" /> {formError}
+            </div>
+          )}
+          {formFeedback && (
+            <div className="flex items-center gap-2 border-l-2 border-[hsl(var(--pine-2))] bg-[hsl(var(--pine-2)/.07)] px-3 py-2 font-ui text-xs text-[hsl(var(--pine-2))]" role="status" data-testid="status-invite-feedback">
+              <Check size={13} /> {formFeedback}
+            </div>
+          )}
+        </form>
+      </section>
+
+      {/* Current members */}
+      <section aria-label="Current staff members">
+        <div className="mb-3 flex items-end justify-between">
+          <div>
+            <SectionKicker>Active access</SectionKicker>
+            <h2 className="mt-1 font-display text-3xl font-semibold tracking-[-.04em]">Current staff</h2>
+          </div>
+          <button type="button" onClick={() => void rosterQuery.refetch()} className="inline-flex items-center gap-2 font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--brick))]">
+            <RefreshCw size={12} className={rosterQuery.isFetching ? 'animate-spin' : ''} /> Refresh
+          </button>
+        </div>
+        {rosterQuery.isPending && <div className="h-24 animate-pulse border border-[hsl(var(--border))] bg-[hsl(var(--card))]" />}
+        {rosterQuery.isError && <p className="font-ui text-xs text-[hsl(var(--brick))]">Could not load roster. Try refreshing.</p>}
+        {!rosterQuery.isPending && !rosterQuery.isError && members.length === 0 && (
+          <p className="font-ui text-xs text-[hsl(var(--muted-foreground))]">No staff with access yet.</p>
+        )}
+        {members.length > 0 && (
+          <div className="overflow-hidden border border-[hsl(var(--border))] bg-[hsl(var(--border))]" data-testid="list-staff-members">
+            {members.map((member) => (
+              <div key={member.userId} className="flex items-center justify-between gap-4 bg-[hsl(var(--card))] px-4 py-3" data-testid={`staff-member-${member.userId}`}>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-ui text-xs font-semibold">{member.displayName || member.email}</p>
+                  {member.displayName && <p className="mt-0.5 truncate font-meta text-[10px] text-[hsl(var(--muted-foreground))]">{member.email}</p>}
+                </div>
+                <RoleLabel role={member.role} />
+                {member.userId !== currentUserId && (
+                  <button
+                    type="button"
+                    onClick={() => handleRevoke(member)}
+                    disabled={mutating}
+                    className="inline-flex items-center gap-1.5 font-meta text-[9px] uppercase tracking-[.12em] text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--brick))] disabled:opacity-40"
+                    data-testid={`button-revoke-${member.userId}`}
+                  >
+                    <X size={12} /> Remove
+                  </button>
+                )}
+                {member.userId === currentUserId && (
+                  <span className="font-meta text-[9px] uppercase tracking-[.12em] text-[hsl(var(--muted-foreground))]">You</span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Pending invites */}
+      {invites.length > 0 && (
+        <section aria-label="Pending invites">
+          <SectionKicker>Awaiting sign-up</SectionKicker>
+          <h2 className="mt-1 font-display text-3xl font-semibold tracking-[-.04em]">Pending invites</h2>
+          <div className="mt-3 overflow-hidden border border-[hsl(var(--border))] bg-[hsl(var(--border))]" data-testid="list-pending-invites">
+            {invites.map((invite) => (
+              <div key={invite.id} className="flex items-center justify-between gap-4 bg-[hsl(var(--card))] px-4 py-3" data-testid={`staff-invite-${invite.id}`}>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-ui text-xs font-semibold">{invite.email}</p>
+                  <p className="mt-0.5 font-meta text-[10px] text-[hsl(var(--muted-foreground))]">Invite pending</p>
+                </div>
+                <RoleLabel role={invite.role} />
+                <button
+                  type="button"
+                  onClick={() => handleCancel(invite)}
+                  disabled={mutating}
+                  className="inline-flex items-center gap-1.5 font-meta text-[9px] uppercase tracking-[.12em] text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--brick))] disabled:opacity-40"
+                  data-testid={`button-cancel-invite-${invite.id}`}
+                >
+                  <X size={12} /> Cancel
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
+
 export default function Staff() {
   const queryClient = useQueryClient();
   const userQuery = useGetCurrentUser({ query: { queryKey: getGetCurrentUserQueryKey(), retry: false } });
@@ -638,6 +846,8 @@ export default function Staff() {
   const publicationId = access?.publicationId;
   const isUnauthorized = userQuery.isError;
   const safePublicationId = publicationId ?? '00000000-0000-0000-0000-000000000000';
+  const isAdmin = access?.role === 'publication-admin';
+  const [activeTab, setActiveTab] = useState<'editorial' | 'team'>('editorial');
   const [status, setStatus] = useState<'' | EditorialStatus>('');
   const [contentType, setContentType] = useState<'' | ContentType>('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -871,7 +1081,37 @@ export default function Staff() {
               <div className="bg-[hsl(var(--card))] px-4 py-4 sm:px-5"><p className="font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Published</p><p className="mt-2 font-display text-3xl font-semibold text-[hsl(var(--pine-2))]" data-testid="text-published-count">{items.filter((item) => item.status === EditorialStatus.published).length}</p></div>
               <div className="bg-[hsl(var(--card))] px-4 py-4 sm:px-5"><p className="font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Access</p><p className="mt-2 font-display text-3xl font-semibold capitalize" data-testid="text-staff-role">{access?.role || 'Staff'}</p></div>
             </div>
-            {feedback && <div className="mt-5 flex items-center gap-2 border-l-2 border-[hsl(var(--pine-2))] bg-[hsl(var(--pine-2)/.07)] px-3 py-2 font-ui text-xs text-[hsl(var(--pine-2))]" role="status" data-testid="status-staff-feedback"><Check size={15} /> {feedback}</div>}
+            {feedback && activeTab === 'editorial' && <div className="mt-5 flex items-center gap-2 border-l-2 border-[hsl(var(--pine-2))] bg-[hsl(var(--pine-2)/.07)] px-3 py-2 font-ui text-xs text-[hsl(var(--pine-2))]" role="status" data-testid="status-staff-feedback"><Check size={15} /> {feedback}</div>}
+
+            {/* Tab switcher — Team tab only for publication-admin */}
+            {isAdmin && (
+              <div className="mt-7 flex gap-px border-b border-[hsl(var(--border))]" role="tablist">
+                <button
+                  role="tab"
+                  aria-selected={activeTab === 'editorial'}
+                  onClick={() => setActiveTab('editorial')}
+                  className={`px-4 pb-3 font-ui text-[10px] font-bold uppercase tracking-[.13em] transition-colors ${activeTab === 'editorial' ? 'border-b-2 border-[hsl(var(--brick))] text-[hsl(var(--brick))]' : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'}`}
+                  data-testid="tab-editorial"
+                >
+                  Editorial
+                </button>
+                <button
+                  role="tab"
+                  aria-selected={activeTab === 'team'}
+                  onClick={() => setActiveTab('team')}
+                  className={`px-4 pb-3 font-ui text-[10px] font-bold uppercase tracking-[.13em] transition-colors ${activeTab === 'team' ? 'border-b-2 border-[hsl(var(--brick))] text-[hsl(var(--brick))]' : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'}`}
+                  data-testid="tab-team"
+                >
+                  Team
+                </button>
+              </div>
+            )}
+
+            {activeTab === 'team' && isAdmin && user && publicationId && (
+              <TeamPanel publicationId={publicationId} currentUserId={user.id} />
+            )}
+
+            {activeTab === 'editorial' && (
             <div className="mt-7 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(400px,.74fr)]">
               <section aria-label="Content library" data-testid="section-content-library">
                 <div className="mb-4 flex items-end justify-between gap-4">
@@ -889,6 +1129,7 @@ export default function Staff() {
                 {!detailQuery.isPending && <Editor selectedId={selectedId} isCreating={isCreating} item={selectedItem} form={form} setForm={setForm} onCancel={cancelEditor} onSave={save} onPublish={() => selectedItem && publish(selectedItem)} onDelete={() => selectedItem && remove(selectedItem)} saving={busy} error={editorError} publicationId={safePublicationId} />}
               </section>
             </div>
+            )}
           </>
         )}
       </main>

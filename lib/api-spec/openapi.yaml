@@ -18,6 +18,8 @@ tags:
     description: Media upload preparation
   - name: editorial
     description: Publication-scoped editorial content management
+  - name: staff
+    description: Staff member and invite management for publication admins
 paths:
   /healthz:
     get:
@@ -361,6 +363,152 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /staff/members:
+    get:
+      operationId: listStaffRoster
+      tags: [staff]
+      summary: List staff members and pending invites for a publication
+      parameters:
+        - name: publicationId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Staff roster with members and pending invites
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffRoster"
+        "400":
+          description: Missing publicationId
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /staff/invites:
+    post:
+      operationId: createStaffInvite
+      tags: [staff]
+      summary: Invite a staff member by email or grant access immediately if they have a Clerk account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStaffInviteBody"
+      responses:
+        "200":
+          description: Invite created or access granted directly
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateStaffInviteResponse"
+        "400":
+          description: Invalid request or role not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /staff/members/{userId}:
+    delete:
+      operationId: revokeStaffAccess
+      tags: [staff]
+      summary: Remove a staff member's access to a publication
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: publicationId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Access revoked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  revoked:
+                    type: boolean
+                required:
+                  - revoked
+        "400":
+          description: Cannot remove yourself
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Staff member not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /staff/invites/{inviteId}:
+    delete:
+      operationId: cancelStaffInvite
+      tags: [staff]
+      summary: Cancel a pending staff invite
+      parameters:
+        - name: inviteId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: publicationId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Invite cancelled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cancelled:
+                    type: boolean
+                required:
+                  - cancelled
+        "403":
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Invite not found or already consumed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 components:
   parameters:
     PublicationIdQuery:
@@ -695,4 +843,93 @@ components:
       required:
         - publicationId
         - status
+    StaffMember:
+      type: object
+      properties:
+        userId:
+          type: string
+        email:
+          type: string
+        displayName:
+          type: string
+        role:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+        grantedAt:
+          type: string
+          format: date-time
+      required:
+        - userId
+        - email
+        - displayName
+        - role
+        - permissions
+        - grantedAt
+    StaffInviteRecord:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+        status:
+          type: string
+        invitedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - email
+        - role
+        - status
+        - invitedAt
+    StaffRoster:
+      type: object
+      properties:
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/StaffMember"
+        invites:
+          type: array
+          items:
+            $ref: "#/components/schemas/StaffInviteRecord"
+      required:
+        - members
+        - invites
+    CreateStaffInviteBody:
+      type: object
+      properties:
+        publicationId:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum:
+            - publication-admin
+            - editor
+      required:
+        - publicationId
+        - email
+        - role
+    CreateStaffInviteResponse:
+      type: object
+      properties:
+        result:
+          type: string
+          enum:
+            - granted
+            - invited
+        member:
+          $ref: "#/components/schemas/StaffMember"
+        invite:
+          $ref: "#/components/schemas/StaffInviteRecord"
+      required:
+        - result
 

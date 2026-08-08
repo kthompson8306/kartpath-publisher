@@ -3,6 +3,7 @@ import type { NextFunction, Request, Response } from "express";
 import {
   ensureLocalUser,
   grantBootstrapStaffAccess,
+  grantInviteBasedAccess,
   getFirstUserPublicationAccess,
   getUserPublicationAccess,
 } from "./platform";
@@ -39,6 +40,9 @@ async function enforceStaff(
     // Controlled bootstrap: grant access only if the email is explicitly
     // listed in STAFF_BOOTSTRAP_EMAILS. No-ops for everyone else.
     await grantBootstrapStaffAccess(localUser.id, localUser.email);
+
+    // Auto-grant access for any pending admin-issued invites matching this email.
+    await grantInviteBasedAccess(localUser.id, localUser.email);
 
     if (localUser.status !== "active") {
       res.status(403).json({ error: "Staff account is inactive" });

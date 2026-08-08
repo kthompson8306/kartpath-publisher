@@ -3,7 +3,7 @@ import { RequestStorageUploadUrlBody, RequestStorageUploadUrlResponse, CompleteM
 import { eq } from "drizzle-orm";
 import { db, mediaAssetsTable } from "@workspace/db";
 import { requireStaff, type AuthenticatedRequest } from "../lib/auth";
-import { getObjectEntityGetURL, getObjectEntityUploadURL } from "../lib/objectStorage";
+import { checkObjectExists, getObjectEntityGetURL, getObjectEntityUploadURL } from "../lib/objectStorage";
 import { getUserPublicationAccess, recordAuditEvent } from "../lib/platform";
 
 const router: IRouter = Router();
@@ -114,6 +114,20 @@ router.post(
         mimeType: media.mimeType,
         coverUrl,
       }));
+      return;
+    }
+
+    // Verify the file actually landed in GCS before marking it ready.
+    // A HEAD against the signed GET URL confirms object existence without
+    // downloading the bytes. This prevents a failed PUT from being silently
+    // accepted and later serving a 404 when someone tries to view the image.
+    const exists = await checkObjectExists(media.objectPath);
+    if (!exists) {
+      res.status(422).json({
+        error:
+          "Upload not found in storage — the file transfer may have failed. " +
+          "Please retry the upload.",
+      });
       return;
     }
 

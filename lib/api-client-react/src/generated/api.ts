@@ -20,9 +20,13 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  CancelStaffInvite200,
+  CancelStaffInviteParams,
   ContentItem,
   ContentItemList,
   CreateContentItem,
+  CreateStaffInviteBody,
+  CreateStaffInviteResponse,
   CurrentUser,
   DeleteContentItemParams,
   Error,
@@ -30,9 +34,13 @@ import type {
   HealthStatus,
   ListContentItemsParams,
   ListPublishedContentItemsParams,
+  ListStaffRosterParams,
   MediaAsset,
   Publication,
   PublishContentItem,
+  RevokeStaffAccess200,
+  RevokeStaffAccessParams,
+  StaffRoster,
   StorageUpload,
   StorageUploadInput,
   UpdateContentItem
@@ -996,5 +1004,320 @@ export const usePublishContentItem = <TError = ErrorType<Error>,
         TContext
       > => {
       return useMutation(getPublishContentItemMutationOptions(options));
+    }
+
+export const getListStaffRosterUrl = (params: ListStaffRosterParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/staff/members?${stringifiedParams}` : `/api/staff/members`
+}
+
+/**
+ * @summary List staff members and pending invites for a publication
+ */
+export const listStaffRoster = async (params: ListStaffRosterParams, options?: Parameters<typeof customFetch>[1]): Promise<StaffRoster> => {
+
+  return customFetch<StaffRoster>(getListStaffRosterUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListStaffRosterQueryKey = (params?: ListStaffRosterParams,) => {
+    return [
+    `/api/staff/members`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListStaffRosterQueryOptions = <TData = Awaited<ReturnType<typeof listStaffRoster>>, TError = ErrorType<Error>>(params: ListStaffRosterParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listStaffRoster>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListStaffRosterQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listStaffRoster>>> = ({ signal }) => listStaffRoster(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listStaffRoster>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListStaffRosterQueryResult = NonNullable<Awaited<ReturnType<typeof listStaffRoster>>>
+export type ListStaffRosterQueryError = ErrorType<Error>
+
+
+/**
+ * @summary List staff members and pending invites for a publication
+ */
+
+export function useListStaffRoster<TData = Awaited<ReturnType<typeof listStaffRoster>>, TError = ErrorType<Error>>(
+ params: ListStaffRosterParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listStaffRoster>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListStaffRosterQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateStaffInviteUrl = () => {
+
+
+
+
+  return `/api/staff/invites`
+}
+
+/**
+ * @summary Invite a staff member by email or grant access immediately if they have a Clerk account
+ */
+export const createStaffInvite = async (createStaffInviteBody: CreateStaffInviteBody, options?: Parameters<typeof customFetch>[1]): Promise<CreateStaffInviteResponse> => {
+
+  return customFetch<CreateStaffInviteResponse>(getCreateStaffInviteUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createStaffInviteBody)
+  }
+);}
+
+
+
+
+
+export const getCreateStaffInviteMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStaffInvite>>, TError,{data: BodyType<CreateStaffInviteBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createStaffInvite>>, TError,{data: BodyType<CreateStaffInviteBody>}, TContext> => {
+
+const mutationKey = ['createStaffInvite'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createStaffInvite>>, {data: BodyType<CreateStaffInviteBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createStaffInvite(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateStaffInviteMutationResult = NonNullable<Awaited<ReturnType<typeof createStaffInvite>>>
+    export type CreateStaffInviteMutationBody = BodyType<CreateStaffInviteBody>
+    export type CreateStaffInviteMutationError = ErrorType<Error>
+
+    /**
+ * @summary Invite a staff member by email or grant access immediately if they have a Clerk account
+ */
+export const useCreateStaffInvite = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStaffInvite>>, TError,{data: BodyType<CreateStaffInviteBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createStaffInvite>>,
+        TError,
+        {data: BodyType<CreateStaffInviteBody>},
+        TContext
+      > => {
+      return useMutation(getCreateStaffInviteMutationOptions(options));
+    }
+
+export const getRevokeStaffAccessUrl = (userId: string,
+    params: RevokeStaffAccessParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/staff/members/${userId}?${stringifiedParams}` : `/api/staff/members/${userId}`
+}
+
+/**
+ * @summary Remove a staff member's access to a publication
+ */
+export const revokeStaffAccess = async (userId: string,
+    params: RevokeStaffAccessParams, options?: Parameters<typeof customFetch>[1]): Promise<RevokeStaffAccess200> => {
+
+  return customFetch<RevokeStaffAccess200>(getRevokeStaffAccessUrl(userId,params),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getRevokeStaffAccessMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeStaffAccess>>, TError,{userId: string;params: RevokeStaffAccessParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof revokeStaffAccess>>, TError,{userId: string;params: RevokeStaffAccessParams}, TContext> => {
+
+const mutationKey = ['revokeStaffAccess'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revokeStaffAccess>>, {userId: string;params: RevokeStaffAccessParams}> = (props) => {
+          const {userId,params} = props ?? {};
+
+          return  revokeStaffAccess(userId,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RevokeStaffAccessMutationResult = NonNullable<Awaited<ReturnType<typeof revokeStaffAccess>>>
+
+    export type RevokeStaffAccessMutationError = ErrorType<Error>
+
+    /**
+ * @summary Remove a staff member's access to a publication
+ */
+export const useRevokeStaffAccess = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeStaffAccess>>, TError,{userId: string;params: RevokeStaffAccessParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof revokeStaffAccess>>,
+        TError,
+        {userId: string;params: RevokeStaffAccessParams},
+        TContext
+      > => {
+      return useMutation(getRevokeStaffAccessMutationOptions(options));
+    }
+
+export const getCancelStaffInviteUrl = (inviteId: string,
+    params: CancelStaffInviteParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/staff/invites/${inviteId}?${stringifiedParams}` : `/api/staff/invites/${inviteId}`
+}
+
+/**
+ * @summary Cancel a pending staff invite
+ */
+export const cancelStaffInvite = async (inviteId: string,
+    params: CancelStaffInviteParams, options?: Parameters<typeof customFetch>[1]): Promise<CancelStaffInvite200> => {
+
+  return customFetch<CancelStaffInvite200>(getCancelStaffInviteUrl(inviteId,params),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getCancelStaffInviteMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelStaffInvite>>, TError,{inviteId: string;params: CancelStaffInviteParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof cancelStaffInvite>>, TError,{inviteId: string;params: CancelStaffInviteParams}, TContext> => {
+
+const mutationKey = ['cancelStaffInvite'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof cancelStaffInvite>>, {inviteId: string;params: CancelStaffInviteParams}> = (props) => {
+          const {inviteId,params} = props ?? {};
+
+          return  cancelStaffInvite(inviteId,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CancelStaffInviteMutationResult = NonNullable<Awaited<ReturnType<typeof cancelStaffInvite>>>
+
+    export type CancelStaffInviteMutationError = ErrorType<Error>
+
+    /**
+ * @summary Cancel a pending staff invite
+ */
+export const useCancelStaffInvite = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelStaffInvite>>, TError,{inviteId: string;params: CancelStaffInviteParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof cancelStaffInvite>>,
+        TError,
+        {inviteId: string;params: CancelStaffInviteParams},
+        TContext
+      > => {
+      return useMutation(getCancelStaffInviteMutationOptions(options));
     }
 

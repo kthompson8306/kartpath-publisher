@@ -172,6 +172,56 @@ export interface PublishContentItem {
   status: EditorialStatus;
 }
 
+export interface StaffMember {
+  userId: string;
+  email: string;
+  displayName: string;
+  role: string;
+  permissions: string[];
+  grantedAt: string;
+}
+
+export interface StaffInviteRecord {
+  id: string;
+  email: string;
+  role: string;
+  status: string;
+  invitedAt: string;
+}
+
+export interface StaffRoster {
+  members: StaffMember[];
+  invites: StaffInviteRecord[];
+}
+
+export type CreateStaffInviteBodyRole = typeof CreateStaffInviteBodyRole[keyof typeof CreateStaffInviteBodyRole];
+
+
+export const CreateStaffInviteBodyRole = {
+  'publication-admin': 'publication-admin',
+  editor: 'editor',
+} as const;
+
+export interface CreateStaffInviteBody {
+  publicationId: string;
+  email: string;
+  role: CreateStaffInviteBodyRole;
+}
+
+export type CreateStaffInviteResponseResult = typeof CreateStaffInviteResponseResult[keyof typeof CreateStaffInviteResponseResult];
+
+
+export const CreateStaffInviteResponseResult = {
+  granted: 'granted',
+  invited: 'invited',
+} as const;
+
+export interface CreateStaffInviteResponse {
+  result: CreateStaffInviteResponseResult;
+  member?: StaffMember;
+  invite?: StaffInviteRecord;
+}
+
 export type PublicationIdQueryParameter = string;
 
 export type ListPublishedContentItemsParams = {
@@ -199,5 +249,25 @@ export type DeleteContentItemParams = {
  * @pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$
  */
 publicationId: PublicationIdQueryParameter;
+};
+
+export type ListStaffRosterParams = {
+publicationId: string;
+};
+
+export type RevokeStaffAccessParams = {
+publicationId: string;
+};
+
+export type RevokeStaffAccess200 = {
+  revoked: boolean;
+};
+
+export type CancelStaffInviteParams = {
+publicationId: string;
+};
+
+export type CancelStaffInvite200 = {
+  cancelled: boolean;
 };
 

@@ -364,3 +364,90 @@ export const PublishContentItemResponse = zod.object({
 })
 
 
+/**
+ * @summary List staff members and pending invites for a publication
+ */
+export const ListStaffRosterQueryParams = zod.object({
+  "publicationId": zod.coerce.string()
+})
+
+export const ListStaffRosterResponse = zod.object({
+  "members": zod.array(zod.object({
+  "userId": zod.string(),
+  "email": zod.string(),
+  "displayName": zod.string(),
+  "role": zod.string(),
+  "permissions": zod.array(zod.string()),
+  "grantedAt": zod.coerce.date()
+})),
+  "invites": zod.array(zod.object({
+  "id": zod.string(),
+  "email": zod.string(),
+  "role": zod.string(),
+  "status": zod.string(),
+  "invitedAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * @summary Invite a staff member by email or grant access immediately if they have a Clerk account
+ */
+export const CreateStaffInviteBody = zod.object({
+  "publicationId": zod.string(),
+  "email": zod.string(),
+  "role": zod.enum(['publication-admin', 'editor'])
+})
+
+export const CreateStaffInviteResponse = zod.object({
+  "result": zod.enum(['granted', 'invited']),
+  "member": zod.object({
+  "userId": zod.string(),
+  "email": zod.string(),
+  "displayName": zod.string(),
+  "role": zod.string(),
+  "permissions": zod.array(zod.string()),
+  "grantedAt": zod.coerce.date()
+}).optional(),
+  "invite": zod.object({
+  "id": zod.string(),
+  "email": zod.string(),
+  "role": zod.string(),
+  "status": zod.string(),
+  "invitedAt": zod.coerce.date()
+}).optional()
+})
+
+
+/**
+ * @summary Remove a staff member's access to a publication
+ */
+export const RevokeStaffAccessParams = zod.object({
+  "userId": zod.coerce.string()
+})
+
+export const RevokeStaffAccessQueryParams = zod.object({
+  "publicationId": zod.coerce.string()
+})
+
+export const RevokeStaffAccessResponse = zod.object({
+  "revoked": zod.boolean()
+})
+
+
+/**
+ * @summary Cancel a pending staff invite
+ */
+export const CancelStaffInviteParams = zod.object({
+  "inviteId": zod.coerce.string()
+})
+
+export const CancelStaffInviteQueryParams = zod.object({
+  "publicationId": zod.coerce.string()
+})
+
+export const CancelStaffInviteResponse = zod.object({
+  "cancelled": zod.boolean()
+})
+
+

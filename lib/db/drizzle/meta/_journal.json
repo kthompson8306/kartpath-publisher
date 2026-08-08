@@ -15,6 +15,13 @@
       "when": 1786156567712,
       "tag": "0001_amazing_winter_soldier",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786220000000,
+      "tag": "0002_noble_staff_invites",
+      "breakpoints": true
     }
   ]
 }

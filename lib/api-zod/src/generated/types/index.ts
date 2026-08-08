@@ -6,11 +6,17 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './cancelStaffInvite200';
+export * from './cancelStaffInviteParams';
 export * from './contentItem';
 export * from './contentItemDetails';
 export * from './contentItemList';
 export * from './createContentItem';
 export * from './createContentItemDetails';
+export * from './createStaffInviteBody';
+export * from './createStaffInviteBodyRole';
+export * from './createStaffInviteResponse';
+export * from './createStaffInviteResponseResult';
 export * from './currentUser';
 export * from './deleteContentItemParams';
 export * from './editorialContentType';
@@ -20,6 +26,7 @@ export * from './getContentItemParams';
 export * from './healthStatus';
 export * from './listContentItemsParams';
 export * from './listPublishedContentItemsParams';
+export * from './listStaffRosterParams';
 export * from './mediaAsset';
 export * from './publication';
 export * from './publicationIdQueryParameter';
@@ -28,6 +35,11 @@ export * from './publicationSettingsNavigationItemsItem';
 export * from './publicationSettingsSocialLinks';
 export * from './publicationSettingsThemeTokens';
 export * from './publishContentItem';
+export * from './revokeStaffAccess200';
+export * from './revokeStaffAccessParams';
+export * from './staffInviteRecord';
+export * from './staffMember';
+export * from './staffRoster';
 export * from './storageUpload';
 export * from './storageUploadInput';
 export * from './updateContentItem';

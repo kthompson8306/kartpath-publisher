@@ -73,3 +73,50 @@ export async function getObjectEntityGetURL(objectPath: string): Promise<string>
   }
   return body.signed_url;
 }
+
+/**
+ * Verify that an object actually exists in GCS by obtaining a short-lived
+ * signed GET URL from the sidecar and performing a HEAD request against it.
+ *
+ * GCS signed GET URLs accept HEAD requests (HEAD is a permission subset of
+ * GET), so this works without needing a separate signed HEAD URL.
+ *
+ * Returns true if the object exists and is accessible, false otherwise.
+ * Never throws — a network error or sidecar failure is treated as non-existent
+ * to avoid silently marking corrupt uploads as ready.
+ */
+export async function checkObjectExists(objectPath: string): Promise<boolean> {
+  try {
+    const relativePath = objectPath.replace(/^\/objects/, "");
+    const fullPath = `${privateObjectDir()}${relativePath}`;
+    const { bucketName, objectName } = parseObjectPath(fullPath);
+
+    const signResponse = await fetch(
+      `${SIDECAR_ENDPOINT}/object-storage/signed-object-url`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bucket_name: bucketName,
+          object_name: objectName,
+          method: "GET",
+          expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+        }),
+        signal: AbortSignal.timeout(10_000),
+      },
+    );
+
+    if (!signResponse.ok) return false;
+    const body = (await signResponse.json()) as { signed_url?: string };
+    if (!body.signed_url) return false;
+
+    const headResponse = await fetch(body.signed_url, {
+      method: "HEAD",
+      signal: AbortSignal.timeout(10_000),
+    });
+
+    return headResponse.ok; // 200 → exists; 404/403 → missing or never uploaded
+  } catch {
+    return false; // network error, timeout, bad path — treat as non-existent
+  }
+}
