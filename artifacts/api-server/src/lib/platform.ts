@@ -1,11 +1,10 @@
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { clerkClient } from "@clerk/express";
 import {
   auditEventsTable,
   db,
   publicationsTable,
   publicationSettingsTable,
-  rolesTable,
   userPublicationAccessTable,
   usersTable,
 } from "@workspace/db";
@@ -27,38 +26,13 @@ export async function ensureLocalUser(authProviderSubject: string) {
       authProviderSubject,
       email,
       displayName,
-      status: "active",
+      status: "pending",
     })
     .onConflictDoUpdate({
       target: usersTable.authProviderSubject,
       set: { email, displayName, updatedAt: new Date() },
     })
     .returning();
-
-  const [las] = await db
-    .select({ id: publicationsTable.id })
-    .from(publicationsTable)
-    .where(eq(publicationsTable.slug, "life-around-senoia"));
-  if (!las) {
-    throw new Error("Life Around Senoia has not been seeded");
-  }
-
-  const [role] = await db
-    .select()
-    .from(rolesTable)
-    .where(eq(rolesTable.key, "publication-admin"));
-
-  if (role) {
-    await db
-      .insert(userPublicationAccessTable)
-      .values({
-        userId: user.id,
-        publicationId: las.id,
-        role: role.key,
-        permissions: role.permissions,
-      })
-      .onConflictDoNothing();
-  }
 
   return user;
 }
@@ -98,6 +72,19 @@ export async function getFirstUserPublication(userId: string) {
     .where(eq(userPublicationAccessTable.userId, userId))
     .limit(1);
   return result?.publicationId;
+}
+
+export async function getFirstUserPublicationAccess(userId: string) {
+  const [result] = await db
+    .select({
+      publicationId: userPublicationAccessTable.publicationId,
+      role: userPublicationAccessTable.role,
+      permissions: userPublicationAccessTable.permissions,
+    })
+    .from(userPublicationAccessTable)
+    .where(eq(userPublicationAccessTable.userId, userId))
+    .limit(1);
+  return result;
 }
 
 export async function recordAuditEvent(input: {

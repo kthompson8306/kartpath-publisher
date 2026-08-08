@@ -15,6 +15,12 @@ Browser authentication uses Clerk session cookies through the managed Clerk Reac
 
 **How to apply:** Keep `/sign-in/*?` and `/sign-up/*?` as dedicated Clerk routes, keep the Clerk proxy/middleware ordering intact, and record application authorization in Postgres rather than Clerk metadata.
 
+The API's Express 5 route-facing authorization middleware must expose exactly `(req, res, next)`; permission-specific state belongs in an internal helper. For this managed Clerk setup, server requests are verified through the backend client's `authenticateRequest` with a Web `Request`, then the verified subject is bridged into the local authorization guard.
+
+**Why:** Express 5 treats four-argument functions as error handlers, and the Express adapter's request conversion did not preserve the bearer session in this runtime.
+
+**How to apply:** Keep authentication verification separate from local staff approval. Never treat a valid Clerk session as publication access; resolve the verified subject through the local `users` and `user_publication_access` records.
+
 Media bytes belong in App Storage; Postgres stores object paths and queryable metadata. Upload URL requests are protected and should create audit events when authenticated users request media.
 
 **Why:** Object storage is durable and avoids putting binary payloads in the relational database; auditability is required for editorial operations.

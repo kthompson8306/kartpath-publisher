@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { RequestStorageUploadUrlBody, RequestStorageUploadUrlResponse } from "@workspace/api-zod";
 import { db, mediaAssetsTable } from "@workspace/db";
-import { requireStaff, type AuthenticatedRequest } from "../lib/auth";
+import { requirePermission, type AuthenticatedRequest } from "../lib/auth";
 import { getObjectEntityUploadURL } from "../lib/objectStorage";
 import { recordAuditEvent } from "../lib/platform";
 
@@ -9,7 +9,7 @@ const router: IRouter = Router();
 
 router.post(
   "/storage/uploads/request-url",
-  requireStaff,
+  requirePermission("media:write"),
   async (req, res): Promise<void> => {
     const parsed = RequestStorageUploadUrlBody.safeParse(req.body);
     if (!parsed.success) {

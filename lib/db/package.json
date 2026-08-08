@@ -8,9 +8,13 @@
     "./schema": "./src/schema/index.ts"
   },
   "scripts": {
+    "generate": "drizzle-kit generate --config ./drizzle.config.ts",
+    "baseline": "tsx src/baseline.ts",
+    "migrate": "tsx src/migrate.ts",
     "push": "drizzle-kit push --config ./drizzle.config.ts",
     "push-force": "drizzle-kit push --force --config ./drizzle.config.ts",
-    "seed": "tsx src/seed.ts"
+    "seed": "tsx src/seed.ts",
+    "bootstrap-access": "tsx src/bootstrap-access.ts"
   },
   "dependencies": {
     "drizzle-orm": "catalog:",
