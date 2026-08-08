@@ -29,6 +29,7 @@ import type {
   GetContentItemParams,
   HealthStatus,
   ListContentItemsParams,
+  ListPublishedContentItemsParams,
   Publication,
   PublishContentItem,
   StorageUpload,
@@ -206,6 +207,96 @@ export function useGetPublicationBySlug<TData = Awaited<ReturnType<typeof getPub
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetPublicationBySlugQueryOptions(slug,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListPublishedContentItemsUrl = (slug: string,
+    params?: ListPublishedContentItemsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/publications/${slug}/content-items?${stringifiedParams}` : `/api/publications/${slug}/content-items`
+}
+
+/**
+ * Returns only published editorial content belonging to the publication identified by the slug. This endpoint is intentionally unauthenticated for public publication pages.
+ * @summary List published content for a public publication
+ */
+export const listPublishedContentItems = async (slug: string,
+    params?: ListPublishedContentItemsParams, options?: Parameters<typeof customFetch>[1]): Promise<ContentItemList> => {
+
+  return customFetch<ContentItemList>(getListPublishedContentItemsUrl(slug,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPublishedContentItemsQueryKey = (slug: string,
+    params?: ListPublishedContentItemsParams,) => {
+    return [
+    `/api/publications/${slug}/content-items`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListPublishedContentItemsQueryOptions = <TData = Awaited<ReturnType<typeof listPublishedContentItems>>, TError = ErrorType<Error>>(slug: string,
+    params?: ListPublishedContentItemsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPublishedContentItems>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPublishedContentItemsQueryKey(slug,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPublishedContentItems>>> = ({ signal }) => listPublishedContentItems(slug,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: slug !== null && slug !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPublishedContentItems>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPublishedContentItemsQueryResult = NonNullable<Awaited<ReturnType<typeof listPublishedContentItems>>>
+export type ListPublishedContentItemsQueryError = ErrorType<Error>
+
+
+/**
+ * @summary List published content for a public publication
+ */
+
+export function useListPublishedContentItems<TData = Awaited<ReturnType<typeof listPublishedContentItems>>, TError = ErrorType<Error>>(
+ slug: string,
+    params?: ListPublishedContentItemsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPublishedContentItems>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPublishedContentItemsQueryOptions(slug,params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

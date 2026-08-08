@@ -56,6 +56,36 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /publications/{slug}/content-items:
+    get:
+      operationId: listPublishedContentItems
+      tags: [publications]
+      summary: List published content for a public publication
+      description: Returns only published editorial content belonging to the publication identified by the slug. This endpoint is intentionally unauthenticated for public publication pages.
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: contentType
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/EditorialContentType"
+      responses:
+        "200":
+          description: Published content items
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContentItemList"
+        "404":
+          description: Publication not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /me:
     get:
       operationId: getCurrentUser

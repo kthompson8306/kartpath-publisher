@@ -19,6 +19,7 @@ export * from './error';
 export * from './getContentItemParams';
 export * from './healthStatus';
 export * from './listContentItemsParams';
+export * from './listPublishedContentItemsParams';
 export * from './publication';
 export * from './publicationIdQueryParameter';
 export * from './publicationSettings';

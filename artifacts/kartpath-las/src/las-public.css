@@ -5,6 +5,11 @@
 .las-site button,.las-site input,.las-site textarea,.las-site select{font:inherit}
 .las-site .wrap{max-width:var(--maxw);margin:0 auto;padding:0 40px}
 .las-site .wrap-narrow{max-width:920px;margin:0 auto;padding:0 40px}
+.public-content-state{border:1px dashed var(--line);padding:28px 32px;color:var(--ink-soft);font:1rem var(--read);margin-bottom:28px}
+.published-story-placeholder{display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,var(--pine-2),var(--ink))}
+.published-story-mark{font:900 clamp(3rem,8vw,7rem)/1 var(--disp);letter-spacing:-.08em;color:var(--honey);opacity:.8}
+.published-home-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}
+.published-home-grid .spread-side-item{background:var(--paper);min-height:190px}
 .util-bar{background:var(--ink);color:var(--paper);font:11px var(--mono);letter-spacing:.04em}
 .util-inner{display:flex;align-items:center;justify-content:space-between;padding-top:9px!important;padding-bottom:9px!important}
 .live-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--honey);margin-right:8px;box-shadow:0 0 0 3px rgba(231,169,62,.25);animation:pulse 2s infinite}

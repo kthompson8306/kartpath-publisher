@@ -1,8 +1,25 @@
 import { Router, type IRouter } from "express";
-import { GetPublicationBySlugParams, GetPublicationBySlugResponse } from "@workspace/api-zod";
+import {
+  GetPublicationBySlugParams,
+  GetPublicationBySlugResponse,
+  ListPublishedContentItemsParams,
+  ListPublishedContentItemsQueryParams,
+  ListPublishedContentItemsResponse,
+} from "@workspace/api-zod";
+import { and, asc, eq } from "drizzle-orm";
+import { contentItemsTable, db } from "@workspace/db";
 import { getPublicationBySlug } from "../lib/platform";
 
 const router: IRouter = Router();
+
+function serializeItem(item: typeof contentItemsTable.$inferSelect) {
+  return {
+    ...item,
+    createdAt: item.createdAt.toISOString(),
+    updatedAt: item.updatedAt.toISOString(),
+    publishedAt: item.publishedAt?.toISOString() ?? null,
+  };
+}
 
 router.get("/publications/:slug", async (req, res): Promise<void> => {
   const params = GetPublicationBySlugParams.safeParse(req.params);
@@ -23,6 +40,37 @@ router.get("/publications/:slug", async (req, res): Promise<void> => {
       settings: result.settings,
     }),
   );
+});
+
+router.get("/publications/:slug/content-items", async (req, res): Promise<void> => {
+  const params = ListPublishedContentItemsParams.safeParse(req.params);
+  const query = ListPublishedContentItemsQueryParams.safeParse(req.query);
+  if (!params.success || !query.success) {
+    res.status(400).json({ error: "Invalid public content request" });
+    return;
+  }
+
+  const result = await getPublicationBySlug(params.data.slug);
+  if (!result?.publication) {
+    res.status(404).json({ error: "Publication not found" });
+    return;
+  }
+
+  const conditions = [
+    eq(contentItemsTable.publicationId, result.publication.id),
+    eq(contentItemsTable.status, "published"),
+  ];
+  if (query.data.contentType) {
+    conditions.push(eq(contentItemsTable.contentType, query.data.contentType));
+  }
+
+  const items = await db
+    .select()
+    .from(contentItemsTable)
+    .where(and(...conditions))
+    .orderBy(asc(contentItemsTable.publishedAt), asc(contentItemsTable.updatedAt));
+
+  res.json(ListPublishedContentItemsResponse.parse(items.map(serializeItem)));
 });
 
 export default router;

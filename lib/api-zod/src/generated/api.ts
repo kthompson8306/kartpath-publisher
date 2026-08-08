@@ -48,6 +48,38 @@ export const GetPublicationBySlugResponse = zod.object({
 
 
 /**
+ * Returns only published editorial content belonging to the publication identified by the slug. This endpoint is intentionally unauthenticated for public publication pages.
+ * @summary List published content for a public publication
+ */
+export const ListPublishedContentItemsParams = zod.object({
+  "slug": zod.coerce.string()
+})
+
+export const ListPublishedContentItemsQueryParams = zod.object({
+  "contentType": zod.enum(['featured-family', 'nonprofit-spotlight', 'young-achiever', 'pet-of-the-month', 'business-listing', 'event']).optional()
+})
+
+export const ListPublishedContentItemsResponseItem = zod.object({
+  "id": zod.string(),
+  "publicationId": zod.string(),
+  "contentType": zod.enum(['featured-family', 'nonprofit-spotlight', 'young-achiever', 'pet-of-the-month', 'business-listing', 'event']),
+  "status": zod.enum(['draft', 'published']),
+  "slug": zod.string(),
+  "title": zod.string(),
+  "summary": zod.string(),
+  "body": zod.string(),
+  "details": zod.record(zod.string(), zod.string()),
+  "coverMediaId": zod.string().nullable(),
+  "createdBy": zod.string().nullable(),
+  "updatedBy": zod.string().nullable(),
+  "publishedAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListPublishedContentItemsResponse = zod.array(ListPublishedContentItemsResponseItem)
+
+
+/**
  * @summary Get the current authenticated staff user and access
  */
 export const GetCurrentUserResponse = zod.object({
