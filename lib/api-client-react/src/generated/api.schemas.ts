@@ -75,9 +75,20 @@ export interface StorageUploadInput {
 }
 
 export interface StorageUpload {
+  mediaId: string;
   uploadURL: string;
   objectPath: string;
   expiresInSeconds: number;
+}
+
+export interface MediaAsset {
+  id: string;
+  status: string;
+  objectPath: string;
+  originalName: string;
+  mimeType: string;
+  /** @nullable */
+  coverUrl: string | null;
 }
 
 export type EditorialContentType = typeof EditorialContentType[keyof typeof EditorialContentType];
@@ -114,6 +125,8 @@ export interface ContentItem {
   details: ContentItemDetails;
   /** @nullable */
   coverMediaId: string | null;
+  /** @nullable */
+  coverUrl: string | null;
   /** @nullable */
   createdBy: string | null;
   /** @nullable */

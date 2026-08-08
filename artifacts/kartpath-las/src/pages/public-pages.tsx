@@ -165,7 +165,15 @@ function Newsletter() {
 }
 
 function PublishedStoryCard({ item, reverse = false }: { item: ContentItem; reverse?: boolean }) {
-  return <article className={`family-row published-story-row ${reverse ? 'reverse' : ''}`} data-testid={`public-published-${item.slug}`}><div className="family-img published-story-placeholder"><span className="family-issue-badge">Published story</span><div className="published-story-mark">LAS</div></div><div className="family-copy"><span className="tag">{item.contentType.replaceAll('-', ' ')}</span><h2>{item.title}</h2><p className="dek">{item.summary}</p><p>{item.body}</p><DetailValue item={item} names={['quote', 'pullQuote']} /></div></article>;
+  return <article className={`family-row published-story-row ${reverse ? 'reverse' : ''}`} data-testid={`public-published-${item.slug}`}>
+    <div className="family-img">
+      {item.coverUrl
+        ? <img src={item.coverUrl} alt={item.title} className="family-photo" loading="lazy" data-testid={`img-cover-${item.slug}`} />
+        : <><span className="family-issue-badge">Published story</span><div className="published-story-mark">LAS</div></>
+      }
+    </div>
+    <div className="family-copy"><span className="tag">{item.contentType.replaceAll('-', ' ')}</span><h2>{item.title}</h2><p className="dek">{item.summary}</p><p>{item.body}</p><DetailValue item={item} names={['quote', 'pullQuote']} /></div>
+  </article>;
 }
 
 function PublishedStoryList({ query, emptyMessage }: { query: ReturnType<typeof usePublishedContent>; emptyMessage: string }) {
@@ -181,9 +189,9 @@ export function People() {
     <section><div className="wrap"><SectionHead index="01" title="Published Featured Families" /><PublishedStoryList query={featuredFamiliesQuery} emptyMessage="No featured families are published right now." /></div></section>
     <section className="on-paper2"><div className="wrap">
       <SectionHead index="02" title="Published Young Achievers" /><PublicContentState query={youngAchieversQuery} emptyMessage="No young achievers are published right now." />
-      <div className="people-grid">{youngAchieversQuery.data?.map((item) => <article className="people-card" key={item.id} data-testid={`public-published-${item.slug}`}><div className="pimg"><div className="published-story-mark">LAS</div></div><div className="pbody"><span className="pmeta">Published Young Achiever</span><h3>{item.title}</h3><p>{item.summary}</p><p>{item.body}</p></div></article>)}</div>
+      <div className="people-grid">{youngAchieversQuery.data?.map((item) => <article className="people-card" key={item.id} data-testid={`public-published-${item.slug}`}><div className="pimg">{item.coverUrl ? <img src={item.coverUrl} alt={item.title} loading="lazy" data-testid={`img-cover-${item.slug}`} /> : <div className="noimg">LAS</div>}</div><div className="pbody"><span className="pmeta">Published Young Achiever</span><h3>{item.title}</h3><p>{item.summary}</p><p>{item.body}</p></div></article>)}</div>
       <SectionHead index="03" title="Published Pets of the Month" /><PublicContentState query={petsQuery} emptyMessage="No pets of the month are published right now." />
-      <div className="people-grid">{petsQuery.data?.map((item) => <article className="people-card" key={item.id} data-testid={`public-published-${item.slug}`}><div className="pimg"><div className="published-story-mark">LAS</div></div><div className="pbody"><span className="pmeta">Published Pet of the Month</span><h3>{item.title}</h3><p>{item.summary}</p><p>{item.body}</p></div></article>)}</div>
+      <div className="people-grid">{petsQuery.data?.map((item) => <article className="people-card" key={item.id} data-testid={`public-published-${item.slug}`}><div className="pimg">{item.coverUrl ? <img src={item.coverUrl} alt={item.title} loading="lazy" data-testid={`img-cover-${item.slug}`} /> : <div className="noimg">LAS</div>}</div><div className="pbody"><span className="pmeta">Published Pet of the Month</span><h3>{item.title}</h3><p>{item.summary}</p><p>{item.body}</p></div></article>)}</div>
     </div></section>
   </PageShell>;
 }

@@ -46,3 +46,30 @@ export async function getObjectEntityUploadURL() {
     expiresInSeconds: 900,
   };
 }
+
+export async function getObjectEntityGetURL(objectPath: string): Promise<string> {
+  // objectPath is stored as /objects/uploads/<uuid>
+  // Reconstruct the full GCS path: PRIVATE_OBJECT_DIR/uploads/<uuid>
+  const relativePath = objectPath.replace(/^\/objects/, "");
+  const fullPath = `${privateObjectDir()}${relativePath}`;
+  const { bucketName, objectName } = parseObjectPath(fullPath);
+  const response = await fetch(`${SIDECAR_ENDPOINT}/object-storage/signed-object-url`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      bucket_name: bucketName,
+      object_name: objectName,
+      method: "GET",
+      expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(), // 1-hour GET URL
+    }),
+    signal: AbortSignal.timeout(30_000),
+  });
+  if (!response.ok) {
+    throw new Error(`Object storage GET signing failed with ${response.status}`);
+  }
+  const body = (await response.json()) as { signed_url?: string };
+  if (!body.signed_url) {
+    throw new Error("Object storage returned no signed GET URL");
+  }
+  return body.signed_url;
+}

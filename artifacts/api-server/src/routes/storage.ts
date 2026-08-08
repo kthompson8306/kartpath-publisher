@@ -1,8 +1,9 @@
 import { Router, type IRouter } from "express";
-import { RequestStorageUploadUrlBody, RequestStorageUploadUrlResponse } from "@workspace/api-zod";
+import { RequestStorageUploadUrlBody, RequestStorageUploadUrlResponse, CompleteMediaUploadParams, CompleteMediaUploadResponse } from "@workspace/api-zod";
+import { eq } from "drizzle-orm";
 import { db, mediaAssetsTable } from "@workspace/db";
 import { requireStaff, type AuthenticatedRequest } from "../lib/auth";
-import { getObjectEntityUploadURL } from "../lib/objectStorage";
+import { getObjectEntityGetURL, getObjectEntityUploadURL } from "../lib/objectStorage";
 import { getUserPublicationAccess, recordAuditEvent } from "../lib/platform";
 
 const router: IRouter = Router();
@@ -62,12 +63,103 @@ router.post(
         metadata: { objectPath: upload.objectPath },
       });
 
-      res.json(RequestStorageUploadUrlResponse.parse(upload));
+      res.json(RequestStorageUploadUrlResponse.parse({ ...upload, mediaId: media.id }));
     } catch (error) {
       req.log.error({ err: error }, "Unable to prepare media upload");
       res.status(500).json({ error: "Failed to generate upload URL" });
     }
   },
 );
+
+router.post(
+  "/storage/uploads/:mediaId/complete",
+  requireStaff,
+  async (req, res): Promise<void> => {
+    const params = CompleteMediaUploadParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: "Invalid media ID" });
+      return;
+    }
+
+    const user = (req as AuthenticatedRequest).localUser;
+    if (!user) {
+      res.status(403).json({ error: "No publication access" });
+      return;
+    }
+
+    const [media] = await db
+      .select()
+      .from(mediaAssetsTable)
+      .where(eq(mediaAssetsTable.id, params.data.mediaId));
+
+    if (!media) {
+      res.status(404).json({ error: "Media asset not found" });
+      return;
+    }
+
+    const access = await getUserPublicationAccess(user.id, media.publicationId);
+    if (!access || !access.permissions.includes("media:write")) {
+      res.status(403).json({ error: "No media access to this publication" });
+      return;
+    }
+
+    // Idempotent — already ready
+    if (media.status === "ready") {
+      const coverUrl = `/api/storage/objects${media.objectPath.replace(/^\/objects/, "")}`;
+      res.json(CompleteMediaUploadResponse.parse({
+        id: media.id,
+        status: media.status,
+        objectPath: media.objectPath,
+        originalName: media.originalName,
+        mimeType: media.mimeType,
+        coverUrl,
+      }));
+      return;
+    }
+
+    const [updated] = await db
+      .update(mediaAssetsTable)
+      .set({ status: "ready" })
+      .where(eq(mediaAssetsTable.id, params.data.mediaId))
+      .returning();
+
+    await recordAuditEvent({
+      publicationId: media.publicationId,
+      userId: user.id,
+      action: "media.upload.completed",
+      entityType: "media_asset",
+      entityId: media.id,
+      metadata: { objectPath: media.objectPath },
+    });
+
+    const coverUrl = `/api/storage/objects${updated.objectPath.replace(/^\/objects/, "")}`;
+    res.json(CompleteMediaUploadResponse.parse({
+      id: updated.id,
+      status: updated.status,
+      objectPath: updated.objectPath,
+      originalName: updated.originalName,
+      mimeType: updated.mimeType,
+      coverUrl,
+    }));
+  },
+);
+
+// Serve a stored object — generates a signed GET URL and redirects.
+// Intentionally public (no auth): objects are referenced only by random UUIDs
+// and editorial cover photos on published stories are publicly viewable by design.
+router.get("/storage/objects/*objectPath", async (req, res): Promise<void> => {
+  // path-to-regexp v8 may return the wildcard capture as an array of segments.
+  // Explicitly join with "/" to avoid the default Array.toString() comma separator.
+  const raw = (req.params as Record<string, string | string[]>).objectPath;
+  const segments = Array.isArray(raw) ? raw : String(raw).split(",");
+  const objectPath = `/objects/${segments.join("/")}`;
+  try {
+    const signedUrl = await getObjectEntityGetURL(objectPath);
+    res.redirect(302, signedUrl);
+  } catch (err) {
+    req.log.error({ err }, "Failed to generate object serve URL");
+    res.status(404).json({ error: "Object not found or unavailable" });
+  }
+});
 
 export default router;

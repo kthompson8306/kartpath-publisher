@@ -138,6 +138,40 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /storage/uploads/{mediaId}/complete:
+    post:
+      operationId: completeMediaUpload
+      tags: [storage]
+      summary: Mark an uploaded media asset as ready
+      description: Call after a successful PUT to the presigned URL to transition the media asset from pending to ready, enabling it to be attached to content items.
+      security:
+        - clerkSession: []
+      parameters:
+        - name: mediaId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+      responses:
+        "200":
+          description: Media asset marked ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaAsset"
+        "403":
+          description: No access to this media asset
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Media asset not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /editorial/content-items:
     get:
       operationId: listContentItems
@@ -498,6 +532,8 @@ components:
     StorageUpload:
       type: object
       properties:
+        mediaId:
+          type: string
         uploadURL:
           type: string
         objectPath:
@@ -505,9 +541,32 @@ components:
         expiresInSeconds:
           type: number
       required:
+        - mediaId
         - uploadURL
         - objectPath
         - expiresInSeconds
+    MediaAsset:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+        objectPath:
+          type: string
+        originalName:
+          type: string
+        mimeType:
+          type: string
+        coverUrl:
+          type: ["string", "null"]
+      required:
+        - id
+        - status
+        - objectPath
+        - originalName
+        - mimeType
+        - coverUrl
     EditorialContentType:
       type: string
       enum:
@@ -547,6 +606,8 @@ components:
             type: string
         coverMediaId:
           type: ["string", "null"]
+        coverUrl:
+          type: ["string", "null"]
         createdBy:
           type: ["string", "null"]
         updatedBy:
@@ -571,6 +632,7 @@ components:
         - body
         - details
         - coverMediaId
+        - coverUrl
         - createdBy
         - updatedBy
         - publishedAt

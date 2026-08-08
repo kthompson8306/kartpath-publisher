@@ -70,6 +70,7 @@ export const ListPublishedContentItemsResponseItem = zod.object({
   "body": zod.string(),
   "details": zod.record(zod.string(), zod.string()),
   "coverMediaId": zod.string().nullable(),
+  "coverUrl": zod.string().nullable(),
   "createdBy": zod.string().nullable(),
   "updatedBy": zod.string().nullable(),
   "publishedAt": zod.coerce.date().nullable(),
@@ -114,9 +115,31 @@ export const RequestStorageUploadUrlBody = zod.object({
 })
 
 export const RequestStorageUploadUrlResponse = zod.object({
+  "mediaId": zod.string(),
   "uploadURL": zod.string(),
   "objectPath": zod.string(),
   "expiresInSeconds": zod.number()
+})
+
+
+/**
+ * Call after a successful PUT to the presigned URL to transition the media asset from pending to ready, enabling it to be attached to content items.
+ * @summary Mark an uploaded media asset as ready
+ */
+export const completeMediaUploadPathMediaIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$');
+
+
+export const CompleteMediaUploadParams = zod.object({
+  "mediaId": zod.coerce.string().regex(completeMediaUploadPathMediaIdRegExp)
+})
+
+export const CompleteMediaUploadResponse = zod.object({
+  "id": zod.string(),
+  "status": zod.string(),
+  "objectPath": zod.string(),
+  "originalName": zod.string(),
+  "mimeType": zod.string(),
+  "coverUrl": zod.string().nullable()
 })
 
 
@@ -143,6 +166,7 @@ export const ListContentItemsResponseItem = zod.object({
   "body": zod.string(),
   "details": zod.record(zod.string(), zod.string()),
   "coverMediaId": zod.string().nullable(),
+  "coverUrl": zod.string().nullable(),
   "createdBy": zod.string().nullable(),
   "updatedBy": zod.string().nullable(),
   "publishedAt": zod.coerce.date().nullable(),
@@ -186,6 +210,7 @@ export const CreateContentItemResponse = zod.object({
   "body": zod.string(),
   "details": zod.record(zod.string(), zod.string()),
   "coverMediaId": zod.string().nullable(),
+  "coverUrl": zod.string().nullable(),
   "createdBy": zod.string().nullable(),
   "updatedBy": zod.string().nullable(),
   "publishedAt": zod.coerce.date().nullable(),
@@ -222,6 +247,7 @@ export const GetContentItemResponse = zod.object({
   "body": zod.string(),
   "details": zod.record(zod.string(), zod.string()),
   "coverMediaId": zod.string().nullable(),
+  "coverUrl": zod.string().nullable(),
   "createdBy": zod.string().nullable(),
   "updatedBy": zod.string().nullable(),
   "publishedAt": zod.coerce.date().nullable(),
@@ -271,6 +297,7 @@ export const UpdateContentItemResponse = zod.object({
   "body": zod.string(),
   "details": zod.record(zod.string(), zod.string()),
   "coverMediaId": zod.string().nullable(),
+  "coverUrl": zod.string().nullable(),
   "createdBy": zod.string().nullable(),
   "updatedBy": zod.string().nullable(),
   "publishedAt": zod.coerce.date().nullable(),
@@ -328,6 +355,7 @@ export const PublishContentItemResponse = zod.object({
   "body": zod.string(),
   "details": zod.record(zod.string(), zod.string()),
   "coverMediaId": zod.string().nullable(),
+  "coverUrl": zod.string().nullable(),
   "createdBy": zod.string().nullable(),
   "updatedBy": zod.string().nullable(),
   "publishedAt": zod.coerce.date().nullable(),

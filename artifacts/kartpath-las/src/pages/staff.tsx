@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, ArrowRight, Check, ChevronDown, CircleAlert, Clock3, FilePlus2, Loader2, Pencil, Plus, RefreshCw, Save, Send, ShieldCheck, Trash2, Undo2, X } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowLeft, ArrowRight, Check, ChevronDown, CircleAlert, Clock3, FilePlus2, ImageIcon, Loader2, Pencil, Plus, RefreshCw, Save, Send, ShieldCheck, Trash2, Undo2, X } from 'lucide-react';
 import { Link } from 'wouter';
 import {
   EditorialContentType,
@@ -78,7 +78,7 @@ function StaffHeader({ userName, publicationSlug }: { userName: string; publicat
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <span className="hidden font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--sidebar-foreground)/.48)] md:inline">M1 / Manual CMS</span>
+          <span className="hidden font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--sidebar-foreground)/.48)] md:inline">M2 / CMS + Media</span>
           <div className="flex items-center gap-2.5 border-l border-[hsl(var(--sidebar-border))] pl-4">
             <Initials name={userName} />
             <span className="hidden font-ui text-xs font-medium text-[hsl(var(--sidebar-foreground)/.8)] lg:inline" data-testid="text-staff-name">{userName}</span>
@@ -190,18 +190,26 @@ function ContentRow({
   return (
     <article className={`group relative border-b border-[hsl(var(--border))] px-4 py-4 transition-colors sm:px-5 ${selected ? 'bg-[hsl(var(--honey)/.12)]' : 'hover:bg-[hsl(var(--card))]'}`} data-testid={`row-content-${item.id}`}>
       <button type="button" onClick={onSelect} className="block w-full text-left" data-testid={`button-edit-content-${item.id}`}>
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <p className="font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--brick))]">{typeLabel(item.contentType)}</p>
-            <h3 className="mt-1 truncate pr-2 font-display text-xl font-semibold leading-tight tracking-[-.025em] text-[hsl(var(--foreground))]">{item.title || 'Untitled story'}</h3>
+        <div className="flex items-start gap-3">
+          {item.coverUrl && (
+            <img src={item.coverUrl} alt="" className="hidden size-12 shrink-0 object-cover sm:block" aria-hidden="true" />
+          )}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--brick))]">{typeLabel(item.contentType)}</p>
+                <h3 className="mt-1 truncate pr-2 font-display text-xl font-semibold leading-tight tracking-[-.025em] text-[hsl(var(--foreground))]">{item.title || 'Untitled story'}</h3>
+              </div>
+              <StatusChip status={item.status} />
+            </div>
+            <p className="mt-2 line-clamp-2 max-w-[560px] font-ui text-xs leading-5 text-[hsl(var(--muted-foreground))]">{item.summary || 'No summary added yet.'}</p>
+            <div className="mt-3 flex items-center gap-3 font-meta text-[9px] uppercase tracking-[.1em] text-[hsl(var(--ink-faint))]">
+              <span>{item.slug || 'no-slug'}</span>
+              <span className="size-0.5 rounded-full bg-[hsl(var(--border))]" />
+              <span>{isPublished ? formatDate(item.publishedAt) : `Edited ${formatDate(item.updatedAt)}`}</span>
+              {item.coverUrl && <><span className="size-0.5 rounded-full bg-[hsl(var(--border))]" /><span className="text-[hsl(var(--pine-2))]">Photo ✓</span></>}
+            </div>
           </div>
-          <StatusChip status={item.status} />
-        </div>
-        <p className="mt-2 line-clamp-2 max-w-[560px] font-ui text-xs leading-5 text-[hsl(var(--muted-foreground))]">{item.summary || 'No summary added yet.'}</p>
-        <div className="mt-3 flex items-center gap-3 font-meta text-[9px] uppercase tracking-[.1em] text-[hsl(var(--ink-faint))]">
-          <span>{item.slug || 'no-slug'}</span>
-          <span className="size-0.5 rounded-full bg-[hsl(var(--border))]" />
-          <span>{isPublished ? formatDate(item.publishedAt) : `Edited ${formatDate(item.updatedAt)}`}</span>
         </div>
       </button>
       <div className="mt-3 flex items-center gap-2 border-t border-[hsl(var(--border)/.65)] pt-2 opacity-100 sm:absolute sm:bottom-3 sm:right-4 sm:mt-0 sm:border-0 sm:pt-0 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
@@ -228,6 +236,167 @@ function EmptyList({ filtered, onCreate }: { filtered: boolean; onCreate: () => 
   );
 }
 
+// ─── Cover photo uploader ────────────────────────────────────────────────────
+
+type UploadState = 'idle' | 'requesting' | 'uploading' | 'completing' | 'done' | 'error';
+
+function CoverPhotoUploader({
+  coverMediaId,
+  existingCoverUrl,
+  publicationId,
+  onChange,
+}: {
+  coverMediaId: string | null;
+  existingCoverUrl: string | null | undefined;
+  publicationId: string;
+  onChange: (mediaId: string | null) => void;
+}) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadState, setUploadState] = useState<UploadState>('idle');
+  const [uploadError, setUploadError] = useState('');
+  const [localPreview, setLocalPreview] = useState<string | null>(null);
+
+  // The URL shown to the user: prefer a fresh local blob (just uploaded),
+  // then fall back to the API-resolved coverUrl for the already-saved item.
+  const displayUrl = localPreview ?? existingCoverUrl ?? null;
+
+  const handleFileChange = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      setUploadError('Only image files are accepted.');
+      return;
+    }
+    setUploadError('');
+
+    try {
+      // Step 1 — request presigned upload URL
+      setUploadState('requesting');
+      const reqRes = await fetch('/api/storage/uploads/request-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          publicationId,
+          name: file.name,
+          size: file.size,
+          contentType: file.type,
+        }),
+      });
+      if (!reqRes.ok) {
+        const err = (await reqRes.json().catch(() => ({}))) as { error?: string };
+        throw new Error(err.error ?? `Request failed (${reqRes.status})`);
+      }
+      const { mediaId, uploadURL } = (await reqRes.json()) as { mediaId: string; uploadURL: string };
+
+      // Step 2 — PUT bytes directly to GCS
+      setUploadState('uploading');
+      const putRes = await fetch(uploadURL, {
+        method: 'PUT',
+        body: file,
+        headers: { 'Content-Type': file.type },
+      });
+      if (!putRes.ok) {
+        throw new Error(`File upload failed (${putRes.status})`);
+      }
+
+      // Step 3 — mark complete so it becomes status=ready
+      setUploadState('completing');
+      const completeRes = await fetch(`/api/storage/uploads/${mediaId}/complete`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!completeRes.ok) {
+        const err = (await completeRes.json().catch(() => ({}))) as { error?: string };
+        throw new Error(err.error ?? `Finalize failed (${completeRes.status})`);
+      }
+
+      // Step 4 — update local preview and notify parent
+      setLocalPreview(URL.createObjectURL(file));
+      setUploadState('done');
+      onChange(mediaId);
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Upload failed — try again.');
+      setUploadState('error');
+    }
+  };
+
+  const busy = uploadState === 'requesting' || uploadState === 'uploading' || uploadState === 'completing';
+
+  const stateLabel: Record<UploadState, string> = {
+    idle: displayUrl ? 'Change photo' : 'Upload cover photo',
+    requesting: 'Preparing…',
+    uploading: 'Uploading…',
+    completing: 'Finalizing…',
+    done: 'Change photo',
+    error: 'Retry upload',
+  };
+
+  return (
+    <div data-testid="field-cover-photo">
+      <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Cover photo <span className="normal-case tracking-normal">(optional)</span></span>
+
+      {displayUrl ? (
+        <div className="relative mb-2 aspect-[16/9] max-h-40 overflow-hidden border border-[hsl(var(--input))] bg-[hsl(var(--muted))]">
+          <img src={displayUrl} alt="Cover photo preview" className="size-full object-cover" data-testid="img-cover-preview" />
+          <button
+            type="button"
+            onClick={() => { setLocalPreview(null); onChange(null); setUploadState('idle'); }}
+            className="absolute right-2 top-2 grid size-6 place-items-center bg-[hsl(var(--background)/.8)] text-[hsl(var(--brick))] transition-colors hover:bg-[hsl(var(--brick))] hover:text-white"
+            aria-label="Remove cover photo"
+            data-testid="button-remove-cover"
+          >
+            <X size={12} />
+          </button>
+        </div>
+      ) : (
+        <div className="mb-2 flex aspect-[16/9] max-h-40 items-center justify-center border border-dashed border-[hsl(var(--input))] bg-[hsl(var(--card)/.45)]">
+          {busy
+            ? <Loader2 size={20} className="animate-spin text-[hsl(var(--muted-foreground))]" />
+            : <ImageIcon size={20} className="text-[hsl(var(--muted-foreground)/.5)]" />}
+        </div>
+      )}
+
+      <div className="flex items-center gap-2">
+        <label className={`inline-flex cursor-pointer items-center gap-2 border border-[hsl(var(--border))] px-3 py-2 font-ui text-[10px] uppercase tracking-[.12em] transition-colors hover:border-[hsl(var(--brick))] ${busy ? 'cursor-wait opacity-50' : ''}`} data-testid="button-upload-cover">
+          {busy ? <Loader2 size={12} className="animate-spin" /> : <ImageIcon size={12} />}
+          {stateLabel[uploadState]}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="sr-only"
+            disabled={busy}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) void handleFileChange(file);
+              // reset so same file can be re-selected
+              e.target.value = '';
+            }}
+            data-testid="input-file-cover"
+          />
+        </label>
+        {coverMediaId && (
+          <span className="font-meta text-[9px] uppercase tracking-[.1em] text-[hsl(var(--pine-2))]">
+            <Check size={10} className="mr-0.5 inline" />Photo attached
+          </span>
+        )}
+      </div>
+
+      {uploadError && (
+        <p className="mt-1.5 font-ui text-[10px] leading-4 text-[hsl(var(--brick))]" role="alert" data-testid="status-upload-error">
+          {uploadError}
+        </p>
+      )}
+      {!uploadError && (
+        <span className="mt-1.5 block font-ui text-[10px] leading-4 text-[hsl(var(--muted-foreground))]">
+          JPEG or PNG recommended. Photo appears on the public page after publishing.
+        </span>
+      )}
+    </div>
+  );
+}
+
+// ─── Editor ─────────────────────────────────────────────────────────────────
+
 function Editor({
   selectedId,
   isCreating,
@@ -240,6 +409,7 @@ function Editor({
   onDelete,
   saving,
   error,
+  publicationId,
 }: {
   selectedId: string | null;
   isCreating: boolean;
@@ -252,6 +422,7 @@ function Editor({
   onDelete: () => void;
   saving: boolean;
   error: string;
+  publicationId: string;
 }) {
   const update = (key: keyof FormState, value: string | null) => setForm({ ...form, [key]: value });
   const hasItem = Boolean(selectedId || isCreating);
@@ -300,7 +471,7 @@ function Editor({
         </label>
         <label className="block">
           <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Story body</span>
-          <textarea value={form.body} onChange={(event) => update('body', event.target.value)} rows={9} placeholder="Write the full story here. Plain text is supported in M1." className="w-full resize-y border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2.5 font-editorial text-lg leading-[1.35] outline-none focus:border-[hsl(var(--brick))]" data-testid="textarea-content-body" />
+          <textarea value={form.body} onChange={(event) => update('body', event.target.value)} rows={9} placeholder="Write the full story here." className="w-full resize-y border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2.5 font-editorial text-lg leading-[1.35] outline-none focus:border-[hsl(var(--brick))]" data-testid="textarea-content-body" />
         </label>
         <div className="grid gap-5 sm:grid-cols-2">
           <label className="block">
@@ -308,11 +479,12 @@ function Editor({
             <textarea value={form.detailsText} onChange={(event) => update('detailsText', event.target.value)} rows={5} placeholder={'{"address":"..."}'} className="w-full resize-y border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2.5 font-meta text-xs leading-5 outline-none focus:border-[hsl(var(--brick))]" data-testid="textarea-content-details" />
             <span className="mt-1.5 block font-ui text-[10px] leading-4 text-[hsl(var(--muted-foreground))]">Use string values for lane-specific facts such as address, date, or contact.</span>
           </label>
-          <label className="block">
-            <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Cover media ID <span className="normal-case tracking-normal">(optional)</span></span>
-            <input value={form.coverMediaId ?? ''} onChange={(event) => update('coverMediaId', event.target.value || null)} placeholder="Media ID from storage" className="h-10 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" data-testid="input-content-cover-media" />
-            <span className="mt-1.5 block font-ui text-[10px] leading-4 text-[hsl(var(--muted-foreground))]">M1 keeps media selection manual. Leave blank for a text-only record.</span>
-          </label>
+          <CoverPhotoUploader
+            coverMediaId={form.coverMediaId}
+            existingCoverUrl={item?.coverUrl}
+            publicationId={publicationId}
+            onChange={(mediaId) => update('coverMediaId', mediaId)}
+          />
         </div>
         {error && <div className="flex items-start gap-2 border border-[hsl(var(--brick)/.4)] bg-[hsl(var(--brick)/.07)] px-3 py-2.5 font-ui text-xs leading-5 text-[hsl(var(--brick))]" role="alert" data-testid="status-editor-error"><CircleAlert size={15} className="mt-0.5 shrink-0" /> {error}</div>}
         <div className="flex flex-col-reverse gap-2 border-t border-[hsl(var(--border))] pt-4 sm:flex-row sm:items-center sm:justify-between">
@@ -456,6 +628,7 @@ export default function Staff() {
       updateMutation.mutate({ id: selectedId, data }, {
         onSuccess: () => {
           invalidateList();
+          invalidateDetail(selectedId);
           setFeedback('Changes saved.');
         },
         onError: () => setEditorError('The story could not be updated. Check the fields and try again.'),
@@ -478,7 +651,7 @@ export default function Staff() {
   };
 
   const remove = (item: ContentItem) => {
-    if (!publicationId || !window.confirm(`Delete “${item.title || 'Untitled story'}”? This cannot be undone.`)) return;
+    if (!publicationId || !window.confirm(`Delete "${item.title || 'Untitled story'}"? This cannot be undone.`)) return;
     deleteMutation.mutate({ id: item.id, params: { publicationId } }, {
       onSuccess: () => {
         invalidateList();
@@ -533,13 +706,13 @@ export default function Staff() {
               </section>
               <section aria-label="Story editor" className="lg:sticky lg:top-5" data-testid="section-content-editor">
                 {detailQuery.isPending && selectedId && <div className="min-h-[520px] animate-pulse border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6" data-testid="status-editor-loading"><div className="h-3 w-24 bg-[hsl(var(--muted))]" /><div className="mt-5 h-10 w-3/4 bg-[hsl(var(--muted))]" /><div className="mt-12 h-28 bg-[hsl(var(--muted))]" /><div className="mt-5 h-48 bg-[hsl(var(--muted))]" /></div>}
-                {!detailQuery.isPending && <Editor selectedId={selectedId} isCreating={isCreating} item={selectedItem} form={form} setForm={setForm} onCancel={cancelEditor} onSave={save} onPublish={() => selectedItem && publish(selectedItem)} onDelete={() => selectedItem && remove(selectedItem)} saving={busy} error={editorError} />}
+                {!detailQuery.isPending && <Editor selectedId={selectedId} isCreating={isCreating} item={selectedItem} form={form} setForm={setForm} onCancel={cancelEditor} onSave={save} onPublish={() => selectedItem && publish(selectedItem)} onDelete={() => selectedItem && remove(selectedItem)} saving={busy} error={editorError} publicationId={safePublicationId} />}
               </section>
             </div>
           </>
         )}
       </main>
-      <footer className="mx-auto flex max-w-[1500px] items-center justify-between border-t border-[hsl(var(--border))] px-5 py-6 sm:px-8 lg:px-10"><span className="font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">LAS / Manual editorial CMS</span><Link href="/" className="inline-flex items-center gap-2 font-ui text-[10px] uppercase tracking-[.13em] text-[hsl(var(--brick))]" data-testid="link-staff-footer-home">Return to LAS <ArrowRight size={13} /></Link></footer>
+      <footer className="mx-auto flex max-w-[1500px] items-center justify-between border-t border-[hsl(var(--border))] px-5 py-6 sm:px-8 lg:px-10"><span className="font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">LAS / Editorial CMS + Media</span><Link href="/" className="inline-flex items-center gap-2 font-ui text-[10px] uppercase tracking-[.13em] text-[hsl(var(--brick))]" data-testid="link-staff-footer-home">Return to LAS <ArrowRight size={13} /></Link></footer>
     </div>
   );
 }

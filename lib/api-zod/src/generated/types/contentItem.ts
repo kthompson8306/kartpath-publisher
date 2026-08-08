@@ -22,6 +22,8 @@ export interface ContentItem {
   /** @nullable */
   coverMediaId: string | null;
   /** @nullable */
+  coverUrl: string | null;
+  /** @nullable */
   createdBy: string | null;
   /** @nullable */
   updatedBy: string | null;

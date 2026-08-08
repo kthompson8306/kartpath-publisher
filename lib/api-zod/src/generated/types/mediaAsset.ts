@@ -6,9 +6,12 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface StorageUpload {
-  mediaId: string;
-  uploadURL: string;
+export interface MediaAsset {
+  id: string;
+  status: string;
   objectPath: string;
-  expiresInSeconds: number;
+  originalName: string;
+  mimeType: string;
+  /** @nullable */
+  coverUrl: string | null;
 }

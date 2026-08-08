@@ -30,6 +30,7 @@ import type {
   HealthStatus,
   ListContentItemsParams,
   ListPublishedContentItemsParams,
+  MediaAsset,
   Publication,
   PublishContentItem,
   StorageUpload,
@@ -455,6 +456,78 @@ export const useRequestStorageUploadUrl = <TError = ErrorType<Error>,
         TContext
       > => {
       return useMutation(getRequestStorageUploadUrlMutationOptions(options));
+    }
+
+export const getCompleteMediaUploadUrl = (mediaId: string,) => {
+
+
+
+
+  return `/api/storage/uploads/${mediaId}/complete`
+}
+
+/**
+ * Call after a successful PUT to the presigned URL to transition the media asset from pending to ready, enabling it to be attached to content items.
+ * @summary Mark an uploaded media asset as ready
+ */
+export const completeMediaUpload = async (mediaId: string, options?: Parameters<typeof customFetch>[1]): Promise<MediaAsset> => {
+
+  return customFetch<MediaAsset>(getCompleteMediaUploadUrl(mediaId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getCompleteMediaUploadMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeMediaUpload>>, TError,{mediaId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof completeMediaUpload>>, TError,{mediaId: string}, TContext> => {
+
+const mutationKey = ['completeMediaUpload'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof completeMediaUpload>>, {mediaId: string}> = (props) => {
+          const {mediaId} = props ?? {};
+
+          return  completeMediaUpload(mediaId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CompleteMediaUploadMutationResult = NonNullable<Awaited<ReturnType<typeof completeMediaUpload>>>
+
+    export type CompleteMediaUploadMutationError = ErrorType<Error>
+
+    /**
+ * @summary Mark an uploaded media asset as ready
+ */
+export const useCompleteMediaUpload = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeMediaUpload>>, TError,{mediaId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof completeMediaUpload>>,
+        TError,
+        {mediaId: string},
+        TContext
+      > => {
+      return useMutation(getCompleteMediaUploadMutationOptions(options));
     }
 
 export const getListContentItemsUrl = (params: ListContentItemsParams,) => {

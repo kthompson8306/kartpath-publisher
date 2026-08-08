@@ -7,14 +7,21 @@ import {
   ListPublishedContentItemsResponse,
 } from "@workspace/api-zod";
 import { and, asc, eq } from "drizzle-orm";
-import { contentItemsTable, db } from "@workspace/db";
+import { contentItemsTable, db, mediaAssetsTable } from "@workspace/db";
 import { getPublicationBySlug } from "../lib/platform";
 
 const router: IRouter = Router();
 
-function serializeItem(item: typeof contentItemsTable.$inferSelect) {
+function serializeItem(
+  item: typeof contentItemsTable.$inferSelect,
+  mediaObjectPath: string | null,
+) {
+  const coverUrl = mediaObjectPath
+    ? `/api/storage/objects${mediaObjectPath.replace(/^\/objects/, "")}`
+    : null;
   return {
     ...item,
+    coverUrl,
     createdAt: item.createdAt.toISOString(),
     updatedAt: item.updatedAt.toISOString(),
     publishedAt: item.publishedAt?.toISOString() ?? null,
@@ -64,13 +71,27 @@ router.get("/publications/:slug/content-items", async (req, res): Promise<void> 
     conditions.push(eq(contentItemsTable.contentType, query.data.contentType));
   }
 
-  const items = await db
-    .select()
+  const rows = await db
+    .select({
+      item: contentItemsTable,
+      mediaObjectPath: mediaAssetsTable.objectPath,
+    })
     .from(contentItemsTable)
+    .leftJoin(
+      mediaAssetsTable,
+      and(
+        eq(contentItemsTable.coverMediaId, mediaAssetsTable.id),
+        eq(mediaAssetsTable.status, "ready"),
+      ),
+    )
     .where(and(...conditions))
     .orderBy(asc(contentItemsTable.publishedAt), asc(contentItemsTable.updatedAt));
 
-  res.json(ListPublishedContentItemsResponse.parse(items.map(serializeItem)));
+  res.json(
+    ListPublishedContentItemsResponse.parse(
+      rows.map(({ item, mediaObjectPath }) => serializeItem(item, mediaObjectPath ?? null)),
+    ),
+  );
 });
 
 export default router;
