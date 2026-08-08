@@ -1,4 +1,8 @@
 - [KartPath foundation](kartpath-foundation.md) — M0 uses managed Clerk, tenant-scoped Postgres tables, and App Storage object paths as the platform boundary.
 - [Editorial core](kartpath-editorial-core.md) — M1 content items are publication-scoped, six-type constrained, draft/published records with audited CRUD and explicit tenant authorization.
-- [Structured content types](structured-content-types.md) — recipe/crooks-corner/lifestyle-column store arrays as JSON strings in the details jsonb field; API server must be restarted after codegen for enum changes to take effect.- [Public-site asset delivery](kartpath-public-site.md) — bundle editorial media through Vite when the path-routed preview can SPA-fallback missing public assets.
+- [Structured content types](structured-content-types.md) — recipe/crooks-corner/lifestyle-column store arrays as JSON strings in the details jsonb field; API server must be restarted after codegen for enum changes to take effect.
+- [Public-site asset delivery](kartpath-public-site.md) — bundle editorial media through Vite when the path-routed preview can SPA-fallback missing public assets.
 - [Object storage path bugs](object-storage-path-bugs.md) — path-to-regexp v8 wildcard returns array (commas instead of slashes); must join explicitly. Also: anonymous `/*` throws, must name it.
+- [Staff management feature](staff-management.md) — Invite/revoke flow, route patterns, and test setup for the staff endpoints.
+- [Editorial route schemas](editorial-route-schemas.md) — Body schema quirks for integration tests (PATCH requires all fields including coverMediaId:null; Publish requires status; GET list returns plain array not {items:[]}).
+- [Cleanup job pattern](cleanup-job-pattern.md) — Stale pending media cleanup architecture: direct function call testable, scheduler wired into index.ts after listen().

@@ -451,3 +451,73 @@ export const CancelStaffInviteResponse = zod.object({
 })
 
 
+/**
+ * @summary Subscribe an email address to a publication's newsletter
+ */
+export const SubscribeToPublicationParams = zod.object({
+  "slug": zod.coerce.string()
+})
+
+export const subscribeToPublicationBodyEmailMin = 3;
+
+
+
+export const SubscribeToPublicationBody = zod.object({
+  "email": zod.string().min(subscribeToPublicationBodyEmailMin)
+})
+
+export const SubscribeToPublicationResponse = zod.object({
+  "subscribed": zod.boolean()
+})
+
+
+/**
+ * @summary Submit a community story nomination to a publication
+ */
+export const SubmitNominationParams = zod.object({
+  "slug": zod.coerce.string()
+})
+
+
+export const submitNominationBodyNominatorEmailMin = 3;
+
+
+
+
+
+export const SubmitNominationBody = zod.object({
+  "nominatorName": zod.string().min(1),
+  "nominatorEmail": zod.string().min(submitNominationBodyNominatorEmailMin),
+  "category": zod.string().min(1),
+  "story": zod.string().min(1)
+})
+
+export const SubmitNominationResponse = zod.object({
+  "id": zod.string(),
+  "received": zod.boolean()
+})
+
+
+/**
+ * @summary List story nominations for a publication (staff only)
+ */
+export const listNominationsQueryPublicationIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$');
+
+
+export const ListNominationsQueryParams = zod.object({
+  "publicationId": zod.coerce.string().regex(listNominationsQueryPublicationIdRegExp)
+})
+
+export const ListNominationsResponse = zod.object({
+  "nominations": zod.array(zod.object({
+  "id": zod.string(),
+  "nominatorName": zod.string(),
+  "nominatorEmail": zod.string(),
+  "category": zod.string(),
+  "story": zod.string(),
+  "status": zod.string(),
+  "createdAt": zod.coerce.date()
+}))
+})
+
+

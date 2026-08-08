@@ -20,6 +20,8 @@ tags:
     description: Publication-scoped editorial content management
   - name: staff
     description: Staff member and invite management for publication admins
+  - name: engagement
+    description: Public reader engagement — newsletter subscriptions and story nominations
 paths:
   /healthz:
     get:
@@ -509,6 +511,106 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /publications/{slug}/subscribe:
+    post:
+      operationId: subscribeToPublication
+      tags: [engagement]
+      summary: Subscribe an email address to a publication's newsletter
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubscribeInput"
+      responses:
+        "200":
+          description: Subscribed successfully (idempotent — already-subscribed emails also return 200)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscribeResponse"
+        "400":
+          description: Invalid email
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Publication not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /publications/{slug}/nominations:
+    post:
+      operationId: submitNomination
+      tags: [engagement]
+      summary: Submit a community story nomination to a publication
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitNominationInput"
+      responses:
+        "200":
+          description: Nomination received and stored
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubmitNominationResponse"
+        "400":
+          description: Missing or invalid fields
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Publication not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /nominations:
+    get:
+      operationId: listNominations
+      tags: [engagement]
+      summary: List story nominations for a publication (staff only)
+      security:
+        - clerkSession: []
+      parameters:
+        - $ref: "#/components/parameters/PublicationIdQuery"
+      responses:
+        "200":
+          description: Nominations list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NominationList"
+        "400":
+          description: publicationId is required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: No staff access to this publication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 components:
   parameters:
     PublicationIdQuery:
@@ -932,4 +1034,84 @@ components:
           $ref: "#/components/schemas/StaffInviteRecord"
       required:
         - result
+    SubscribeInput:
+      type: object
+      properties:
+        email:
+          type: string
+          minLength: 3
+      required:
+        - email
+    SubscribeResponse:
+      type: object
+      properties:
+        subscribed:
+          type: boolean
+      required:
+        - subscribed
+    SubmitNominationInput:
+      type: object
+      properties:
+        nominatorName:
+          type: string
+          minLength: 1
+        nominatorEmail:
+          type: string
+          minLength: 3
+        category:
+          type: string
+          minLength: 1
+        story:
+          type: string
+          minLength: 1
+      required:
+        - nominatorName
+        - nominatorEmail
+        - category
+        - story
+    SubmitNominationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        received:
+          type: boolean
+      required:
+        - id
+        - received
+    NominationRecord:
+      type: object
+      properties:
+        id:
+          type: string
+        nominatorName:
+          type: string
+        nominatorEmail:
+          type: string
+        category:
+          type: string
+        story:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - nominatorName
+        - nominatorEmail
+        - category
+        - story
+        - status
+        - createdAt
+    NominationList:
+      type: object
+      properties:
+        nominations:
+          type: array
+          items:
+            $ref: "#/components/schemas/NominationRecord"
+      required:
+        - nominations
 

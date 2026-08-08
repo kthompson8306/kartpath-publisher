@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { ArrowRight, Menu, Search, X } from 'lucide-react';
-import { Link } from 'wouter';
-import { getListPublishedContentItemsQueryKey, useListPublishedContentItems } from '@workspace/api-client-react';
+import { Link, useParams } from 'wouter';
+import { getListPublishedContentItemsQueryKey, useListPublishedContentItems, useSubscribeToPublication, useSubmitNomination } from '@workspace/api-client-react';
 import type { ContentItem, EditorialContentType } from '@workspace/api-client-react';
 
 type SeoProps = { title: string; description: string; path: string };
@@ -161,7 +161,18 @@ export function PublicHome() {
 
 function Newsletter() {
   const [submitted, setSubmitted] = useState(false);
-  return <section className="newsletter" id="newsletter"><div className="wrap"><span className="mono-label">Join The List</span><h2>Senoia stories, straight to your inbox — no fluff, just the town.</h2>{submitted ? <p className="form-confirm">Thanks — your interest is noted. Email <a href="mailto:hello@kartpathmedia.com">hello@kartpathmedia.com</a> to complete your subscription.</p> : <form className="news-input-row" onSubmit={(e) => { e.preventDefault(); setSubmitted(true); }}><input required type="email" aria-label="Email address" placeholder="you@email.com" /><button type="submit">Subscribe</button></form>}</div></section>;
+  const [subError, setSubError] = useState('');
+  const subscribeMutation = useSubscribeToPublication();
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setSubError('');
+    const email = (e.currentTarget.elements.namedItem('email') as HTMLInputElement).value;
+    subscribeMutation.mutate({ slug: PUBLICATION_SLUG, data: { email } }, {
+      onSuccess: () => setSubmitted(true),
+      onError: () => setSubError('Something went wrong. Please try again or email hello@kartpathmedia.com.'),
+    });
+  };
+  return <section className="newsletter" id="newsletter"><div className="wrap"><span className="mono-label">Join The List</span><h2>Senoia stories, straight to your inbox — no fluff, just the town.</h2>{submitted ? <p className="form-confirm">You're on the list — look for Life Around Senoia in your inbox soon.</p> : <>{subError && <p style={{ color: 'var(--brick)', marginBottom: 12, font: '.9rem var(--ui)' }}>{subError}</p>}<form className="news-input-row" onSubmit={handleSubmit}><input required type="email" name="email" aria-label="Email address" placeholder="you@email.com" /><button type="submit" disabled={subscribeMutation.isPending}>{subscribeMutation.isPending ? '…' : 'Subscribe'}</button></form></>}</div></section>;
 }
 
 function PublishedStoryCard({ item, reverse = false }: { item: ContentItem; reverse?: boolean }) {
@@ -378,13 +389,75 @@ export function Directory() {
 
 const issues = [['01', 'Sept 2025', 'The Bergstroms', 'las1-cover.jpg'], ['02', 'Nov–Dec 2025', 'Joe & Dawn McGee', 'las2-cover.jpg'], ['03', 'Winter 2026', 'The Crooks of Senoia', 'las3-cover.jpg'], ['04', 'Spring 2026', 'The Jenkins Family', 'las4-cover.jpg'], ['05', 'May–Jun 2026', 'The Bartels Family', 'las5-cover.jpg'], ['06', 'Jul–Aug 2026', 'The Brewingtons', 'las6-cover.jpg']] as const;
 export function Editions() {
-  return <PageShell seo={{ title: 'Digital Editions — Life Around Senoia Archive', description: 'Read every issue of Life Around Senoia exactly as it was printed, from Issue 01 through Issue 06.', path: '/editions' }}><PageHero kicker="The Archive" title={<>Every issue,<br />flip-through ready</>}>Read Life Around Senoia exactly as it was printed — full-page spreads, ads and all — right in your browser.</PageHero><section><div className="wrap"><div className="featured-reader"><div className="reader-cover"><img src={image('las6-cover.jpg')} alt="Life Around Senoia Issue 6 cover" /></div><div className="reader-copy"><span className="mono-label">Latest Edition · Issue 06</span><h2>Making Room at the Table</h2><p>The Brewington family, the Senoia Optimist Club’s four decades of service, Milo Stupski, and a tribute to Ellis Crook — plus our one-year anniversary as a publication. July–August 2026.</p><button type="button" className="btn-sharp honey-button" onClick={() => alert('The full edition reader is being prepared. See the web stories in the meantime.')}>Open Full Edition <ArrowRight size={14} /></button></div></div></div></section><section className="on-paper2"><div className="wrap"><SectionHead index="" title="Full Archive" /><div className="archive-grid">{issues.map(([issue, date, title, cover]) => <button type="button" className="issue-card" key={issue} onClick={() => alert(`Issue ${issue} reader is being prepared.`)}><div className="issue-cover-img"><img src={image(cover)} alt={`Life Around Senoia Issue ${issue} cover`} loading="lazy" /></div><div className="meta"><span className="date">{date}</span><h3>Issue {issue}</h3><p>{title}</p></div></button>)}</div></div></section></PageShell>;
+  return <PageShell seo={{ title: 'Digital Editions — Life Around Senoia Archive', description: 'Read every issue of Life Around Senoia exactly as it was printed, from Issue 01 through Issue 06.', path: '/editions' }}><PageHero kicker="The Archive" title={<>Every issue,<br />flip-through ready</>}>Read Life Around Senoia exactly as it was printed — full-page spreads, ads and all — right in your browser.</PageHero><section><div className="wrap"><div className="featured-reader"><div className="reader-cover"><img src={image('las6-cover.jpg')} alt="Life Around Senoia Issue 6 cover" /></div><div className="reader-copy"><span className="mono-label">Latest Edition · Issue 06</span><h2>Making Room at the Table</h2><p>The Brewington family, the Senoia Optimist Club’s four decades of service, Milo Stupski, and a tribute to Ellis Crook — plus our one-year anniversary as a publication. July–August 2026.</p><Link href="/editions/06" className="btn-sharp honey-button">Open Full Edition <ArrowRight size={14} /></Link></div></div></div></section><section className="on-paper2"><div className="wrap"><SectionHead index="" title="Full Archive" /><div className="archive-grid">{issues.map(([issue, date, title, cover]) => <Link href={'/editions/' + issue} className="issue-card" key={issue}><div className="issue-cover-img"><img src={image(cover)} alt={`Life Around Senoia Issue ${issue} cover`} loading="lazy" /></div><div className="meta"><span className="date">{date}</span><h3>Issue {issue}</h3><p>{title}</p></div></Link>)}</div></div></section></PageShell>;
+}
+
+export function EditionReader() {
+  const { issue } = useParams<{ issue: string }>();
+  const issueIndex = issues.findIndex(([num]) => num === issue);
+  const contentQuery = usePublishedContent();
+
+  if (issueIndex === -1) {
+    return <PageShell seo={{ title: 'Edition Not Found — Life Around Senoia', description: 'That edition was not found.', path: '/editions' }}>
+      <section><div className="wrap" style={{ padding: '80px 0', textAlign: 'center' }}>
+        <p style={{ marginBottom: 20, font: '1rem var(--ui)', color: 'var(--ink-soft)' }}>That edition doesn't exist.</p>
+        <Link href="/editions" className="btn-sharp honey-button">← Back to Archive <ArrowRight size={14} /></Link>
+      </div></section>
+    </PageShell>;
+  }
+
+  const [num, date, title, cover] = issues[issueIndex];
+  const prevIssue = issueIndex > 0 ? issues[issueIndex - 1] : null;
+  const nextIssue = issueIndex < issues.length - 1 ? issues[issueIndex + 1] : null;
+
+  return (
+    <PageShell seo={{ title: `Issue ${num} — ${title} — Life Around Senoia`, description: `Read Issue ${num} of Life Around Senoia, featuring ${title}. ${date}. Every published story in one place.`, path: `/editions/${num}` }}>
+      <section style={{ background: 'var(--ink)', color: 'var(--paper)' }}>
+        <div className="wrap" style={{ paddingTop: '32px', paddingBottom: 0 }}>
+          <Link href="/editions" style={{ display: 'inline-block', font: '700 .72rem var(--mono)', letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--honey)', textDecoration: 'none', marginBottom: '24px' }}>← All Editions</Link>
+        </div>
+        <div className="wrap" style={{ paddingTop: 0, paddingBottom: 0 }}>
+          <div className="featured-reader" style={{ border: 'none' }}>
+            <div className="reader-cover">
+              <img src={image(cover)} alt={`Life Around Senoia Issue ${num} cover`} />
+            </div>
+            <div className="reader-copy">
+              <span className="mono-label">Issue {num} · {date}</span>
+              <h2>{title}</h2>
+              <p>Life Around Senoia — every published story, all in one place.</p>
+              <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', marginTop: '8px' }}>
+                {prevIssue && <Link href={'/editions/' + prevIssue[0]} style={{ font: '700 .72rem var(--mono)', letterSpacing: '.09em', textTransform: 'uppercase', color: 'rgba(247,245,238,.5)', textDecoration: 'none' }}>← Issue {prevIssue[0]}</Link>}
+                {nextIssue && <Link href={'/editions/' + nextIssue[0]} style={{ font: '700 .72rem var(--mono)', letterSpacing: '.09em', textTransform: 'uppercase', color: 'var(--honey)', textDecoration: 'none' }}>Issue {nextIssue[0]} →</Link>}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section>
+        <div className="wrap">
+          <SectionHead index="" title="Stories in This Edition" />
+          <PublishedStoryList query={contentQuery} emptyMessage="No stories have been published yet. Check back soon." />
+        </div>
+      </section>
+      {(prevIssue || nextIssue) && (
+        <section style={{ borderTop: '1px solid var(--line)', background: 'var(--paper)' }}>
+          <div className="wrap" style={{ paddingTop: '40px', paddingBottom: '60px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+            <div>{prevIssue && <Link href={'/editions/' + prevIssue[0]} className="btn-sharp honey-button" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '.82rem' }}>← Issue {prevIssue[0]}: {prevIssue[2]}</Link>}</div>
+            <Link href="/editions" style={{ font: '700 .7rem var(--mono)', textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--ink-soft)', textDecoration: 'none' }}>All Editions</Link>
+            <div>{nextIssue && <Link href={'/editions/' + nextIssue[0]} className="btn-sharp honey-button" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '.82rem' }}>Issue {nextIssue[0]}: {nextIssue[2]} →</Link>}</div>
+          </div>
+        </section>
+      )}
+    </PageShell>
+  );
 }
 
 export function About() {
   const [sent, setSent] = useState(false);
+  const [nomError, setNomError] = useState('');
+  const nominateMutation = useSubmitNomination();
   const expectations = [['Featured Family', 'Sharing what makes a local household unique, grounded, and inspiring.'], ['Young Achiever', 'Highlighting a student making an impact in the classroom, on the field, or in the community.'], ['Nonprofit Spotlight', 'Uplifting the organizations making a real difference — and ways you can help.'], ['Pet of the Month', 'Because our furry, feathered, and four-legged friends are family too.'], ['Secret Sauce & Crook’s Corner', 'Reflection and local history — the columns that give the magazine its soul.'], ['Events & Recipes', 'What’s happening downtown and what to serve when you get there.']] as const;
-  return <PageShell seo={{ title: 'About Us — Life Around Senoia', description: 'Meet the people behind Life Around Senoia, a magazine written by the town, for the town.', path: '/about' }}><PageHero kicker="About the Publication" title={<>A magazine written by the town, for the town.</>}>Life Around Senoia is a celebration of community, connection, and the people who make this small town special.</PageHero><section><div className="wrap-narrow quote-block"><p>“We’re both fathers, friends, and participants in our communities. This publication is our way of giving back — of highlighting what’s good, celebrating what’s real, and making sure no one in town feels like a stranger.”</p><span className="mono-label">— Kevin Thompson, Publisher</span></div></section><section className="on-paper2"><div className="wrap"><SectionHead index="" title="Our Team" /><div className="team-grid"><article className="team-card"><div className="team-photo" /><div><h2>Kevin Thompson</h2><span className="team-role">Publisher &amp; Founder</span><p>Nearly 20 years in publishing, including work with a niche publisher of nearly 35 enthusiast titles — a journey that led Kevin to launch a business helping publishers and content-driven organizations scale, tell better stories, and grow their communities.</p></div></article><article className="team-card"><div className="team-photo" /><div><h2>Blake Adams</h2><span className="team-role">Advertising Director &amp; Managing Partner</span><p>Born and raised in Fayette and Coweta County, Blake has proudly called Senoia home for over 15 years — active in the local business and creative scene, with a deep passion for connecting people and building things that matter to his hometown.</p></div></article></div><SectionHead index="" title="What To Expect" /><div className="expect-grid">{expectations.map(([title, body]) => <article className="expect-item" key={title}><h3>{title}</h3><p>{body}</p></article>)}</div></div></section><section className="nominate-section" id="nominate"><div className="wrap"><SectionHead index="" title="Nominate a Story" /><p className="nominate-intro">This magazine is shaped by the community. Nominate a Featured Family, Young Achiever, local business, nonprofit, or Pet of the Month.</p><form className="nominate-form" onSubmit={(e) => { e.preventDefault(); setSent(true); }}>{[['Your Name', 'text'], ['Your Email', 'email']].map(([label, type]) => <label key={label}>{label}<input required type={type} /></label>)}<label className="full">I’d like to nominate a...<select><option>Featured Family</option><option>Young Achiever</option><option>Local Business</option><option>Nonprofit</option><option>Pet of the Month</option><option>Community Event</option></select></label><label className="full">Tell us their story<textarea required /></label><div className="full"><button className="btn-sharp honey-button" type="submit">{sent ? 'Nomination noted' : 'Submit Nomination'} <ArrowRight size={14} /></button></div></form><p className="nominate-note">Or email <a href="mailto:editorial@kartpathmedia.com">editorial@kartpathmedia.com</a></p></div></section></PageShell>;
+  return <PageShell seo={{ title: 'About Us — Life Around Senoia', description: 'Meet the people behind Life Around Senoia, a magazine written by the town, for the town.', path: '/about' }}><PageHero kicker="About the Publication" title={<>A magazine written by the town, for the town.</>}>Life Around Senoia is a celebration of community, connection, and the people who make this small town special.</PageHero><section><div className="wrap-narrow quote-block"><p>“We’re both fathers, friends, and participants in our communities. This publication is our way of giving back — of highlighting what’s good, celebrating what’s real, and making sure no one in town feels like a stranger.”</p><span className="mono-label">— Kevin Thompson, Publisher</span></div></section><section className="on-paper2"><div className="wrap"><SectionHead index="" title="Our Team" /><div className="team-grid"><article className="team-card"><div className="team-photo" /><div><h2>Kevin Thompson</h2><span className="team-role">Publisher &amp; Founder</span><p>Nearly 20 years in publishing, including work with a niche publisher of nearly 35 enthusiast titles — a journey that led Kevin to launch a business helping publishers and content-driven organizations scale, tell better stories, and grow their communities.</p></div></article><article className="team-card"><div className="team-photo" /><div><h2>Blake Adams</h2><span className="team-role">Advertising Director &amp; Managing Partner</span><p>Born and raised in Fayette and Coweta County, Blake has proudly called Senoia home for over 15 years — active in the local business and creative scene, with a deep passion for connecting people and building things that matter to his hometown.</p></div></article></div><SectionHead index="" title="What To Expect" /><div className="expect-grid">{expectations.map(([title, body]) => <article className="expect-item" key={title}><h3>{title}</h3><p>{body}</p></article>)}</div></div></section><section className="nominate-section" id="nominate"><div className="wrap"><SectionHead index="" title="Nominate a Story" /><p className="nominate-intro">This magazine is shaped by the community. Nominate a Featured Family, Young Achiever, local business, nonprofit, or Pet of the Month.</p><form className="nominate-form" onSubmit={(e) => { e.preventDefault(); setNomError(''); const fd = new FormData(e.currentTarget); nominateMutation.mutate({ slug: PUBLICATION_SLUG, data: { nominatorName: fd.get('nominatorName') as string, nominatorEmail: fd.get('nominatorEmail') as string, category: fd.get('category') as string, story: fd.get('story') as string } }, { onSuccess: () => setSent(true), onError: () => setNomError('Something went wrong. Please try again or email editorial@kartpathmedia.com.') }); }}><label>Your Name<input required type="text" name="nominatorName" /></label><label>Your Email<input required type="email" name="nominatorEmail" /></label><label className="full">I'd like to nominate a...<select name="category"><option>Featured Family</option><option>Young Achiever</option><option>Local Business</option><option>Nonprofit</option><option>Pet of the Month</option><option>Community Event</option></select></label><label className="full">Tell us their story<textarea required name="story" /></label><div className="full">{nomError && <p style={{ color: 'var(--brick)', font: '.88rem var(--ui)', marginBottom: 8 }}>{nomError}</p>}<button className="btn-sharp honey-button" type="submit" disabled={nominateMutation.isPending}>{sent ? 'Nomination received!' : nominateMutation.isPending ? 'Sending…' : 'Submit Nomination'} <ArrowRight size={14} /></button></div></form><p className="nominate-note">Or email <a href="mailto:editorial@kartpathmedia.com">editorial@kartpathmedia.com</a></p></div></section></PageShell>;
 }
 
 export function Advertise() {

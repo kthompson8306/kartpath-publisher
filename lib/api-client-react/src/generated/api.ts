@@ -33,9 +33,11 @@ import type {
   GetContentItemParams,
   HealthStatus,
   ListContentItemsParams,
+  ListNominationsParams,
   ListPublishedContentItemsParams,
   ListStaffRosterParams,
   MediaAsset,
+  NominationList,
   Publication,
   PublishContentItem,
   RevokeStaffAccess200,
@@ -43,6 +45,10 @@ import type {
   StaffRoster,
   StorageUpload,
   StorageUploadInput,
+  SubmitNominationInput,
+  SubmitNominationResponse,
+  SubscribeInput,
+  SubscribeResponse,
   UpdateContentItem
 } from './api.schemas';
 
@@ -1320,4 +1326,232 @@ export const useCancelStaffInvite = <TError = ErrorType<Error>,
       > => {
       return useMutation(getCancelStaffInviteMutationOptions(options));
     }
+
+export const getSubscribeToPublicationUrl = (slug: string,) => {
+
+
+
+
+  return `/api/publications/${slug}/subscribe`
+}
+
+/**
+ * @summary Subscribe an email address to a publication's newsletter
+ */
+export const subscribeToPublication = async (slug: string,
+    subscribeInput: SubscribeInput, options?: Parameters<typeof customFetch>[1]): Promise<SubscribeResponse> => {
+
+  return customFetch<SubscribeResponse>(getSubscribeToPublicationUrl(slug),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(subscribeInput)
+  }
+);}
+
+
+
+
+
+export const getSubscribeToPublicationMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof subscribeToPublication>>, TError,{slug: string;data: BodyType<SubscribeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof subscribeToPublication>>, TError,{slug: string;data: BodyType<SubscribeInput>}, TContext> => {
+
+const mutationKey = ['subscribeToPublication'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof subscribeToPublication>>, {slug: string;data: BodyType<SubscribeInput>}> = (props) => {
+          const {slug,data} = props ?? {};
+
+          return  subscribeToPublication(slug,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubscribeToPublicationMutationResult = NonNullable<Awaited<ReturnType<typeof subscribeToPublication>>>
+    export type SubscribeToPublicationMutationBody = BodyType<SubscribeInput>
+    export type SubscribeToPublicationMutationError = ErrorType<Error>
+
+    /**
+ * @summary Subscribe an email address to a publication's newsletter
+ */
+export const useSubscribeToPublication = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof subscribeToPublication>>, TError,{slug: string;data: BodyType<SubscribeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof subscribeToPublication>>,
+        TError,
+        {slug: string;data: BodyType<SubscribeInput>},
+        TContext
+      > => {
+      return useMutation(getSubscribeToPublicationMutationOptions(options));
+    }
+
+export const getSubmitNominationUrl = (slug: string,) => {
+
+
+
+
+  return `/api/publications/${slug}/nominations`
+}
+
+/**
+ * @summary Submit a community story nomination to a publication
+ */
+export const submitNomination = async (slug: string,
+    submitNominationInput: SubmitNominationInput, options?: Parameters<typeof customFetch>[1]): Promise<SubmitNominationResponse> => {
+
+  return customFetch<SubmitNominationResponse>(getSubmitNominationUrl(slug),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(submitNominationInput)
+  }
+);}
+
+
+
+
+
+export const getSubmitNominationMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitNomination>>, TError,{slug: string;data: BodyType<SubmitNominationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitNomination>>, TError,{slug: string;data: BodyType<SubmitNominationInput>}, TContext> => {
+
+const mutationKey = ['submitNomination'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitNomination>>, {slug: string;data: BodyType<SubmitNominationInput>}> = (props) => {
+          const {slug,data} = props ?? {};
+
+          return  submitNomination(slug,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitNominationMutationResult = NonNullable<Awaited<ReturnType<typeof submitNomination>>>
+    export type SubmitNominationMutationBody = BodyType<SubmitNominationInput>
+    export type SubmitNominationMutationError = ErrorType<Error>
+
+    /**
+ * @summary Submit a community story nomination to a publication
+ */
+export const useSubmitNomination = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitNomination>>, TError,{slug: string;data: BodyType<SubmitNominationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof submitNomination>>,
+        TError,
+        {slug: string;data: BodyType<SubmitNominationInput>},
+        TContext
+      > => {
+      return useMutation(getSubmitNominationMutationOptions(options));
+    }
+
+export const getListNominationsUrl = (params: ListNominationsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/nominations?${stringifiedParams}` : `/api/nominations`
+}
+
+/**
+ * @summary List story nominations for a publication (staff only)
+ */
+export const listNominations = async (params: ListNominationsParams, options?: Parameters<typeof customFetch>[1]): Promise<NominationList> => {
+
+  return customFetch<NominationList>(getListNominationsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListNominationsQueryKey = (params?: ListNominationsParams,) => {
+    return [
+    `/api/nominations`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListNominationsQueryOptions = <TData = Awaited<ReturnType<typeof listNominations>>, TError = ErrorType<Error>>(params: ListNominationsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listNominations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListNominationsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listNominations>>> = ({ signal }) => listNominations(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listNominations>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListNominationsQueryResult = NonNullable<Awaited<ReturnType<typeof listNominations>>>
+export type ListNominationsQueryError = ErrorType<Error>
+
+
+/**
+ * @summary List story nominations for a publication (staff only)
+ */
+
+export function useListNominations<TData = Awaited<ReturnType<typeof listNominations>>, TError = ErrorType<Error>>(
+ params: ListNominationsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listNominations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListNominationsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 

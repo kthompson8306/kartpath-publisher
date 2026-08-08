@@ -222,6 +222,45 @@ export interface CreateStaffInviteResponse {
   invite?: StaffInviteRecord;
 }
 
+export interface SubscribeInput {
+  /** @minLength 3 */
+  email: string;
+}
+
+export interface SubscribeResponse {
+  subscribed: boolean;
+}
+
+export interface SubmitNominationInput {
+  /** @minLength 1 */
+  nominatorName: string;
+  /** @minLength 3 */
+  nominatorEmail: string;
+  /** @minLength 1 */
+  category: string;
+  /** @minLength 1 */
+  story: string;
+}
+
+export interface SubmitNominationResponse {
+  id: string;
+  received: boolean;
+}
+
+export interface NominationRecord {
+  id: string;
+  nominatorName: string;
+  nominatorEmail: string;
+  category: string;
+  story: string;
+  status: string;
+  createdAt: string;
+}
+
+export interface NominationList {
+  nominations: NominationRecord[];
+}
+
 export type PublicationIdQueryParameter = string;
 
 export type ListPublishedContentItemsParams = {
@@ -269,5 +308,12 @@ publicationId: string;
 
 export type CancelStaffInvite200 = {
   cancelled: boolean;
+};
+
+export type ListNominationsParams = {
+/**
+ * @pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$
+ */
+publicationId: PublicationIdQueryParameter;
 };
 

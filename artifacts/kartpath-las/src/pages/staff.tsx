@@ -15,12 +15,13 @@ import {
   useGetContentItem,
   useGetCurrentUser,
   useListContentItems,
+  useListNominations,
   useListStaffRoster,
   usePublishContentItem,
   useRevokeStaffAccess,
   useUpdateContentItem,
 } from '@workspace/api-client-react';
-import type { ContentItem, CreateContentItem, StaffInviteRecord, StaffMember } from '@workspace/api-client-react';
+import type { ContentItem, CreateContentItem, NominationRecord, StaffInviteRecord, StaffMember } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { LasMark, SectionKicker } from '@/components/las-brand';
 
@@ -838,6 +839,59 @@ function TeamPanel({ publicationId, currentUserId }: { publicationId: string; cu
   );
 }
 
+function NominationsPanel({ publicationId }: { publicationId: string }) {
+  const nominationsQuery = useListNominations({ publicationId });
+  const nominations: NominationRecord[] = nominationsQuery.data?.nominations ?? [];
+
+  return (
+    <div className="mt-7">
+      <div className="mb-6">
+        <SectionKicker>Incoming nominations</SectionKicker>
+        <h2 className="mt-1 font-display text-3xl font-semibold tracking-[-.04em]">Story nominations</h2>
+        <p className="mt-2 font-ui text-xs leading-5 text-[hsl(var(--muted-foreground))]">
+          Reader-submitted story ideas from the public website. Use these to plan upcoming features.
+        </p>
+      </div>
+      {nominationsQuery.isPending && (
+        <div className="space-y-px border border-[hsl(var(--border))] bg-[hsl(var(--border))]">
+          {[1, 2, 3].map((r) => <div key={r} className="h-28 animate-pulse bg-[hsl(var(--card))]" />)}
+        </div>
+      )}
+      {nominationsQuery.isError && (
+        <div className="border border-[hsl(var(--brick)/.4)] bg-[hsl(var(--card))] p-6">
+          <p className="font-ui text-xs text-[hsl(var(--brick))]">Could not load nominations. Try refreshing the page.</p>
+        </div>
+      )}
+      {!nominationsQuery.isPending && !nominationsQuery.isError && nominations.length === 0 && (
+        <div className="border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-10 text-center">
+          <p className="font-ui text-xs text-[hsl(var(--muted-foreground))]">
+            No nominations yet. They'll appear here when readers submit them from the public site.
+          </p>
+        </div>
+      )}
+      {nominations.length > 0 && (
+        <div className="overflow-hidden border border-[hsl(var(--border))] bg-[hsl(var(--border))]">
+          {nominations.map((nom) => (
+            <div key={nom.id} className="space-y-2 bg-[hsl(var(--card))] px-5 py-4">
+              <div className="flex items-center justify-between gap-4">
+                <span className="font-ui text-[10px] font-bold uppercase tracking-[.12em] text-[hsl(var(--brick))]">{nom.category}</span>
+                <span className="font-meta text-[9px] uppercase tracking-[.1em] text-[hsl(var(--muted-foreground))]">
+                  {new Date(nom.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </span>
+              </div>
+              <div className="flex flex-wrap items-baseline gap-x-3">
+                <p className="font-display text-lg font-semibold tracking-[-.03em]">{nom.nominatorName}</p>
+                <p className="font-ui text-xs text-[hsl(var(--muted-foreground))]">{nom.nominatorEmail}</p>
+              </div>
+              <p className="font-editorial text-sm leading-relaxed text-[hsl(var(--foreground)/.8)]">{nom.story}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Staff() {
   const queryClient = useQueryClient();
   const userQuery = useGetCurrentUser({ query: { queryKey: getGetCurrentUserQueryKey(), retry: false } });
@@ -847,7 +901,7 @@ export default function Staff() {
   const isUnauthorized = userQuery.isError;
   const safePublicationId = publicationId ?? '00000000-0000-0000-0000-000000000000';
   const isAdmin = access?.role === 'publication-admin';
-  const [activeTab, setActiveTab] = useState<'editorial' | 'team'>('editorial');
+  const [activeTab, setActiveTab] = useState<'editorial' | 'team' | 'nominations'>('editorial');
   const [status, setStatus] = useState<'' | EditorialStatus>('');
   const [contentType, setContentType] = useState<'' | ContentType>('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -1104,11 +1158,24 @@ export default function Staff() {
                 >
                   Team
                 </button>
+                <button
+                  role="tab"
+                  aria-selected={activeTab === 'nominations'}
+                  onClick={() => setActiveTab('nominations')}
+                  className={`px-4 pb-3 font-ui text-[10px] font-bold uppercase tracking-[.13em] transition-colors ${activeTab === 'nominations' ? 'border-b-2 border-[hsl(var(--brick))] text-[hsl(var(--brick))]' : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'}`}
+                  data-testid="tab-nominations"
+                >
+                  Nominations
+                </button>
               </div>
             )}
 
             {activeTab === 'team' && isAdmin && user && publicationId && (
               <TeamPanel publicationId={publicationId} currentUserId={user.id} />
+            )}
+
+            {activeTab === 'nominations' && isAdmin && publicationId && (
+              <NominationsPanel publicationId={publicationId} />
             )}
 
             {activeTab === 'editorial' && (
