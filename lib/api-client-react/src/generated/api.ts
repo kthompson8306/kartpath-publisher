@@ -36,8 +36,10 @@ import type {
   ListNominationsParams,
   ListPublishedContentItemsParams,
   ListStaffRosterParams,
+  ListSubscribersParams,
   MediaAsset,
   NominationList,
+  NominationRecord,
   Publication,
   PublishContentItem,
   RevokeStaffAccess200,
@@ -49,7 +51,9 @@ import type {
   SubmitNominationResponse,
   SubscribeInput,
   SubscribeResponse,
-  UpdateContentItem
+  SubscriberList,
+  UpdateContentItem,
+  UpdateNominationStatusBody
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -1543,6 +1547,162 @@ export function useListNominations<TData = Awaited<ReturnType<typeof listNominat
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListNominationsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateNominationStatusUrl = (id: string,) => {
+
+
+
+
+  return `/api/nominations/${id}`
+}
+
+/**
+ * @summary Update the triage status of a nomination (staff write access)
+ */
+export const updateNominationStatus = async (id: string,
+    updateNominationStatusBody: UpdateNominationStatusBody, options?: Parameters<typeof customFetch>[1]): Promise<NominationRecord> => {
+
+  return customFetch<NominationRecord>(getUpdateNominationStatusUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateNominationStatusBody)
+  }
+);}
+
+
+
+
+
+export const getUpdateNominationStatusMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateNominationStatus>>, TError,{id: string;data: BodyType<UpdateNominationStatusBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateNominationStatus>>, TError,{id: string;data: BodyType<UpdateNominationStatusBody>}, TContext> => {
+
+const mutationKey = ['updateNominationStatus'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateNominationStatus>>, {id: string;data: BodyType<UpdateNominationStatusBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateNominationStatus(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateNominationStatusMutationResult = NonNullable<Awaited<ReturnType<typeof updateNominationStatus>>>
+    export type UpdateNominationStatusMutationBody = BodyType<UpdateNominationStatusBody>
+    export type UpdateNominationStatusMutationError = ErrorType<Error>
+
+    /**
+ * @summary Update the triage status of a nomination (staff write access)
+ */
+export const useUpdateNominationStatus = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateNominationStatus>>, TError,{id: string;data: BodyType<UpdateNominationStatusBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateNominationStatus>>,
+        TError,
+        {id: string;data: BodyType<UpdateNominationStatusBody>},
+        TContext
+      > => {
+      return useMutation(getUpdateNominationStatusMutationOptions(options));
+    }
+
+export const getListSubscribersUrl = (params: ListSubscribersParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/subscribers?${stringifiedParams}` : `/api/subscribers`
+}
+
+/**
+ * @summary List newsletter subscribers for a publication (staff only)
+ */
+export const listSubscribers = async (params: ListSubscribersParams, options?: Parameters<typeof customFetch>[1]): Promise<SubscriberList> => {
+
+  return customFetch<SubscriberList>(getListSubscribersUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSubscribersQueryKey = (params?: ListSubscribersParams,) => {
+    return [
+    `/api/subscribers`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListSubscribersQueryOptions = <TData = Awaited<ReturnType<typeof listSubscribers>>, TError = ErrorType<Error>>(params: ListSubscribersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSubscribers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSubscribersQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSubscribers>>> = ({ signal }) => listSubscribers(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSubscribers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSubscribersQueryResult = NonNullable<Awaited<ReturnType<typeof listSubscribers>>>
+export type ListSubscribersQueryError = ErrorType<Error>
+
+
+/**
+ * @summary List newsletter subscribers for a publication (staff only)
+ */
+
+export function useListSubscribers<TData = Awaited<ReturnType<typeof listSubscribers>>, TError = ErrorType<Error>>(
+ params: ListSubscribersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSubscribers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSubscribersQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

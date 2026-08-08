@@ -261,6 +261,31 @@ export interface NominationList {
   nominations: NominationRecord[];
 }
 
+export type UpdateNominationStatusBodyStatus = typeof UpdateNominationStatusBodyStatus[keyof typeof UpdateNominationStatusBodyStatus];
+
+
+export const UpdateNominationStatusBodyStatus = {
+  new: 'new',
+  reviewed: 'reviewed',
+  accepted: 'accepted',
+  declined: 'declined',
+} as const;
+
+export interface UpdateNominationStatusBody {
+  status: UpdateNominationStatusBodyStatus;
+}
+
+export interface SubscriberRecord {
+  id: string;
+  email: string;
+  status: string;
+  subscribedAt: string;
+}
+
+export interface SubscriberList {
+  subscribers: SubscriberRecord[];
+}
+
 export type PublicationIdQueryParameter = string;
 
 export type ListPublishedContentItemsParams = {
@@ -315,6 +340,13 @@ export type CancelStaffInvite200 = {
 };
 
 export type ListNominationsParams = {
+/**
+ * @pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$
+ */
+publicationId: PublicationIdQueryParameter;
+};
+
+export type ListSubscribersParams = {
 /**
  * @pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$
  */

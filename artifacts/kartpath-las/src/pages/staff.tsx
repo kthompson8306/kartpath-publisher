@@ -7,6 +7,7 @@ import {
   getGetContentItemQueryKey,
   getGetCurrentUserQueryKey,
   getListContentItemsQueryKey,
+  getListNominationsQueryKey,
   getListStaffRosterQueryKey,
   useCreateContentItem,
   useCreateStaffInvite,
@@ -17,11 +18,13 @@ import {
   useListContentItems,
   useListNominations,
   useListStaffRoster,
+  useListSubscribers,
   usePublishContentItem,
   useRevokeStaffAccess,
   useUpdateContentItem,
+  useUpdateNominationStatus,
 } from '@workspace/api-client-react';
-import type { ContentItem, CreateContentItem, NominationRecord, StaffInviteRecord, StaffMember } from '@workspace/api-client-react';
+import type { ContentItem, CreateContentItem, NominationRecord, StaffInviteRecord, StaffMember, SubscriberRecord, UpdateNominationStatusBodyStatus } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { LasMark, SectionKicker } from '@/components/las-brand';
 
@@ -846,9 +849,30 @@ function TeamPanel({ publicationId, currentUserId }: { publicationId: string; cu
   );
 }
 
+const STATUS_META: Record<string, { label: string; color: string }> = {
+  new:      { label: 'New',      color: 'hsl(var(--brick))' },
+  reviewed: { label: 'Reviewed', color: 'hsl(var(--honey))' },
+  accepted: { label: 'Accepted', color: 'hsl(var(--pine-2))' },
+  declined: { label: 'Declined', color: 'hsl(var(--muted-foreground))' },
+};
+
 function NominationsPanel({ publicationId }: { publicationId: string }) {
+  const queryClient = useQueryClient();
   const nominationsQuery = useListNominations({ publicationId });
   const nominations: NominationRecord[] = nominationsQuery.data?.nominations ?? [];
+  const updateMutation = useUpdateNominationStatus();
+
+  const setStatus = (id: string, status: UpdateNominationStatusBodyStatus) => {
+    updateMutation.mutate({ id, data: { status } }, {
+      onSuccess: () => queryClient.invalidateQueries({ queryKey: getListNominationsQueryKey({ publicationId }) }),
+    });
+  };
+
+  const triageButtons: { status: UpdateNominationStatusBodyStatus; label: string }[] = [
+    { status: 'reviewed', label: 'Reviewed' },
+    { status: 'accepted', label: 'Accepted' },
+    { status: 'declined', label: 'Declined' },
+  ];
 
   return (
     <div className="mt-7">
@@ -856,7 +880,7 @@ function NominationsPanel({ publicationId }: { publicationId: string }) {
         <SectionKicker>Incoming nominations</SectionKicker>
         <h2 className="mt-1 font-display text-3xl font-semibold tracking-[-.04em]">Story nominations</h2>
         <p className="mt-2 font-ui text-xs leading-5 text-[hsl(var(--muted-foreground))]">
-          Reader-submitted story ideas from the public website. Use these to plan upcoming features.
+          Reader-submitted story ideas from the public website. Mark each one as you review it.
         </p>
       </div>
       {nominationsQuery.isPending && (
@@ -878,21 +902,126 @@ function NominationsPanel({ publicationId }: { publicationId: string }) {
       )}
       {nominations.length > 0 && (
         <div className="overflow-hidden border border-[hsl(var(--border))] bg-[hsl(var(--border))]">
-          {nominations.map((nom) => (
-            <div key={nom.id} className="space-y-2 bg-[hsl(var(--card))] px-5 py-4">
-              <div className="flex items-center justify-between gap-4">
-                <span className="font-ui text-[10px] font-bold uppercase tracking-[.12em] text-[hsl(var(--brick))]">{nom.category}</span>
-                <span className="font-meta text-[9px] uppercase tracking-[.1em] text-[hsl(var(--muted-foreground))]">
-                  {new Date(nom.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+          {nominations.map((nom) => {
+            const meta = STATUS_META[nom.status] ?? STATUS_META['new'];
+            const busy = updateMutation.isPending && (updateMutation.variables as { id: string } | undefined)?.id === nom.id;
+            return (
+              <div key={nom.id} className="space-y-2 bg-[hsl(var(--card))] px-5 py-4">
+                <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+                  <div className="flex items-center gap-3">
+                    <span className="font-ui text-[10px] font-bold uppercase tracking-[.12em] text-[hsl(var(--brick))]">{nom.category}</span>
+                    <span
+                      className="rounded-sm px-1.5 py-0.5 font-ui text-[9px] font-bold uppercase tracking-[.1em]"
+                      style={{ background: meta.color + '22', color: meta.color }}
+                    >
+                      {meta.label}
+                    </span>
+                  </div>
+                  <span className="font-meta text-[9px] uppercase tracking-[.1em] text-[hsl(var(--muted-foreground))]">
+                    {new Date(nom.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-baseline gap-x-3">
+                  <p className="font-display text-lg font-semibold tracking-[-.03em]">{nom.nominatorName}</p>
+                  <p className="font-ui text-xs text-[hsl(var(--muted-foreground))]">{nom.nominatorEmail}</p>
+                </div>
+                <p className="font-editorial text-sm leading-relaxed text-[hsl(var(--foreground)/.8)]">{nom.story}</p>
+                <div className="flex items-center gap-2 pt-1">
+                  <span className="font-ui text-[9px] uppercase tracking-[.1em] text-[hsl(var(--muted-foreground))]">Mark as:</span>
+                  {triageButtons.map(({ status, label }) => {
+                    const isActive = nom.status === status;
+                    const btnMeta = STATUS_META[status];
+                    return (
+                      <button
+                        key={status}
+                        type="button"
+                        disabled={isActive || busy}
+                        onClick={() => setStatus(nom.id, status)}
+                        className="rounded-sm border px-2 py-0.5 font-ui text-[9px] font-bold uppercase tracking-[.1em] transition-colors disabled:cursor-default"
+                        style={isActive
+                          ? { borderColor: btnMeta.color, background: btnMeta.color + '22', color: btnMeta.color }
+                          : { borderColor: 'hsl(var(--border))', color: 'hsl(var(--muted-foreground))' }}
+                      >
+                        {busy && isActive ? '…' : label}
+                      </button>
+                    );
+                  })}
+                  {nom.status !== 'new' && (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => setStatus(nom.id, 'new')}
+                      className="ml-1 font-ui text-[9px] uppercase tracking-[.1em] text-[hsl(var(--muted-foreground))] underline-offset-2 hover:underline disabled:cursor-default"
+                    >
+                      Reopen
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SubscribersPanel({ publicationId }: { publicationId: string }) {
+  const subscribersQuery = useListSubscribers({ publicationId });
+  const subscribers: SubscriberRecord[] = subscribersQuery.data?.subscribers ?? [];
+
+  return (
+    <div className="mt-7">
+      <div className="mb-6">
+        <SectionKicker>Newsletter</SectionKicker>
+        <h2 className="mt-1 font-display text-3xl font-semibold tracking-[-.04em]">Subscribers</h2>
+        <p className="mt-2 font-ui text-xs leading-5 text-[hsl(var(--muted-foreground))]">
+          Everyone who has signed up via the newsletter form on the public site.
+          {!subscribersQuery.isPending && !subscribersQuery.isError && ` ${subscribers.length} subscriber${subscribers.length === 1 ? '' : 's'} total.`}
+        </p>
+      </div>
+      {subscribersQuery.isPending && (
+        <div className="space-y-px border border-[hsl(var(--border))] bg-[hsl(var(--border))]">
+          {[1, 2, 3].map((r) => <div key={r} className="h-10 animate-pulse bg-[hsl(var(--card))]" />)}
+        </div>
+      )}
+      {subscribersQuery.isError && (
+        <div className="border border-[hsl(var(--brick)/.4)] bg-[hsl(var(--card))] p-6">
+          <p className="font-ui text-xs text-[hsl(var(--brick))]">Could not load subscribers. Try refreshing the page.</p>
+        </div>
+      )}
+      {!subscribersQuery.isPending && !subscribersQuery.isError && subscribers.length === 0 && (
+        <div className="border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-10 text-center">
+          <p className="font-ui text-xs text-[hsl(var(--muted-foreground))]">
+            No subscribers yet. They'll appear here after signing up on the public site.
+          </p>
+        </div>
+      )}
+      {subscribers.length > 0 && (
+        <div className="overflow-hidden border border-[hsl(var(--border))]">
+          <div className="grid grid-cols-[1fr_auto_auto] bg-[hsl(var(--muted)/.4)] px-4 py-2">
+            <span className="font-ui text-[9px] font-bold uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Email</span>
+            <span className="font-ui text-[9px] font-bold uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Signed up</span>
+            <span className="pl-6 font-ui text-[9px] font-bold uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Status</span>
+          </div>
+          <div className="divide-y divide-[hsl(var(--border))] bg-[hsl(var(--card))]">
+            {subscribers.map((sub) => (
+              <div key={sub.id} className="grid grid-cols-[1fr_auto_auto] items-center px-4 py-2.5">
+                <span className="font-meta text-xs text-[hsl(var(--foreground))]">{sub.email}</span>
+                <span className="font-meta text-[10px] text-[hsl(var(--muted-foreground))]">
+                  {new Date(sub.subscribedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </span>
+                <span
+                  className="ml-6 rounded-sm px-1.5 py-0.5 font-ui text-[9px] font-bold uppercase tracking-[.1em]"
+                  style={sub.status === 'active'
+                    ? { background: 'hsl(var(--pine-2) / .15)', color: 'hsl(var(--pine-2))' }
+                    : { background: 'hsl(var(--muted-foreground) / .15)', color: 'hsl(var(--muted-foreground))' }}
+                >
+                  {sub.status}
                 </span>
               </div>
-              <div className="flex flex-wrap items-baseline gap-x-3">
-                <p className="font-display text-lg font-semibold tracking-[-.03em]">{nom.nominatorName}</p>
-                <p className="font-ui text-xs text-[hsl(var(--muted-foreground))]">{nom.nominatorEmail}</p>
-              </div>
-              <p className="font-editorial text-sm leading-relaxed text-[hsl(var(--foreground)/.8)]">{nom.story}</p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -908,7 +1037,7 @@ export default function Staff() {
   const isUnauthorized = userQuery.isError;
   const safePublicationId = publicationId ?? '00000000-0000-0000-0000-000000000000';
   const isAdmin = access?.role === 'publication-admin';
-  const [activeTab, setActiveTab] = useState<'editorial' | 'team' | 'nominations'>('editorial');
+  const [activeTab, setActiveTab] = useState<'editorial' | 'team' | 'nominations' | 'subscribers'>('editorial');
   const [status, setStatus] = useState<'' | EditorialStatus>('');
   const [contentType, setContentType] = useState<'' | ContentType>('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -1174,6 +1303,15 @@ export default function Staff() {
                 >
                   Nominations
                 </button>
+                <button
+                  role="tab"
+                  aria-selected={activeTab === 'subscribers'}
+                  onClick={() => setActiveTab('subscribers')}
+                  className={`px-4 pb-3 font-ui text-[10px] font-bold uppercase tracking-[.13em] transition-colors ${activeTab === 'subscribers' ? 'border-b-2 border-[hsl(var(--brick))] text-[hsl(var(--brick))]' : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'}`}
+                  data-testid="tab-subscribers"
+                >
+                  Subscribers
+                </button>
               </div>
             )}
 
@@ -1183,6 +1321,10 @@ export default function Staff() {
 
             {activeTab === 'nominations' && isAdmin && publicationId && (
               <NominationsPanel publicationId={publicationId} />
+            )}
+
+            {activeTab === 'subscribers' && isAdmin && publicationId && (
+              <SubscribersPanel publicationId={publicationId} />
             )}
 
             {activeTab === 'editorial' && (

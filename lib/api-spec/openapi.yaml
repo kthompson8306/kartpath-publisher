@@ -617,6 +617,78 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /nominations/{id}:
+    patch:
+      operationId: updateNominationStatus
+      tags: [engagement]
+      summary: Update the triage status of a nomination (staff write access)
+      security:
+        - clerkSession: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateNominationStatusBody"
+      responses:
+        "200":
+          description: Updated nomination record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NominationRecord"
+        "400":
+          description: Invalid status value
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: No staff write access
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Nomination not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /subscribers:
+    get:
+      operationId: listSubscribers
+      tags: [engagement]
+      summary: List newsletter subscribers for a publication (staff only)
+      security:
+        - clerkSession: []
+      parameters:
+        - $ref: "#/components/parameters/PublicationIdQuery"
+      responses:
+        "200":
+          description: Subscriber list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriberList"
+        "400":
+          description: publicationId is required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: No staff access to this publication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 components:
   parameters:
     PublicationIdQuery:
@@ -1120,4 +1192,42 @@ components:
             $ref: "#/components/schemas/NominationRecord"
       required:
         - nominations
+    UpdateNominationStatusBody:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - new
+            - reviewed
+            - accepted
+            - declined
+      required:
+        - status
+    SubscriberRecord:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        status:
+          type: string
+        subscribedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - email
+        - status
+        - subscribedAt
+    SubscriberList:
+      type: object
+      properties:
+        subscribers:
+          type: array
+          items:
+            $ref: "#/components/schemas/SubscriberRecord"
+      required:
+        - subscribers
 

@@ -522,3 +522,45 @@ export const ListNominationsResponse = zod.object({
 })
 
 
+/**
+ * @summary Update the triage status of a nomination (staff write access)
+ */
+export const UpdateNominationStatusParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const UpdateNominationStatusBody = zod.object({
+  "status": zod.enum(['new', 'reviewed', 'accepted', 'declined'])
+})
+
+export const UpdateNominationStatusResponse = zod.object({
+  "id": zod.string(),
+  "nominatorName": zod.string(),
+  "nominatorEmail": zod.string(),
+  "category": zod.string(),
+  "story": zod.string(),
+  "status": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary List newsletter subscribers for a publication (staff only)
+ */
+export const listSubscribersQueryPublicationIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$');
+
+
+export const ListSubscribersQueryParams = zod.object({
+  "publicationId": zod.coerce.string().regex(listSubscribersQueryPublicationIdRegExp)
+})
+
+export const ListSubscribersResponse = zod.object({
+  "subscribers": zod.array(zod.object({
+  "id": zod.string(),
+  "email": zod.string(),
+  "status": zod.string(),
+  "subscribedAt": zod.coerce.date()
+}))
+})
+
+

@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { desc, eq } from "drizzle-orm";
 import { db, newsletterSubscribersTable, nominationsTable } from "@workspace/db";
-import { getPublicationBySlug, getUserPublicationAccess, hasEditorialReadAccess } from "../lib/platform";
+import { getPublicationBySlug, getUserPublicationAccess, hasEditorialReadAccess, hasEditorialWriteAccess } from "../lib/platform";
 import { type AuthenticatedRequest, requireStaff } from "../lib/auth";
 
 const router: IRouter = Router();
@@ -105,4 +105,88 @@ router.get("/nominations", requireStaff, async (req, res): Promise<void> => {
   });
 });
 
+// GET /subscribers — staff-gated, requires read access
+router.get("/subscribers", requireStaff, async (req, res): Promise<void> => {
+  const { publicationId } = req.query as Record<string, unknown>;
+
+  if (!publicationId || typeof publicationId !== "string" || publicationId.trim().length === 0) {
+    res.status(400).json({ error: "publicationId is required" });
+    return;
+  }
+
+  const user = (req as AuthenticatedRequest).localUser;
+  if (!user) {
+    res.status(403).json({ error: "No access" });
+    return;
+  }
+
+  const access = await getUserPublicationAccess(user.id, publicationId);
+  if (!access || !hasEditorialReadAccess(access.permissions)) {
+    res.status(403).json({ error: "No staff access to this publication" });
+    return;
+  }
+
+  const rows = await db
+    .select()
+    .from(newsletterSubscribersTable)
+    .where(eq(newsletterSubscribersTable.publicationId, publicationId))
+    .orderBy(desc(newsletterSubscribersTable.subscribedAt));
+
+  res.json({
+    subscribers: rows.map((s) => ({
+      ...s,
+      subscribedAt: s.subscribedAt.toISOString(),
+    })),
+  });
+});
+
+// PATCH /nominations/:id — staff-gated, requires write access
+router.patch("/nominations/:id", requireStaff, async (req, res): Promise<void> => {
+  const rawId = req.params["id"];
+  const id = typeof rawId === "string" ? rawId : null;
+  if (!id) {
+    res.status(400).json({ error: "Invalid nomination id" });
+    return;
+  }
+  const { status } = req.body as Record<string, unknown>;
+
+  const validStatuses = ["new", "reviewed", "accepted", "declined"];
+  if (!status || typeof status !== "string" || !validStatuses.includes(status)) {
+    res.status(400).json({ error: `status must be one of: ${validStatuses.join(", ")}` });
+    return;
+  }
+
+  const user = (req as AuthenticatedRequest).localUser;
+  if (!user) {
+    res.status(403).json({ error: "No access" });
+    return;
+  }
+
+  const [nomination] = await db
+    .select()
+    .from(nominationsTable)
+    .where(eq(nominationsTable.id, id))
+    .limit(1);
+
+  if (!nomination) {
+    res.status(404).json({ error: "Nomination not found" });
+    return;
+  }
+
+  const access = await getUserPublicationAccess(user.id, nomination.publicationId);
+  if (!access || !hasEditorialWriteAccess(access.permissions)) {
+    res.status(403).json({ error: "No staff write access to this publication" });
+    return;
+  }
+
+  const [updated] = await db
+    .update(nominationsTable)
+    .set({ status })
+    .where(eq(nominationsTable.id, id))
+    .returning();
+
+  res.json({ ...updated, createdAt: updated.createdAt.toISOString() });
+});
+
 export default router;
+
