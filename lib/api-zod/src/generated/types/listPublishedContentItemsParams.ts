@@ -9,4 +9,8 @@ import type { EditorialContentType } from './editorialContentType';
 
 export type ListPublishedContentItemsParams = {
 contentType?: EditorialContentType;
+/**
+ * Filter to a specific issue number (e.g. "06")
+ */
+issue?: string;
 };

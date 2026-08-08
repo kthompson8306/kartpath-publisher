@@ -56,7 +56,8 @@ export const ListPublishedContentItemsParams = zod.object({
 })
 
 export const ListPublishedContentItemsQueryParams = zod.object({
-  "contentType": zod.enum(['featured-family', 'nonprofit-spotlight', 'young-achiever', 'pet-of-the-month', 'business-listing', 'event', 'crooks-corner', 'recipe', 'lifestyle-column']).optional()
+  "contentType": zod.enum(['featured-family', 'nonprofit-spotlight', 'young-achiever', 'pet-of-the-month', 'business-listing', 'event', 'crooks-corner', 'recipe', 'lifestyle-column']).optional(),
+  "issue": zod.coerce.string().optional()
 })
 
 export const ListPublishedContentItemsResponseItem = zod.object({

@@ -34,6 +34,22 @@ function usePublishedContent(contentType?: EditorialContentType) {
   );
 }
 
+function useIssueContent(issue: string) {
+  const params = { issue };
+  return useListPublishedContentItems(
+    PUBLICATION_SLUG,
+    params,
+    {
+      query: {
+        queryKey: getListPublishedContentItemsQueryKey(PUBLICATION_SLUG, params),
+        staleTime: 0,
+        refetchOnMount: 'always',
+        retry: false,
+      },
+    },
+  );
+}
+
 function PublicContentState({
   query,
   emptyMessage,
@@ -395,7 +411,7 @@ export function Editions() {
 export function EditionReader() {
   const { issue } = useParams<{ issue: string }>();
   const issueIndex = issues.findIndex(([num]) => num === issue);
-  const contentQuery = usePublishedContent();
+  const contentQuery = useIssueContent(issue ?? '');
 
   if (issueIndex === -1) {
     return <PageShell seo={{ title: 'Edition Not Found — Life Around Senoia', description: 'That edition was not found.', path: '/editions' }}>

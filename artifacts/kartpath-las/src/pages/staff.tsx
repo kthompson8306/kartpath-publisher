@@ -603,13 +603,20 @@ function Editor({
             </div>
           );
 
-          // Generic types: plain JSON details textarea
+          // Generic types: issue field + plain JSON details textarea
           return (
-            <label className="block">
-              <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Details JSON</span>
-              <textarea value={form.detailsText} onChange={(event) => update('detailsText', event.target.value)} rows={5} placeholder={'{"address":"..."}'} className="w-full resize-y border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2.5 font-meta text-xs leading-5 outline-none focus:border-[hsl(var(--brick))]" data-testid="textarea-content-details" />
-              <span className="mt-1.5 block font-ui text-[10px] leading-4 text-[hsl(var(--muted-foreground))]">Use string values for lane-specific facts such as address, date, or contact.</span>
-            </label>
+            <>
+              <label className="block">
+                <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Issue number</span>
+                <input value={form.issue} onChange={(e) => update('issue', e.target.value)} placeholder="06" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" data-testid="input-generic-issue" />
+                <span className="mt-1.5 block font-ui text-[10px] leading-4 text-[hsl(var(--muted-foreground))]">Which issue does this story belong to? Use two digits — e.g. 06, not 6.</span>
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Details JSON</span>
+                <textarea value={form.detailsText} onChange={(event) => update('detailsText', event.target.value)} rows={5} placeholder={'{"address":"..."}'} className="w-full resize-y border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2.5 font-meta text-xs leading-5 outline-none focus:border-[hsl(var(--brick))]" data-testid="textarea-content-details" />
+                <span className="mt-1.5 block font-ui text-[10px] leading-4 text-[hsl(var(--muted-foreground))]">Use string values for lane-specific facts such as address, date, or contact.</span>
+              </label>
+            </>
           );
         })()}
         {/* ── Cover photo (always shown) ─────────────────────────────────── */}
@@ -1039,7 +1046,7 @@ export default function Staff() {
       if (!form.body.trim()) { setEditorError('Headline, slug, standfirst, and story body are required.'); return null; }
       const parsed = parseDetailsJson();
       if (!parsed) return null;
-      details = parsed;
+      details = form.issue.trim() ? { ...parsed, issue: form.issue.trim() } : parsed;
     }
     return {
       publicationId,

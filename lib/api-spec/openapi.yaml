@@ -77,6 +77,12 @@ paths:
           required: false
           schema:
             $ref: "#/components/schemas/EditorialContentType"
+        - name: issue
+          in: query
+          required: false
+          schema:
+            type: string
+            description: Filter to a specific issue number (e.g. "06")
       responses:
         "200":
           description: Published content items

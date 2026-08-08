@@ -6,7 +6,7 @@ import {
   ListPublishedContentItemsQueryParams,
   ListPublishedContentItemsResponse,
 } from "@workspace/api-zod";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { contentItemsTable, db, mediaAssetsTable } from "@workspace/db";
 import { getPublicationBySlug } from "../lib/platform";
 
@@ -69,6 +69,11 @@ router.get("/publications/:slug/content-items", async (req, res): Promise<void> 
   ];
   if (query.data.contentType) {
     conditions.push(eq(contentItemsTable.contentType, query.data.contentType));
+  }
+  if (query.data.issue) {
+    conditions.push(
+      sql`${contentItemsTable.details}->>'issue' = ${query.data.issue}`,
+    );
   }
 
   const rows = await db
