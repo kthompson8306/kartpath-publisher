@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Events — Life Around Senoia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,600;9..144,700;9..144,900&family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Newsreader:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style2.css">
+<style>
+.page-hero{padding:70px 0 30px}
+.page-hero h1{font-size:clamp(2.6rem,5.5vw,4.2rem);margin:16px 0 14px;color:var(--ink)}
+
+.event-list{border-top:1.5px solid var(--ink)}
+.event-row{display:grid;grid-template-columns:170px 1fr;gap:24px;padding:28px 0;border-bottom:1px solid var(--line)}
+.event-row .when{font-family:var(--mono);font-size:.82rem;color:var(--brick)}
+.event-row .when .day{font-family:var(--disp);font-weight:700;font-size:1.7rem;color:var(--ink);display:block;margin-top:4px}
+.event-row h3{font-family:var(--disp);font-weight:600;font-size:1.3rem;margin-bottom:6px}
+.event-row .loc{font-family:var(--mono);font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);margin-bottom:8px}
+.event-row p{font-family:var(--read);color:var(--ink-soft);font-size:.92rem;line-height:1.6}
+
+.recurring-strip{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--line);border:1px solid var(--line);margin-bottom:40px}
+.recur-item{background:var(--paper);padding:26px 30px}
+.recur-item .cadence{font-family:var(--mono);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--brick)}
+.recur-item h4{font-family:var(--disp);font-weight:600;font-size:1.15rem;margin:8px 0}
+.recur-item p{font-family:var(--read);font-size:.88rem;color:var(--ink-soft);line-height:1.5}
+
+.recap-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}
+.recap-card{background:var(--paper);padding:26px}
+.recap-card .tag{font-family:var(--mono);font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint)}
+.recap-card h4{font-family:var(--disp);font-weight:600;font-size:1.1rem;margin:8px 0}
+.recap-card p{font-family:var(--read);font-size:.85rem;color:var(--ink-soft);line-height:1.5}
+
+@media(max-width:820px){
+  .event-row{grid-template-columns:1fr}
+  .recurring-strip,.recap-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="util-bar">
+  <div class="wrap">
+    <div><span class="live-dot"></span>SENOIA, GA · CLEAR, 84°F · VOL. 02</div>
+    <div class="util-links"><a href="#">FACEBOOK</a><a href="#">INSTAGRAM</a><a href="#">SUBSCRIBE</a></div>
+  </div>
+</div>
+
+<header class="site-header">
+  <nav class="nav-bar">
+    <a href="index.html" class="brand">LIFE <em>around</em> SENOIA</a>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="people.html">People</a></li>
+      <li><a href="nonprofit.html">Nonprofit</a></li>
+      <li><a href="lifestyle.html">Lifestyle</a></li>
+      <li><a href="events.html" style="color:var(--brick)">Events</a></li>
+      <li><a href="directory.html">Directory</a></li>
+      <li><a href="editions.html">Editions</a></li>
+    </ul>
+    <a href="advertise.html" class="btn-sharp">Advertise →</a>
+  </nav>
+</header>
+
+<section class="page-hero">
+  <div class="wrap">
+    <span class="mega-kicker" style="color:var(--brick)"><span class="dash" style="background:var(--brick)"></span>Around Town</span>
+    <h1>What's happening<br>downtown</h1>
+    <p style="color:var(--ink-soft);max-width:600px;font-family:var(--read);font-size:1.05rem">A living calendar of Senoia's regulars, straight from the Downtown Development Authority and the pages of the magazine.</p>
+  </div>
+</section>
+
+<section style="padding-top:10px">
+  <div class="wrap">
+    <div class="sec-head"><div class="tt"><span class="tt-idx">§01</span><h2>Every Week</h2></div></div>
+    <div class="recurring-strip">
+      <div class="recur-item"><span class="cadence">Weekly · Sat 8:30am–1pm</span><h4>Senoia Farmers' Market</h4><p>40 Travis Street. Fresh produce, local bakeries, live music, and mimosas at Nic & Norman's Bar — April through December.</p></div>
+      <div class="recur-item"><span class="cadence">Monthly</span><h4>Alive After Five</h4><p>Main Street. Downtown shops stay open late with music and food trucks — hosted by the Downtown Development Authority.</p></div>
+    </div>
+
+    <div class="sec-head"><div class="tt"><span class="tt-idx">§02</span><h2>Upcoming in 2026</h2></div></div>
+    <div class="event-list">
+
+      <div class="event-row">
+        <div class="when">AUG<span class="day">21</span></div>
+        <div>
+          <h3>Locals Night</h3>
+          <div class="loc">5:00 PM · Main Street</div>
+          <p>A celebration of all things Senoia — stroll Main Street, shop small, and enjoy live music on the main stage. Free and family-friendly. Bring a lawn chair.</p>
+        </div>
+      </div>
+
+      <div class="event-row">
+        <div class="when">SEP<span class="day">6</span></div>
+        <div>
+          <h3>Senoia PorchFest</h3>
+          <div class="loc">3:00 PM · Historic District</div>
+          <p>Porches and yards become stages for local and regional musicians. Free, with food vendors, art displays, and kids' activities throughout the Historic District.</p>
+        </div>
+      </div>
+
+      <div class="event-row">
+        <div class="when">SEP<span class="day">18</span></div>
+        <div>
+          <h3>Alive After Five — Friday Night Fever</h3>
+          <div class="loc">Main Street</div>
+          <p>The first of three Alive After Five dates this fall — live performances, food trucks, and downtown shops open late.</p>
+        </div>
+      </div>
+
+      <div class="event-row">
+        <div class="when">SEP<span class="day">19</span></div>
+        <div>
+          <h3>Fish Derby</h3>
+          <div class="loc">Lake Marimac</div>
+          <p>Up to 140 children arrive with parents in tow for a morning of fishing — rods, tackle, and prizes provided for kids without equipment. Hosted by the Senoia Optimist Club.</p>
+        </div>
+      </div>
+
+      <div class="event-row">
+        <div class="when">OCT<span class="day">16</span></div>
+        <div>
+          <h3>Alive After Five — Oktober Fest</h3>
+          <div class="loc">Main Street</div>
+        </div>
+      </div>
+
+      <div class="event-row">
+        <div class="when">NOV<span class="day">20</span></div>
+        <div>
+          <h3>Alive After Five — Gather & Give</h3>
+          <div class="loc">Main Street</div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="sec-head"><div class="tt"><span class="tt-idx">§03</span><h2>From Past Issues</h2></div></div>
+    <div class="recap-grid">
+      <div class="recap-card"><span class="tag">Issue 01 · Oct 2025</span><h4>Senoia Boutique Crawl</h4><p>Girlfriends, shopping shoes, and exclusive deals across downtown's best boutiques.</p></div>
+      <div class="recap-card"><span class="tag">Issue 01 · Oct 2025</span><h4>Senoia Jeep Fest</h4><p>Jeep lovers from across the region roll in for rides, rigs, and rugged fun on Main Street.</p></div>
+      <div class="recap-card"><span class="tag">Issue 01 · Dec 2025</span><h4>Light Up Senoia</h4><p>The beloved annual Christmas parade and tree lighting that kicks off the holiday season downtown.</p></div>
+    </div>
+  </div>
+</section>
+
+<footer style="margin-top:60px">
+  <div class="footer-grid">
+    <div>
+      <div class="brand" style="color:var(--paper);margin-bottom:12px">LIFE <em>around</em> SENOIA</div>
+      <p class="footer-tag">A bi-monthly magazine and digital publication for the people, businesses, and stories of Senoia, GA. Published by KartPath Media.</p>
+    </div>
+    <div><h4>Explore</h4><a href="people.html">People</a><a href="nonprofit.html">Nonprofit</a><a href="lifestyle.html">Lifestyle</a><a href="events.html">Events</a></div>
+    <div><h4>Publication</h4><a href="editions.html">Editions</a><a href="about.html">About</a><a href="advertise.html">Advertise</a></div>
+    <div><h4>Directory</h4><a href="directory.html">Browse All</a><a href="advertise.html">Add a Business</a></div>
+    <div><h4>Contact</h4><a href="mailto:kevin@kartpathmedia.com">kevin@kartpathmedia.com</a><a href="mailto:blake@kartpathmedia.com">blake@kartpathmedia.com</a></div>
+  </div>
+  <div class="footer-giant">SENOIA</div>
+  <div class="footer-bottom"><span>© 2026 KARTPATH MEDIA LLC</span><span>PEACHTREE CITY, GA</span></div>
+</footer>
+
+</body>
+</html>

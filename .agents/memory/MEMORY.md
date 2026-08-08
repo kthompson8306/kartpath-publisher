@@ -1,2 +1,2 @@
 - [KartPath foundation](kartpath-foundation.md) — M0 uses managed Clerk, tenant-scoped Postgres tables, and App Storage object paths as the platform boundary.
-- [Editorial core](kartpath-editorial-core.md) — M1 content items are publication-scoped, six-type constrained, draft/published records with audited CRUD and explicit tenant authorization.
+- [Editorial core](kartpath-editorial-core.md) — M1 content items are publication-scoped, six-type constrained, draft/published records with audited CRUD and explicit tenant authorization.- [Public-site asset delivery](kartpath-public-site.md) — bundle editorial media through Vite when the path-routed preview can SPA-fallback missing public assets.

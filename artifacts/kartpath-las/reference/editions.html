@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Digital Editions — Life Around Senoia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,600;9..144,700;9..144,900&family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Newsreader:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style2.css">
+<style>
+.page-hero{padding:70px 0 30px}
+.page-hero h1{font-size:clamp(2.6rem,5.5vw,4.2rem);margin:16px 0 14px;color:var(--ink)}
+
+.featured-reader{display:grid;grid-template-columns:.85fr 1.15fr;background:var(--ink);border:1px solid var(--ink)}
+.reader-cover{padding:40px;display:flex;align-items:center;justify-content:center;position:relative}
+.reader-cover img{width:100%;max-width:280px;box-shadow:0 30px 60px -20px rgba(0,0,0,.6)}
+.reader-copy{padding:44px 44px 44px 0;color:var(--paper)}
+.reader-copy h2{color:var(--paper);font-size:1.9rem;margin:10px 0 14px;font-family:var(--disp);font-weight:700}
+.reader-copy p{color:rgba(247,245,238,.7);margin-bottom:22px;max-width:440px;font-family:var(--read)}
+
+.archive-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}
+.issue-card{background:var(--paper);transition:.2s}
+.issue-card:hover{background:var(--white)}
+.issue-cover-img{aspect-ratio:.77;overflow:hidden;position:relative}
+.issue-cover-img img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+.issue-card .meta{padding:14px}
+.issue-card .meta .date{font-family:var(--mono);font-size:.64rem;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.04em}
+.issue-card .meta h4{font-family:var(--disp);font-size:.98rem;margin:5px 0;font-weight:600}
+.issue-card .meta p{font-size:.74rem;color:var(--ink-soft);line-height:1.4}
+
+@media(max-width:980px){.featured-reader{grid-template-columns:1fr}.reader-copy{padding:32px}.archive-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:620px){.archive-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+
+<div class="util-bar">
+  <div class="wrap">
+    <div><span class="live-dot"></span>SENOIA, GA · CLEAR, 84°F · VOL. 02</div>
+    <div class="util-links"><a href="#">FACEBOOK</a><a href="#">INSTAGRAM</a><a href="#">SUBSCRIBE</a></div>
+  </div>
+</div>
+
+<header class="site-header">
+  <nav class="nav-bar">
+    <a href="index.html" class="brand">LIFE <em>around</em> SENOIA</a>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="people.html">People</a></li>
+      <li><a href="nonprofit.html">Nonprofit</a></li>
+      <li><a href="lifestyle.html">Lifestyle</a></li>
+      <li><a href="events.html">Events</a></li>
+      <li><a href="directory.html">Directory</a></li>
+      <li><a href="editions.html" style="color:var(--brick)">Editions</a></li>
+    </ul>
+    <a href="advertise.html" class="btn-sharp">Advertise →</a>
+  </nav>
+</header>
+
+<section class="page-hero">
+  <div class="wrap">
+    <span class="mega-kicker" style="color:var(--brick)"><span class="dash" style="background:var(--brick)"></span>The Archive</span>
+    <h1>Every issue,<br>flip-through ready</h1>
+    <p style="color:var(--ink-soft);max-width:600px;font-family:var(--read);font-size:1.05rem">Read Life Around Senoia exactly as it was printed — full-page spreads, ads and all — right in your browser.</p>
+  </div>
+</section>
+
+<section style="padding-top:10px">
+  <div class="wrap">
+    <div class="featured-reader">
+      <div class="reader-cover"><img src="images/las6-cover.jpg" alt="Life Around Senoia Issue 6 cover"></div>
+      <div class="reader-copy">
+        <span class="mono-label" style="color:var(--honey-soft);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;font-size:.8rem">Latest Edition · Issue 06</span>
+        <h2>Making Room at the Table</h2>
+        <p>The Brewington family, the Senoia Optimist Club's four decades of service, Milo Stupski, and a tribute to Ellis Crook — plus our one-year anniversary as a publication. July–August 2026.</p>
+        <a href="#" class="btn-sharp" style="background:var(--honey);border-color:var(--honey);color:var(--ink)">Open Full Edition →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="on-paper2">
+  <div class="wrap">
+    <div class="sec-head"><div class="tt"><span class="tt-idx">§</span><h2>Full Archive</h2></div></div>
+    <div class="archive-grid">
+      <a href="#" class="issue-card">
+        <div class="issue-cover-img"><img src="images/las1-cover.jpg" alt="Issue 1 cover"></div>
+        <div class="meta"><span class="date">Sept 2025</span><h4>Issue 01</h4><p>The Bergstroms</p></div>
+      </a>
+      <a href="#" class="issue-card">
+        <div class="issue-cover-img"><img src="images/las2-cover.jpg" alt="Issue 2 cover"></div>
+        <div class="meta"><span class="date">Nov–Dec 2025</span><h4>Issue 02</h4><p>Joe & Dawn McGee</p></div>
+      </a>
+      <a href="#" class="issue-card">
+        <div class="issue-cover-img"><img src="images/las3-cover.jpg" alt="Issue 3 cover"></div>
+        <div class="meta"><span class="date">Winter 2026</span><h4>Issue 03</h4><p>The Crooks of Senoia</p></div>
+      </a>
+      <a href="#" class="issue-card">
+        <div class="issue-cover-img"><img src="images/las4-cover.jpg" alt="Issue 4 cover"></div>
+        <div class="meta"><span class="date">Spring 2026</span><h4>Issue 04</h4><p>The Jenkins Family</p></div>
+      </a>
+      <a href="#" class="issue-card">
+        <div class="issue-cover-img"><img src="images/las5-cover.jpg" alt="Issue 5 cover"></div>
+        <div class="meta"><span class="date">May–Jun 2026</span><h4>Issue 05</h4><p>The Bartels Family</p></div>
+      </a>
+      <a href="#" class="issue-card">
+        <div class="issue-cover-img"><img src="images/las6-cover.jpg" alt="Issue 6 cover"></div>
+        <div class="meta"><span class="date">Jul–Aug 2026</span><h4>Issue 06</h4><p>The Brewingtons</p></div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="involved-strip" style="border:2px dashed var(--line);padding:36px 40px;display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;background:transparent">
+      <div>
+        <span class="mono-label" style="color:var(--brick);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;font-size:.78rem">Web-Only Content</span>
+        <h3 style="font-family:var(--disp);font-size:1.3rem;margin-top:8px;color:var(--ink)">Some stories don't fit in print — but they'll always fit here.</h3>
+      </div>
+      <a href="people.html" style="font-family:var(--mono);font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--ink);padding-bottom:2px;color:var(--ink)">See Online-Only Stories →</a>
+    </div>
+  </div>
+</section>
+
+<footer style="margin-top:0">
+  <div class="footer-grid">
+    <div>
+      <div class="brand" style="color:var(--paper);margin-bottom:12px">LIFE <em>around</em> SENOIA</div>
+      <p class="footer-tag">A bi-monthly magazine and digital publication for the people, businesses, and stories of Senoia, GA. Published by KartPath Media.</p>
+    </div>
+    <div><h4>Explore</h4><a href="people.html">People</a><a href="nonprofit.html">Nonprofit</a><a href="lifestyle.html">Lifestyle</a><a href="events.html">Events</a></div>
+    <div><h4>Publication</h4><a href="editions.html">Editions</a><a href="about.html">About</a><a href="advertise.html">Advertise</a></div>
+    <div><h4>Directory</h4><a href="directory.html">Browse All</a><a href="advertise.html">Add a Business</a></div>
+    <div><h4>Contact</h4><a href="mailto:kevin@kartpathmedia.com">kevin@kartpathmedia.com</a><a href="mailto:blake@kartpathmedia.com">blake@kartpathmedia.com</a></div>
+  </div>
+  <div class="footer-giant">SENOIA</div>
+  <div class="footer-bottom"><span>© 2026 KARTPATH MEDIA LLC</span><span>PEACHTREE CITY, GA</span></div>
+</footer>
+
+</body>
+</html>

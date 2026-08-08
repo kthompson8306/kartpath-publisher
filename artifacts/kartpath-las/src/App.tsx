@@ -7,8 +7,8 @@ import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
 import { Redirect, Route, Switch, Router as WouterRouter, useLocation } from 'wouter';
-import Home from '@/pages/home';
 import Staff from '@/pages/staff';
+import { About, Advertise, Directory, Editions, Events, Lifestyle, Nonprofit, People, PublicHome } from '@/pages/public-pages';
 
 const queryClient = new QueryClient();
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -108,14 +108,22 @@ function SignUpPage() {
 
 function HomeRedirect() {
   const { isSignedIn, isLoaded } = useAuth();
-  if (!isLoaded || !isSignedIn) return <Home />;
-  return <Redirect to="/staff" />;
+  if (!isLoaded) return <PublicHome />;
+  return isSignedIn ? <Redirect to="/staff" /> : <PublicHome />;
 }
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={HomeRedirect} />
+      <Route path="/people" component={People} />
+      <Route path="/nonprofit" component={Nonprofit} />
+      <Route path="/lifestyle" component={Lifestyle} />
+      <Route path="/events" component={Events} />
+      <Route path="/directory" component={Directory} />
+      <Route path="/editions" component={Editions} />
+      <Route path="/about" component={About} />
+      <Route path="/advertise" component={Advertise} />
       <Route path="/sign-in/*?" component={SignInPage} />
       <Route path="/sign-up/*?" component={SignUpPage} />
       <Route path="/staff" component={Staff} />

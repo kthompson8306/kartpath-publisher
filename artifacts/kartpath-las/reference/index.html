@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Life Around Senoia — Design Concept V3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,600;9..144,700;9..144,900&family=Fraunces:ital,opsz,wght@1,9..144,500&family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Newsreader:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0B0E0A;
+  --ink-2:#12160F;
+  --ink-soft:#4A4F49;
+  --ink-faint:#8A8F86;
+  --pine:#16301F;
+  --pine-2:#1F4029;
+  --brick:#C1502A;
+  --honey:#E7A93E;
+  --honey-glow:rgba(231,169,62,.5);
+  --paper:#F7F5EE;
+  --paper-2:#EFEBDD;
+  --line:#DAD5C4;
+  --line-dark:rgba(247,245,238,.14);
+  --white:#FFFFFF;
+  --disp:'Fraunces',Georgia,serif;
+  --ui:'Space Grotesk',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',monospace;
+  --read:'Newsreader',Georgia,serif;
+  --maxw:1360px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--paper);color:var(--ink);font-family:var(--ui);font-size:16px;-webkit-font-smoothing:antialiased;cursor:default;overflow-x:hidden}
+img{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 40px}
+::selection{background:var(--honey);color:var(--ink)}
+
+/* Custom cursor dot */
+.cursor-dot{position:fixed;width:10px;height:10px;border-radius:50%;background:var(--honey);pointer-events:none;z-index:9999;mix-blend-mode:difference;transform:translate(-50%,-50%);transition:width .2s,height .2s;}
+.cursor-dot.grow{width:46px;height:46px;background:var(--paper)}
+
+/* Grain overlay */
+.grain{position:fixed;inset:0;z-index:9998;pointer-events:none;opacity:.05;mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+/* ============ UTILITY BAR ============ */
+.util-bar{background:var(--ink);color:var(--paper);font-family:var(--mono);font-size:11px;letter-spacing:.04em}
+.util-bar .wrap{display:flex;justify-content:space-between;align-items:center;padding:9px 40px}
+.live-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--honey);margin-right:8px;box-shadow:0 0 0 3px rgba(231,169,62,.25);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.util-links{display:flex;gap:22px}
+.util-links a{opacity:.65}
+.util-links a:hover{opacity:1;color:var(--honey)}
+
+/* ============ NAV ============ */
+.site-header{position:sticky;top:0;z-index:200;background:rgba(247,245,238,.88);backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
+.nav-bar{display:flex;align-items:center;justify-content:space-between;padding:22px 40px;max-width:var(--maxw);margin:0 auto}
+.brand{font-family:var(--disp);font-weight:900;font-size:1.6rem;letter-spacing:-.02em}
+.brand em{color:var(--brick);font-style:italic;font-weight:600}
+.nav-links{display:flex;gap:34px;font-family:var(--ui);font-weight:600;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.nav-links a{position:relative;padding:4px 0}
+.nav-links a::after{content:"";position:absolute;left:0;bottom:-2px;width:0;height:2px;background:var(--brick);transition:width .18s}
+.nav-links a:hover::after{width:100%}
+.btn-sharp{font-family:var(--ui);font-weight:700;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;padding:13px 24px;border:1.5px solid var(--ink);background:var(--ink);color:var(--paper);transition:.2s;display:inline-block}
+.btn-sharp:hover{background:var(--brick);border-color:var(--brick)}
+.btn-ghost-dark{font-family:var(--ui);font-weight:700;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;padding:13px 24px;border:1.5px solid var(--paper);color:var(--paper);transition:.2s;display:inline-block}
+.btn-ghost-dark:hover{background:var(--paper);color:var(--ink)}
+
+/* ============ MEGA HERO (dark, full bleed) ============ */
+.mega-hero{background:var(--ink);color:var(--paper);position:relative;overflow:hidden;padding:0}
+.mega-hero::before{
+  content:"";position:absolute;top:-20%;right:-10%;width:60%;height:80%;
+  background:radial-gradient(circle,var(--honey-glow) 0%,transparent 70%);
+  opacity:.22;filter:blur(40px);pointer-events:none;
+}
+.mega-hero-bg{position:relative;padding-top:100px;min-height:640px;display:flex;align-items:center}
+.mega-hero-inner{position:relative;z-index:2;max-width:var(--maxw);margin:0 auto;padding:0 40px 60px}
+.giant-num{
+  position:absolute;top:20px;right:20px;font-family:var(--disp);font-weight:900;font-size:min(38vw,420px);
+  line-height:1;color:transparent;-webkit-text-stroke:1.5px rgba(247,245,238,.12);z-index:1;pointer-events:none;
+  user-select:none;
+}
+.mega-kicker{font-family:var(--mono);font-size:.85rem;letter-spacing:.14em;text-transform:uppercase;color:var(--honey);margin-bottom:26px;display:flex;align-items:center;gap:10px}
+.mega-kicker .dash{width:26px;height:1.5px;background:var(--honey)}
+.mega-hero h1{
+  font-family:var(--disp);font-weight:700;font-size:clamp(3.2rem,8vw,7.2rem);line-height:.96;letter-spacing:-.02em;
+  max-width:900px;margin-bottom:8px;
+}
+.mega-hero h1 em{font-style:italic;font-weight:500;color:var(--honey)}
+.mega-hero .dek{font-family:var(--read);font-style:italic;font-size:1.25rem;color:rgba(247,245,238,.68);max-width:520px;margin:26px 0 40px;line-height:1.5}
+.mega-cta-row{display:flex;gap:16px;align-items:center;margin-bottom:70px}
+.mega-meta{font-family:var(--mono);font-size:.78rem;color:rgba(247,245,238,.5)}
+
+.hero-strip-imgs{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line-dark);border-top:1px solid var(--line-dark);position:relative;z-index:2}
+.strip-img{aspect-ratio:1/1.05;background:linear-gradient(160deg,var(--pine-2),var(--ink));position:relative;overflow:hidden;transition:.4s}
+.strip-img:hover{transform:scale(1.02)}
+.strip-img .lbl{position:absolute;bottom:14px;left:14px;font-family:var(--mono);font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:rgba(247,245,238,.85)}
+.strip-img .lbl b{display:block;font-family:var(--disp);font-size:1rem;font-weight:600;color:var(--paper);margin-top:3px;letter-spacing:0;text-transform:none}
+
+/* ============ MARQUEE ============ */
+.marquee-band{background:var(--honey);color:var(--ink);padding:16px 0;overflow:hidden;border-bottom:1.5px solid var(--ink);border-top:1.5px solid var(--ink)}
+.marquee-track{display:flex;white-space:nowrap;font-family:var(--disp);font-weight:700;font-size:1.4rem;animation:mscroll 26s linear infinite}
+.marquee-track span{margin-right:40px;display:inline-flex;align-items:center;gap:40px}
+.marquee-track span::after{content:"✦";font-size:1rem;margin-left:40px}
+@keyframes mscroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+
+/* ============ STATS COUNTER ============ */
+.stats-strip{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--line)}
+.stat{padding:44px 40px;border-right:1px solid var(--line);text-align:left}
+.stat:last-child{border-right:none}
+.stat .n{font-family:var(--disp);font-weight:700;font-size:3rem;color:var(--brick);line-height:1}
+.stat .l{font-family:var(--mono);font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);margin-top:8px}
+
+/* ============ SECTION HEAD ============ */
+.sec-head{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 30px;padding-top:80px}
+.sec-head .tt{display:flex;align-items:baseline;gap:16px}
+.sec-head .tt-idx{font-family:var(--mono);font-size:.82rem;color:var(--brick)}
+.sec-head h2{font-family:var(--disp);font-weight:700;font-size:clamp(1.8rem,3vw,2.6rem);letter-spacing:-.01em}
+.sec-head .view-all{font-family:var(--mono);font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--ink);padding-bottom:2px}
+
+/* ============ ASYMMETRIC FEATURE SPREAD ============ */
+.spread{display:grid;grid-template-columns:1.3fr .7fr;gap:0;border:1px solid var(--line)}
+.spread-main{position:relative;aspect-ratio:5/4;background:linear-gradient(160deg,var(--pine-2) 0%,var(--ink) 100%);overflow:hidden;border-right:1px solid var(--line)}
+.spread-main .quote-overlay{position:absolute;bottom:0;left:0;right:0;padding:40px;background:linear-gradient(to top,rgba(0,0,0,.75),transparent)}
+.spread-main .quote-overlay .qmark{font-family:var(--disp);font-size:3rem;color:var(--honey);line-height:.5;display:block}
+.spread-main .quote-overlay p{font-family:var(--disp);font-style:italic;font-weight:500;font-size:1.5rem;color:var(--paper);max-width:480px;line-height:1.3}
+.spread-main .quote-overlay .attr{font-family:var(--mono);font-size:.75rem;color:var(--honey);margin-top:14px;display:block;text-transform:uppercase}
+.spread-side{display:flex;flex-direction:column}
+.spread-side-item{padding:30px 32px;border-bottom:1px solid var(--line);flex:1;transition:.2s}
+.spread-side-item:last-child{border-bottom:none}
+.spread-side-item:hover{background:var(--ink);color:var(--paper)}
+.spread-side-item .tag{font-family:var(--mono);font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--brick)}
+.spread-side-item:hover .tag{color:var(--honey)}
+.spread-side-item h3{font-family:var(--disp);font-weight:600;font-size:1.3rem;margin:10px 0;line-height:1.2}
+.spread-side-item p{font-family:var(--read);font-size:.88rem;color:var(--ink-soft);line-height:1.55}
+.spread-side-item:hover p{color:rgba(247,245,238,.7)}
+
+/* ============ INDEX RAIL W/ HOVER PREVIEW ============ */
+.index-rail{border-top:1.5px solid var(--ink);border-bottom:1.5px solid var(--ink);position:relative}
+.index-row{display:grid;grid-template-columns:70px 1fr 260px 40px;align-items:center;padding:30px 0;border-bottom:1px solid var(--line);transition:.15s;position:relative}
+.index-row:last-child{border-bottom:none}
+.index-row:hover{background:var(--ink);color:var(--paper)}
+.index-row:hover .idx-num,.index-row:hover .idx-desc{color:var(--honey)}
+.index-row .idx-num{font-family:var(--mono);font-size:1rem;color:var(--brick)}
+.index-row h3{font-family:var(--disp);font-weight:700;font-size:1.8rem}
+.index-row .idx-desc{font-family:var(--ui);font-size:.85rem;color:var(--ink-faint)}
+.index-row .arrow{font-family:var(--mono);font-size:1.3rem;text-align:right;transition:.15s}
+.index-row:hover .arrow{transform:translateX(8px) rotate(0deg);color:var(--honey)}
+.preview-thumb{position:absolute;right:280px;top:50%;transform:translateY(-50%) scale(.9);width:140px;height:100px;background:linear-gradient(150deg,var(--honey),var(--brick));opacity:0;transition:.2s;pointer-events:none;z-index:5}
+.index-row:hover .preview-thumb{opacity:1;transform:translateY(-50%) scale(1)}
+
+/* ============ BIG PULL QUOTE BREAK ============ */
+.pull-break{background:var(--pine);color:var(--paper);padding:110px 0;text-align:center;position:relative;overflow:hidden}
+.pull-break .bigq{font-family:var(--disp);font-size:8rem;color:var(--honey);opacity:.35;line-height:0;position:absolute;top:50px;left:50%;transform:translateX(-50%)}
+.pull-break p{font-family:var(--disp);font-style:italic;font-weight:500;font-size:clamp(1.8rem,3.6vw,2.8rem);max-width:800px;margin:0 auto 26px;line-height:1.3;position:relative;z-index:2}
+.pull-break .attr{font-family:var(--mono);font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;color:var(--honey)}
+
+/* ============ EDITION PROMO ============ */
+.edition-promo{display:grid;grid-template-columns:360px 1fr;background:var(--ink);color:var(--paper);border:1px solid var(--ink)}
+.edition-cover{background:linear-gradient(150deg,var(--honey),var(--brick));aspect-ratio:.77;margin:36px;display:flex;align-items:flex-end;padding:22px;font-family:var(--disp);font-weight:700;font-size:1.4rem;color:var(--ink);box-shadow:0 40px 70px -20px rgba(0,0,0,.6)}
+.edition-copy{padding:54px 54px 54px 0}
+.edition-copy .mono-label{font-family:var(--mono);font-size:.8rem;color:var(--honey);text-transform:uppercase;letter-spacing:.08em;margin-bottom:16px;display:block}
+.edition-copy h2{font-family:var(--disp);font-weight:700;font-size:2.2rem;margin-bottom:16px}
+.edition-copy p{color:rgba(247,245,238,.68);max-width:480px;margin-bottom:28px;font-family:var(--read);font-size:1.05rem}
+
+/* ============ NEWSLETTER ============ */
+.newsletter{padding:110px 0;text-align:center;border-top:1px solid var(--line)}
+.newsletter .mono-label{font-family:var(--mono);font-size:.8rem;color:var(--brick);text-transform:uppercase;letter-spacing:.1em;margin-bottom:20px;display:block}
+.newsletter h2{font-family:var(--disp);font-weight:700;font-size:clamp(2.2rem,5.5vw,4rem);max-width:820px;margin:0 auto 34px;line-height:1.08}
+.news-input-row{display:flex;max-width:480px;margin:0 auto;border:1.5px solid var(--ink)}
+.news-input-row input{flex:1;border:none;background:none;padding:18px 20px;font-family:var(--ui);font-size:1rem;outline:none}
+.news-input-row button{background:var(--ink);color:var(--paper);border:none;padding:18px 28px;font-family:var(--ui);font-weight:700;font-size:.85rem;text-transform:uppercase;letter-spacing:.04em;cursor:pointer;transition:.2s}
+.news-input-row button:hover{background:var(--brick)}
+
+/* ============ AD ZONE ============ */
+.ad-zone{border:1.5px dashed var(--line);background:var(--paper-2);padding:36px 40px;text-align:center;margin:70px 0 0;position:relative}
+.ad-zone .ad-lbl{position:absolute;top:-11px;left:40px;background:var(--paper);padding:0 10px;font-family:var(--mono);font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint)}
+.ad-zone .ad-inner{font-family:var(--ui);font-size:.85rem;color:var(--ink-faint);min-height:64px;display:flex;align-items:center;justify-content:center}
+.ad-zone.leaderboard{max-width:100%}
+.ad-zone.in-feed{grid-column:1/-1}
+
+/* ============ FOOTER ============ */
+footer{background:var(--ink);color:rgba(247,245,238,.8);padding:64px 0 0;overflow:hidden}
+.footer-grid{max-width:var(--maxw);margin:0 auto;padding:0 40px 44px;display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr 1fr;gap:30px;border-bottom:1px solid rgba(247,245,238,.15)}
+.footer-grid h4{font-family:var(--mono);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--honey);margin-bottom:16px}
+.footer-grid a{display:block;padding:5px 0;font-size:.88rem}
+.footer-grid a:hover{color:var(--honey)}
+.footer-tag{font-size:.88rem;max-width:280px;line-height:1.6;color:rgba(247,245,238,.55)}
+.footer-bottom{max-width:var(--maxw);margin:0 auto;padding:20px 40px;display:flex;justify-content:space-between;font-family:var(--mono);font-size:.72rem;color:rgba(247,245,238,.4)}
+.footer-giant{font-family:var(--disp);font-weight:900;font-size:min(16vw,220px);line-height:.8;color:transparent;-webkit-text-stroke:1px rgba(247,245,238,.1);text-align:center;padding:20px 0 0;letter-spacing:-.02em;user-select:none}
+
+@media(max-width:980px){
+  .hero-strip-imgs{grid-template-columns:1fr 1fr}
+  .spread{grid-template-columns:1fr}
+  .index-row{grid-template-columns:44px 1fr 28px}
+  .index-row .idx-desc{display:none}
+  .preview-thumb{display:none}
+  .edition-promo{grid-template-columns:1fr}
+  .edition-cover{margin:36px auto;width:200px}
+  .stats-strip{grid-template-columns:1fr 1fr}
+  .footer-grid{grid-template-columns:1fr 1fr}
+  .nav-links{display:none}
+  .giant-num{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="cursor-dot" id="cursorDot"></div>
+<div class="grain"></div>
+
+<div class="util-bar">
+  <div class="wrap">
+    <div><span class="live-dot"></span>SENOIA, GA · CLEAR, 84°F · VOL. 01</div>
+    <div class="util-links"><a href="#">FACEBOOK</a><a href="#">INSTAGRAM</a><a href="#">SUBSCRIBE</a></div>
+  </div>
+</div>
+
+<header class="site-header">
+  <nav class="nav-bar">
+    <a href="#" class="brand">LIFE <em>around</em> SENOIA</a>
+    <ul class="nav-links">
+      <li><a href="people.html">People</a></li>
+      <li><a href="nonprofit.html">Nonprofit</a></li>
+      <li><a href="lifestyle.html">Lifestyle</a></li>
+      <li><a href="events.html">Events</a></li>
+      <li><a href="directory.html">Directory</a></li>
+      <li><a href="editions.html">Editions</a></li>
+    </ul>
+    <a href="advertise.html" class="btn-sharp">Advertise →</a>
+  </nav>
+</header>
+
+<!-- ============ MEGA HERO ============ -->
+<section class="mega-hero">
+  <div class="mega-hero-bg" style="background:linear-gradient(180deg, rgba(11,14,10,.1) 0%, rgba(11,14,10,.5) 60%, rgba(11,14,10,.97) 100%), url('images/hero-brewington.jpg') center 38%/cover no-repeat">
+  <div class="giant-num">06</div>
+  <div class="mega-hero-inner">
+    <span class="mega-kicker"><span class="dash"></span>Issue 06 — July / August 2026</span>
+    <h1>Making Room <em>at</em><br>the Table</h1>
+    <p class="dek">How Darrin and Ashley Brewington — and their daughter Nayeli — are building community in Senoia one open chair at a time.</p>
+    <div class="mega-cta-row">
+      <a href="#" class="btn-ghost-dark" data-hover>Read the Story →</a>
+      <span class="mega-meta">People · Featured Family · 6 Min Read</span>
+    </div>
+  </div>
+  </div>
+  <div class="hero-strip-imgs">
+    <div class="strip-img" style="background:url('images/nonprofit-optimist.jpg') center/cover"><div class="lbl">Nonprofit<b>Senoia Optimist Club</b></div></div>
+    <div class="strip-img" style="background:url('images/young-achiever-milo.jpg') center/cover"><div class="lbl">Young Achiever<b>Milo Stupski, Age 9</b></div></div>
+    <div class="strip-img" style="background:url('images/secret-sauce-mainst.jpg') center/cover"><div class="lbl">Secret Sauce<b>Freedoms We Share</b></div></div>
+    <div class="strip-img" style="background:url('images/feature-truck.jpg') center/cover"><div class="lbl">Feature<b>Buying or Selling</b></div></div>
+  </div>
+</section>
+
+<div class="wrap">
+  <div class="ad-zone leaderboard">
+    <span class="ad-lbl">Advertisement</span>
+    <div class="ad-inner">728×90 Leaderboard — Premium Placement</div>
+  </div>
+</div>
+
+<!-- ============ MARQUEE ============ -->
+<div class="marquee-band">
+  <div class="marquee-track">
+    <span>SENOIA, GEORGIA</span><span>ALIVE AFTER FIVE — SEPT 18, OCT 16, NOV 20</span><span>FARMERS MARKET EVERY SATURDAY</span><span>SENOIA, GEORGIA</span><span>ALIVE AFTER FIVE — SEPT 18, OCT 16, NOV 20</span><span>FARMERS MARKET EVERY SATURDAY</span>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ============ ASYMMETRIC SPREAD ============ -->
+<div class="sec-head">
+  <div class="tt"><span class="tt-idx">§01</span><h2>Latest Stories</h2></div>
+  <a href="#" class="view-all">View All →</a>
+</div>
+<div class="spread">
+  <div class="spread-main" style="background:linear-gradient(180deg, rgba(15,19,16,.1) 0%, rgba(15,19,16,.85) 100%), url('images/hero-brewington.jpg') center 25%/cover no-repeat">
+    <div class="quote-overlay">
+      <span class="qmark">"</span>
+      <p>Community often begins with something as simple as making room for one more chair at the table.</p>
+      <span class="attr">Darrin & Ashley Brewington — Featured Family</span>
+    </div>
+  </div>
+  <div class="spread-side">
+    <a href="#" class="spread-side-item">
+      <span class="tag">Nonprofit</span>
+      <h3>Four Decades of Showing Up</h3>
+      <p>The Senoia Optimist Club has quietly funded scholarships and service projects since 1985.</p>
+    </a>
+    <a href="#" class="spread-side-item">
+      <span class="tag">Crook's Corner</span>
+      <h3>Honoring the Stories — and Storyteller — of Ellis Crook</h3>
+      <p>Our history column takes on a new name in memory of the man who preserved Senoia's own.</p>
+    </a>
+  </div>
+</div>
+
+<!-- ============ INDEX RAIL ============ -->
+<div class="sec-head">
+  <div class="tt"><span class="tt-idx">§02</span><h2>Explore the Publication</h2></div>
+</div>
+<div class="index-rail">
+  <a href="#" class="index-row"><span class="idx-num">01</span><h3>People</h3><span class="idx-desc">Featured Families · Young Achievers · Pet of the Month</span><span class="preview-thumb"></span><span class="arrow">→</span></a>
+  <a href="#" class="index-row"><span class="idx-num">02</span><h3>Nonprofit</h3><span class="idx-desc">The organizations holding this town together</span><span class="preview-thumb"></span><span class="arrow">→</span></a>
+  <a href="#" class="index-row"><span class="idx-num">03</span><h3>Lifestyle</h3><span class="idx-desc">Secret Sauce · Historical Society · What's Cooking</span><span class="preview-thumb"></span><span class="arrow">→</span></a>
+  <a href="#" class="index-row"><span class="idx-num">04</span><h3>Events</h3><span class="idx-desc">Calendar, coverage, and Main Street happenings</span><span class="preview-thumb"></span><span class="arrow">→</span></a>
+  <a href="#" class="index-row"><span class="idx-num">05</span><h3>Directory</h3><span class="idx-desc">Every business on Main Street, searchable</span><span class="preview-thumb"></span><span class="arrow">→</span></a>
+</div>
+
+<div class="ad-zone in-feed">
+  <span class="ad-lbl">Advertisement</span>
+  <div class="ad-inner">In-Feed Placement — Directory or Local Business Sponsor</div>
+</div>
+
+</div>
+
+<!-- ============ PULL QUOTE BREAK ============ -->
+<div class="pull-break">
+  <span class="bigq">"</span>
+  <p>We have the freedom to worship. Across our community each week, church doors open without fear, and families gather to pray.</p>
+  <span class="attr">Secret Sauce — Issue 06</span>
+</div>
+
+<div class="wrap">
+  <div class="sec-head">
+    <div class="tt"><span class="tt-idx">§03</span><h2>Digital Editions</h2></div>
+  </div>
+  <div class="edition-promo">
+    <div class="edition-cover" style="background:url('images/hero-brewington.jpg') center 20%/cover;display:flex;align-items:flex-end;padding:22px">
+      <span style="background:rgba(11,14,10,.7);color:#F7F5EE;padding:6px 12px;font-family:var(--disp);font-weight:700;font-size:1.1rem">LAS 06</span>
+    </div>
+    <div class="edition-copy">
+      <span class="mono-label">Latest Published Edition</span>
+      <h2>Issue 06 — The Full Flip-Through</h2>
+      <p>The Brewington family, the Senoia Optimist Club, Milo Stupski, and a tribute to Ellis Crook — every page exactly as printed, plus our one-year anniversary as a publication.</p>
+      <a href="#" class="btn-sharp" style="background:var(--honey);border-color:var(--honey);color:var(--ink)">Open Full Edition →</a>
+    </div>
+  </div>
+</div>
+
+<!-- ============ NEWSLETTER ============ -->
+<section class="newsletter">
+  <div class="wrap">
+    <span class="mono-label">Join The List</span>
+    <h2>Senoia stories, straight to your inbox — no fluff, just the town.</h2>
+    <div class="news-input-row">
+      <input type="email" placeholder="you@email.com">
+      <button>Subscribe</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer>
+  <div class="footer-grid">
+    <div>
+      <div class="brand" style="color:var(--paper);margin-bottom:12px">LIFE <em>around</em> SENOIA</div>
+      <p class="footer-tag">A bi-monthly magazine and digital publication for the people, businesses, and stories of Senoia, GA. Published by KartPath Media.</p>
+    </div>
+    <div><h4>Explore</h4><a href="people.html">People</a><a href="nonprofit.html">Nonprofit</a><a href="lifestyle.html">Lifestyle</a><a href="events.html">Events</a></div>
+    <div><h4>Publication</h4><a href="editions.html">Editions</a><a href="about.html">About</a><a href="advertise.html">Advertise</a></div>
+    <div><h4>Directory</h4><a href="directory.html">Browse All</a><a href="advertise.html">Add a Business</a></div>
+    <div><h4>Contact</h4><a href="mailto:kevin@kartpathmedia.com">kevin@kartpathmedia.com</a><a href="mailto:blake@kartpathmedia.com">blake@kartpathmedia.com</a></div>
+  </div>
+  <div class="footer-giant">SENOIA</div>
+  <div class="footer-bottom"><span>© 2026 KARTPATH MEDIA LLC</span><span>PEACHTREE CITY, GA</span></div>
+</footer>
+
+<script>
+const dot = document.getElementById('cursorDot');
+document.addEventListener('mousemove', e => {
+  dot.style.left = e.clientX + 'px';
+  dot.style.top = e.clientY + 'px';
+});
+document.querySelectorAll('a, button, .index-row, .spread-side-item').forEach(el => {
+  el.addEventListener('mouseenter', () => dot.classList.add('grow'));
+  el.addEventListener('mouseleave', () => dot.classList.remove('grow'));
+});
+</script>
+</body>
+</html>

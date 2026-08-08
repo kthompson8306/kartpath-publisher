@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lifestyle — Life Around Senoia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,600;9..144,700;9..144,900&family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Newsreader:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style2.css">
+<style>
+.page-hero{padding:70px 0 30px}
+.page-hero h1{font-size:clamp(2.6rem,5.5vw,4.2rem);margin:16px 0 14px;color:var(--ink)}
+.subnav{display:flex;gap:10px;flex-wrap:wrap;margin-top:26px}
+.subnav a{font-family:var(--mono);font-weight:500;font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;padding:10px 18px;border:1px solid var(--ink);color:var(--ink)}
+.subnav a:hover{background:var(--ink);color:var(--paper)}
+
+.sauce-card{border:1px solid var(--line);padding:40px;margin-bottom:20px}
+.sauce-card .tag{font-family:var(--mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--brick)}
+.sauce-card h3{font-family:var(--disp);font-weight:700;font-size:1.6rem;margin:10px 0 14px}
+.sauce-card p{font-family:var(--read);color:var(--ink-soft);line-height:1.7;margin-bottom:12px}
+
+.hist-row{display:grid;grid-template-columns:.85fr 1.15fr;gap:0;border:1px solid var(--line)}
+.hist-img{position:relative;overflow:hidden;min-height:380px}
+.hist-img img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+.hist-copy{padding:44px}
+.hist-copy h3{font-family:var(--disp);font-weight:700;font-size:1.7rem;margin:10px 0 14px}
+.hist-copy p{font-family:var(--read);color:var(--ink-soft);line-height:1.7;margin-bottom:12px}
+.hist-timeline{margin-top:16px}
+.hist-timeline .t-row{display:flex;gap:16px;padding:9px 0;border-bottom:1px solid var(--line);font-size:.86rem}
+.hist-timeline .yr{font-family:var(--mono);color:var(--brick);min-width:48px}
+
+.recipe-row{display:grid;grid-template-columns:.9fr 1.1fr;border:1px solid var(--line)}
+.recipe-img{position:relative;overflow:hidden;min-height:360px}
+.recipe-img img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+.recipe-copy{padding:44px}
+.recipe-copy h3{font-family:var(--disp);font-weight:700;font-size:1.9rem;margin:8px 0 16px;color:var(--brick)}
+.ing-list{font-family:var(--read);color:var(--ink-soft);font-size:.92rem;line-height:1.8;margin-bottom:18px}
+.ing-list li{margin-left:18px}
+.steps-list{font-family:var(--read);color:var(--ink-soft);font-size:.92rem;line-height:1.8}
+.steps-list li{margin-left:18px}
+
+.mouse-row{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--line);margin-top:28px}
+.mouse-copy{padding:44px}
+.mouse-img{position:relative;min-height:320px;overflow:hidden}
+.mouse-img img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+
+@media(max-width:900px){
+  .hist-row,.recipe-row,.mouse-row{grid-template-columns:1fr}
+  .hist-img,.recipe-img,.mouse-img{min-height:280px}
+}
+</style>
+</head>
+<body>
+
+<div class="util-bar">
+  <div class="wrap">
+    <div><span class="live-dot"></span>SENOIA, GA · CLEAR, 84°F · VOL. 02</div>
+    <div class="util-links"><a href="#">FACEBOOK</a><a href="#">INSTAGRAM</a><a href="#">SUBSCRIBE</a></div>
+  </div>
+</div>
+
+<header class="site-header">
+  <nav class="nav-bar">
+    <a href="index.html" class="brand">LIFE <em>around</em> SENOIA</a>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="people.html">People</a></li>
+      <li><a href="nonprofit.html">Nonprofit</a></li>
+      <li><a href="lifestyle.html" style="color:var(--brick)">Lifestyle</a></li>
+      <li><a href="events.html">Events</a></li>
+      <li><a href="directory.html">Directory</a></li>
+      <li><a href="editions.html">Editions</a></li>
+    </ul>
+    <a href="advertise.html" class="btn-sharp">Advertise →</a>
+  </nav>
+</header>
+
+<section class="page-hero">
+  <div class="wrap">
+    <span class="mega-kicker" style="color:var(--brick)"><span class="dash" style="background:var(--brick)"></span>Lifestyle</span>
+    <h1>The flavor of<br>life around town</h1>
+    <p style="color:var(--ink-soft);max-width:600px;font-family:var(--read);font-size:1.05rem">History, home cooking, and the small reflections that give Senoia its character.</p>
+    <div class="subnav">
+      <a href="#secret-sauce">Secret Sauce</a>
+      <a href="#crooks-corner">Crook's Corner</a>
+      <a href="#recipe">Recipe</a>
+      <a href="#mouse-hunt">Mouse Hunt</a>
+    </div>
+  </div>
+</section>
+
+<!-- SECRET SAUCE -->
+<section id="secret-sauce" style="padding-top:10px">
+  <div class="wrap-narrow">
+    <div class="sec-head" style="margin-bottom:18px"><div class="tt"><span class="tt-idx">§01</span><h2>Secret Sauce</h2></div></div>
+
+    <div class="sauce-card">
+      <span class="tag">Issue 06</span>
+      <h3>Freedom Worth Celebrating</h3>
+      <p>Every July, we're reminded how blessed we are to call America home. Among the many freedoms we enjoy, one is especially easy to overlook: the freedom to worship. Across our community each week, church doors open without fear, Bibles are read openly, and families gather to pray.</p>
+      <p>While political freedom shapes the way we live, spiritual freedom has the power to shape who we become — and perhaps that's the greatest freedom worth celebrating this season.</p>
+    </div>
+
+    <div class="sauce-card">
+      <span class="tag">Issue 01</span>
+      <h3>Community: Senoia's True Secret Sauce</h3>
+      <p>Ask anyone what they love about Senoia and you'll almost always hear the same answer: the community. Yes, there's the small-town charm, the Hollywood history, the local shops. But Senoia's heart runs deeper than surface-level treasures.</p>
+      <p>What makes Senoia so special is the sense of belonging it cultivates. Neighbors care, strangers are welcomed, and differences are respected. It doesn't require uniformity, only unity.</p>
+    </div>
+  </div>
+</section>
+
+<!-- CROOK'S CORNER / HISTORY -->
+<section class="on-paper2" id="crooks-corner">
+  <div class="wrap">
+    <div class="sec-head"><div class="tt"><span class="tt-idx">§02</span><h2>Crook's Corner</h2></div></div>
+    <p style="color:var(--ink-soft);font-family:var(--read);max-width:640px;margin-bottom:26px;margin-top:-20px">Formerly our Historical Society column — renamed in Issue 06 to honor Ellis Crook, who spent 95 years calling Senoia home and helped preserve its story before his passing on June 22, 2026.</p>
+    <div class="hist-row">
+      <div class="hist-img"><img src="images/lifestyle-history.jpg" alt="The Senoia town sign downtown"></div>
+      <div class="hist-copy">
+        <span class="tag" style="font-family:var(--mono);font-size:.7rem;color:var(--brick);text-transform:uppercase;letter-spacing:.08em">Keeping Senoia's Story Alive</span>
+        <h3>The Senoia Area Historical Society</h3>
+        <p>What began with $55.89 left over from a 1976 Bicentennial celebration became the seed money for something lasting — a Society dedicated to making sure Senoia's stories are never lost to time.</p>
+        <div class="hist-timeline">
+          <div class="t-row"><span class="yr">1976</span>A Bicentennial celebration leaves $55.89 — the Society's seed money.</div>
+          <div class="t-row"><span class="yr">1980</span>The Senoia Area Historical Society officially incorporates.</div>
+          <div class="t-row"><span class="yr">1989</span>Senoia's Historic District is added to the National Register of Historic Places.</div>
+          <div class="t-row"><span class="yr">1990</span>The Society purchases the historic 1870s Carmichael home at 6 Couch Street.</div>
+          <div class="t-row"><span class="yr">2010</span>The Senoia Area History Museum opens its doors on July 18.</div>
+        </div>
+        <p style="margin-top:16px;font-size:.88rem">Open weekends · <a href="https://www.senoiahistory.com" style="color:var(--brick);text-decoration:underline" target="_blank" rel="noopener">senoiahistory.com</a></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RECIPE -->
+<section id="recipe">
+  <div class="wrap">
+    <div class="sec-head"><div class="tt"><span class="tt-idx">§03</span><h2>Recipe</h2></div></div>
+    <div class="recipe-row">
+      <div class="recipe-img"><img src="images/lifestyle-recipe.jpg" alt="Senoia Sunrise cocktail poolside"></div>
+      <div class="recipe-copy">
+        <span class="tag" style="font-family:var(--mono);font-size:.7rem;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.08em">Issue 06</span>
+        <h3>Senoia Sunrise</h3>
+        <p style="font-family:var(--read);font-style:italic;color:var(--ink-soft);margin-bottom:18px">Some cocktails are made for celebrations. Others are made for slow summer afternoons. The Senoia Sunrise is both.</p>
+        <ul class="ing-list">
+          <li>2 oz Doc Brown's Day Swigger Southern Ember Whiskey</li>
+          <li>3 oz fresh orange juice</li>
+          <li>Splash of fresh lime juice</li>
+          <li>Sparkling water, to top</li>
+          <li>Fresh peach slice, for garnish</li>
+        </ul>
+        <ol class="steps-list">
+          <li>Fill a cocktail shaker with ice.</li>
+          <li>Add the whiskey, orange juice, and lime juice. Shake well until chilled.</li>
+          <li>Fill a rocks glass with fresh ice and strain the cocktail into the glass.</li>
+          <li>Top with sparkling water.</li>
+          <li>Garnish with a fresh peach slice.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MOUSE HUNT -->
+<section class="on-paper2" id="mouse-hunt" style="padding-bottom:80px">
+  <div class="wrap">
+    <div class="sec-head"><div class="tt"><span class="tt-idx">§04</span><h2>Around Town</h2></div></div>
+    <div class="mouse-row">
+      <div class="mouse-copy">
+        <span class="tag" style="font-family:var(--mono);font-size:.7rem;color:var(--brick);text-transform:uppercase;letter-spacing:.08em">Issue 03 · Downtown Scavenger Hunt</span>
+        <h3 style="font-family:var(--disp);font-weight:700;font-size:1.7rem;margin:10px 0 14px">A Little Mouse, A Big Idea</h3>
+        <p style="font-family:var(--read);color:var(--ink-soft);line-height:1.7;margin-bottom:12px">Local artist Catrina Didier noticed the iconic red brick downtown and wondered: what if there was a mouse painted somewhere in town? The idea grew legs — or tiny painted paws — into the Downtown Senoia Mouse Hunt.</p>
+        <p style="font-family:var(--read);color:var(--ink-soft);line-height:1.7">Pick up an activity booklet at the Welcome Center, track down each hand-painted mouse hidden in shop windows, and return your completed map for a prize. Proceeds support Catrina's mission work at home and abroad.</p>
+      </div>
+      <div class="mouse-img"><img src="images/lifestyle-secretsauce.jpg" alt="Downtown Senoia Main Street"></div>
+    </div>
+  </div>
+</section>
+
+<footer style="margin-top:0">
+  <div class="footer-grid">
+    <div>
+      <div class="brand" style="color:var(--paper);margin-bottom:12px">LIFE <em>around</em> SENOIA</div>
+      <p class="footer-tag">A bi-monthly magazine and digital publication for the people, businesses, and stories of Senoia, GA. Published by KartPath Media.</p>
+    </div>
+    <div><h4>Explore</h4><a href="people.html">People</a><a href="nonprofit.html">Nonprofit</a><a href="lifestyle.html">Lifestyle</a><a href="events.html">Events</a></div>
+    <div><h4>Publication</h4><a href="editions.html">Editions</a><a href="about.html">About</a><a href="advertise.html">Advertise</a></div>
+    <div><h4>Directory</h4><a href="directory.html">Browse All</a><a href="advertise.html">Add a Business</a></div>
+    <div><h4>Contact</h4><a href="mailto:kevin@kartpathmedia.com">kevin@kartpathmedia.com</a><a href="mailto:blake@kartpathmedia.com">blake@kartpathmedia.com</a></div>
+  </div>
+  <div class="footer-giant">SENOIA</div>
+  <div class="footer-bottom"><span>© 2026 KARTPATH MEDIA LLC</span><span>PEACHTREE CITY, GA</span></div>
+</footer>
+
+</body>
+</html>

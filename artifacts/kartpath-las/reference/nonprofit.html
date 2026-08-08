@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nonprofit Spotlight — Life Around Senoia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,600;9..144,700;9..144,900&family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Newsreader:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style2.css">
+<style>
+.page-hero{padding:70px 0 40px}
+.page-hero h1{font-size:clamp(2.6rem,5.5vw,4.2rem);margin:16px 0 14px;color:var(--ink)}
+
+.np-row{display:grid;grid-template-columns:1.1fr .9fr;gap:0;border:1px solid var(--line);margin-bottom:28px}
+.np-row.reverse{grid-template-columns:.9fr 1.1fr}
+.np-row.reverse .np-img{order:2}
+.np-img{position:relative;overflow:hidden;min-height:400px;background:linear-gradient(160deg,var(--pine-2),var(--ink))}
+.np-img img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+.np-issue-badge{position:absolute;top:18px;left:18px;background:rgba(11,14,10,.75);color:var(--honey-soft);font-family:var(--mono);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;padding:6px 12px;z-index:2}
+.np-copy{padding:44px}
+.np-copy .tag{font-family:var(--mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--brick)}
+.np-copy h3{font-family:var(--disp);font-weight:700;font-size:1.85rem;margin:12px 0 6px;line-height:1.1}
+.np-copy .dek{font-family:var(--read);font-style:italic;color:var(--ink-soft);font-size:1rem;margin-bottom:16px}
+.np-copy p{font-family:var(--read);font-size:.94rem;color:var(--ink-soft);line-height:1.65;margin-bottom:12px}
+.np-cta{display:inline-flex;gap:14px;margin-top:8px;font-family:var(--mono);font-size:.8rem}
+.np-cta a{color:var(--brick);border-bottom:1px solid var(--brick)}
+
+.involved-strip{background:var(--ink);color:var(--paper);padding:56px;text-align:center}
+.involved-strip h2{color:var(--paper);font-size:1.9rem;margin:14px 0 22px}
+
+@media(max-width:900px){
+  .np-row,.np-row.reverse{grid-template-columns:1fr}
+  .np-row.reverse .np-img{order:0}
+  .np-img{min-height:300px}
+}
+</style>
+</head>
+<body>
+
+<div class="util-bar">
+  <div class="wrap">
+    <div><span class="live-dot"></span>SENOIA, GA · CLEAR, 84°F · VOL. 02</div>
+    <div class="util-links"><a href="#">FACEBOOK</a><a href="#">INSTAGRAM</a><a href="#">SUBSCRIBE</a></div>
+  </div>
+</div>
+
+<header class="site-header">
+  <nav class="nav-bar">
+    <a href="index.html" class="brand">LIFE <em>around</em> SENOIA</a>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="people.html">People</a></li>
+      <li><a href="nonprofit.html" style="color:var(--brick)">Nonprofit</a></li>
+      <li><a href="lifestyle.html">Lifestyle</a></li>
+      <li><a href="events.html">Events</a></li>
+      <li><a href="directory.html">Directory</a></li>
+      <li><a href="editions.html">Editions</a></li>
+    </ul>
+    <a href="advertise.html" class="btn-sharp">Advertise →</a>
+  </nav>
+</header>
+
+<section class="page-hero">
+  <div class="wrap">
+    <span class="mega-kicker" style="color:var(--brick)"><span class="dash" style="background:var(--brick)"></span>Nonprofit Spotlight</span>
+    <h1>The organizations quietly<br>holding this town together</h1>
+    <p style="color:var(--ink-soft);max-width:600px;font-family:var(--read);font-size:1.05rem">Every issue, we uplift a local nonprofit making a real difference — and give you a way to help.</p>
+  </div>
+</section>
+
+<section style="padding-top:10px">
+  <div class="wrap">
+
+    <div class="np-row">
+      <div class="np-img"><span class="np-issue-badge">Issue 06</span><img src="images/nonprofit-optimist.jpg" alt="Senoia Optimist Club volunteers"></div>
+      <div class="np-copy">
+        <span class="tag">Nonprofit Spotlight</span>
+        <h3>Four Decades of Showing Up</h3>
+        <p class="dek">How the Senoia Optimist Club continues to invest in Senoia's next generation</p>
+        <p>Chartered in 1985, the club embraces the Optimist International motto "Friend of Youth." Scholarships, the annual Fish Derby at Lake Marimac, Taste of Senoia, and Little Free Libraries — the list is long because the club looks for need wherever it exists. Just over 30 members today, with longtime member Hal Sewell recently celebrating 41 years of service.</p>
+        <div class="np-cta"><a href="#">Join — meets first Thursday monthly at i58 Mission</a></div>
+      </div>
+    </div>
+
+    <div class="np-row reverse">
+      <div class="np-img"><span class="np-issue-badge">Issue 05</span><img src="images/nonprofit-betterway.jpg" alt="A Better Way Ministries graduation ceremony"></div>
+      <div class="np-copy">
+        <span class="tag">Nonprofit Spotlight</span>
+        <h3>The Walking Light</h3>
+        <p class="dek">How A Better Way Ministries is changing lives through service, structure, and redemption</p>
+        <p>Founded in 2005 by John Barrow — who found the seeds of this ministry during an 18-month stretch in solitary confinement — A Better Way has spent more than two decades helping men overcome addiction through faith, discipline, and brotherhood. What began in a farmhouse with five men has impacted thousands of lives across Georgia.</p>
+      </div>
+    </div>
+
+    <div class="np-row">
+      <div class="np-img"><span class="np-issue-badge">Issue 04</span><img src="images/nonprofit-elevate.jpg" alt="ELEVATE Coweta Students graduation"></div>
+      <div class="np-copy">
+        <span class="tag">Nonprofit Spotlight</span>
+        <h3>Filling the Gaps</h3>
+        <p class="dek">How ELEVATE Coweta Students is transforming lives — one student at a time</p>
+        <p>ELEVATE stepped into its independent mission in 2020, choosing to stay local rather than operate under a national umbrella. That means responding to needs the moment they emerge in Coweta County schools — immediately, personally, and relationally, not filtered through national priorities.</p>
+      </div>
+    </div>
+
+    <div class="np-row reverse">
+      <div class="np-img"><span class="np-issue-badge">Issue 03</span><img src="images/nonprofit-ourfathershouse.jpg" alt="Our Father's House families and volunteers"></div>
+      <div class="np-copy">
+        <span class="tag">Nonprofit Spotlight</span>
+        <h3>Our Father's House</h3>
+        <p class="dek">More than a program — a family that walks alongside families</p>
+        <p>What began roughly 23 years ago as a simple tutoring effort, founded by Linda Stankovich of Crossroads Church, has grown into something deeper. Nearly two decades later, volunteers are now walking alongside parents who were once children in the original program themselves — second-generation families, still known by name.</p>
+      </div>
+    </div>
+
+    <div class="np-row">
+      <div class="np-img"><span class="np-issue-badge">Issue 02</span><img src="images/nonprofit-backpackbuddies.jpg" alt="Backpack Buddies volunteers"></div>
+      <div class="np-copy">
+        <span class="tag">Nonprofit Spotlight</span>
+        <h3>Feeding Hope</h3>
+        <p class="dek">How Coweta County comes together to make sure no child goes hungry</p>
+        <p>Founded in 2011 by April Anderson after a single question at a conference — "If the doors of your church closed tomorrow, would your community even notice?" — Backpack Buddies started with 20 children at two schools. Today it provides weekend and break-time food for nearly 2,000 students across Coweta County every week.</p>
+      </div>
+    </div>
+
+    <div class="np-row reverse">
+      <div class="np-img"><span class="np-issue-badge">Issue 01</span><img src="images/nonprofit-i58.jpg" alt="i58 Mission volunteers"></div>
+      <div class="np-copy">
+        <span class="tag">Nonprofit Spotlight</span>
+        <h3>Loving People With Dignity</h3>
+        <p class="dek">i58 Mission — restoring dignity, sharing Jesus, and loving like neighbors</p>
+        <p>It started with an Angel Tree drive. Karhma Novak expected to buy gifts and drop them in a box — instead she delivered them in person and found a family that needed far more. What began with a few calls to friends turned her own home into a distribution center. Out of that beautiful chaos, i58 Mission was born.</p>
+        <div class="np-cta"><a href="tel:7703010870">770-301-0870</a><a href="https://www.thei58mission.org" target="_blank" rel="noopener">thei58mission.org</a></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section style="padding-bottom:0">
+  <div class="wrap">
+    <div class="involved-strip">
+      <span class="mono-label" style="color:var(--honey-soft);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;font-size:.8rem">Know a Nonprofit We Should Feature?</span>
+      <h2>Help us find the next organization worth spotlighting</h2>
+      <a href="about.html#nominate" class="btn-sharp" style="background:var(--honey);border-color:var(--honey);color:var(--ink)">Nominate a Nonprofit →</a>
+    </div>
+  </div>
+</section>
+
+<footer style="margin-top:0">
+  <div class="footer-grid">
+    <div>
+      <div class="brand" style="color:var(--paper);margin-bottom:12px">LIFE <em>around</em> SENOIA</div>
+      <p class="footer-tag">A bi-monthly magazine and digital publication for the people, businesses, and stories of Senoia, GA. Published by KartPath Media.</p>
+    </div>
+    <div><h4>Explore</h4><a href="people.html">People</a><a href="nonprofit.html">Nonprofit</a><a href="lifestyle.html">Lifestyle</a><a href="events.html">Events</a></div>
+    <div><h4>Publication</h4><a href="editions.html">Editions</a><a href="about.html">About</a><a href="advertise.html">Advertise</a></div>
+    <div><h4>Directory</h4><a href="directory.html">Browse All</a><a href="advertise.html">Add a Business</a></div>
+    <div><h4>Contact</h4><a href="mailto:kevin@kartpathmedia.com">kevin@kartpathmedia.com</a><a href="mailto:blake@kartpathmedia.com">blake@kartpathmedia.com</a></div>
+  </div>
+  <div class="footer-giant">SENOIA</div>
+  <div class="footer-bottom"><span>© 2026 KARTPATH MEDIA LLC</span><span>PEACHTREE CITY, GA</span></div>
+</footer>
+
+</body>
+</html>
