@@ -2,14 +2,20 @@ import { and, eq } from "drizzle-orm";
 import { clerkClient } from "@clerk/express";
 import {
   auditEventsTable,
-  contentItemsTable,
   db,
   publicationsTable,
   publicationSettingsTable,
+  rolesTable,
   userPublicationAccessTable,
   usersTable,
 } from "@workspace/db";
 
+/**
+ * Upsert a local user record from Clerk identity data.
+ * Does NOT grant any publication access — access must be granted explicitly
+ * via grantBootstrapStaffAccess or a future admin-invite flow.
+ * New users start with status "pending" until access is granted.
+ */
 export async function ensureLocalUser(authProviderSubject: string) {
   const clerkUser = await clerkClient.users.getUser(authProviderSubject);
   const email =
@@ -36,6 +42,57 @@ export async function ensureLocalUser(authProviderSubject: string) {
     .returning();
 
   return user;
+}
+
+/**
+ * Controlled bootstrap path: grants publication-admin access to the
+ * Life Around Senoia publication if the user's email appears in the
+ * STAFF_BOOTSTRAP_EMAILS environment variable (comma-separated list).
+ *
+ * Safe to call on every login — the insert uses onConflictDoNothing so
+ * existing grants are never overwritten.
+ */
+export async function grantBootstrapStaffAccess(
+  userId: string,
+  email: string,
+): Promise<void> {
+  const raw = process.env.STAFF_BOOTSTRAP_EMAILS ?? "";
+  const allowedEmails = raw
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+
+  if (!allowedEmails.includes(email.toLowerCase())) {
+    return;
+  }
+
+  const [las] = await db
+    .select({ id: publicationsTable.id })
+    .from(publicationsTable)
+    .where(eq(publicationsTable.slug, "life-around-senoia"));
+
+  if (!las) {
+    throw new Error("Life Around Senoia has not been seeded");
+  }
+
+  const [role] = await db
+    .select()
+    .from(rolesTable)
+    .where(eq(rolesTable.key, "publication-admin"));
+
+  if (!role) {
+    throw new Error("publication-admin role has not been seeded");
+  }
+
+  await db
+    .insert(userPublicationAccessTable)
+    .values({
+      userId,
+      publicationId: las.id,
+      role: role.key,
+      permissions: role.permissions,
+    })
+    .onConflictDoNothing();
 }
 
 export async function getPublicationBySlug(slug: string) {
@@ -88,6 +145,11 @@ export async function getFirstUserPublicationAccess(userId: string) {
   return result;
 }
 
+/**
+ * Returns the access record for a specific user+publication pair, or null
+ * if the user has no access to that publication. Use this to enforce
+ * cross-publication isolation on routes that accept a publicationId parameter.
+ */
 export async function getUserPublicationAccess(
   userId: string,
   publicationId: string,
@@ -95,18 +157,22 @@ export async function getUserPublicationAccess(
   const [result] = await db
     .select({
       publicationId: userPublicationAccessTable.publicationId,
+      publicationSlug: publicationsTable.slug,
       role: userPublicationAccessTable.role,
       permissions: userPublicationAccessTable.permissions,
     })
     .from(userPublicationAccessTable)
+    .innerJoin(
+      publicationsTable,
+      eq(publicationsTable.id, userPublicationAccessTable.publicationId),
+    )
     .where(
       and(
         eq(userPublicationAccessTable.userId, userId),
         eq(userPublicationAccessTable.publicationId, publicationId),
       ),
-    )
-    .limit(1);
-  return result;
+    );
+  return result ?? null;
 }
 
 export function hasEditorialWriteAccess(permissions: string[]) {
