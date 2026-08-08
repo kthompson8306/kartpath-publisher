@@ -101,6 +101,9 @@ export const EditorialContentType = {
   'pet-of-the-month': 'pet-of-the-month',
   'business-listing': 'business-listing',
   event: 'event',
+  'crooks-corner': 'crooks-corner',
+  recipe: 'recipe',
+  'lifestyle-column': 'lifestyle-column',
 } as const;
 
 export type EditorialStatus = typeof EditorialStatus[keyof typeof EditorialStatus];

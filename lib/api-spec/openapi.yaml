@@ -576,6 +576,9 @@ components:
         - pet-of-the-month
         - business-listing
         - event
+        - crooks-corner
+        - recipe
+        - lifestyle-column
     EditorialStatus:
       type: string
       enum:

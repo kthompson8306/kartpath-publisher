@@ -88,7 +88,7 @@ function Seo({ title, description, path }: SeoProps) {
 
 const nav = [
   ['People', '/people'], ['Nonprofit', '/nonprofit'], ['Lifestyle', '/lifestyle'],
-  ['Events', '/events'], ['Directory', '/directory'], ['Editions', '/editions'],
+  ["Crook's Corner", '/crooks-corner'], ['Events', '/events'], ['Directory', '/directory'], ['Editions', '/editions'],
 ] as const;
 
 export function PublicHeader() {
@@ -206,7 +206,143 @@ export function Nonprofit() {
 }
 
 export function Lifestyle() {
-  return <PageShell seo={{ title: 'Lifestyle — History, Recipes & Life Around Senoia', description: 'History, home cooking, and the small reflections that give Senoia its character.', path: '/lifestyle' }}><PageHero kicker="Lifestyle" title={<>The flavor of<br />life around town</>}>History, home cooking, and the small reflections that give Senoia its character.</PageHero><section id="secret-sauce"><div className="wrap-narrow"><SectionHead index="01" title="Secret Sauce" /><div className="sauce-card"><span className="tag">Issue 06</span><h2>Freedom Worth Celebrating</h2><p>Every July, we’re reminded how blessed we are to call America home. Among the many freedoms we enjoy, one is especially easy to overlook: the freedom to worship. Across our community each week, church doors open without fear, Bibles are read openly, and families gather to pray.</p><p>While political freedom shapes the way we live, spiritual freedom has the power to shape who we become — and perhaps that’s the greatest freedom worth celebrating this season.</p></div><div className="sauce-card"><span className="tag">Issue 01</span><h2>Community: Senoia’s True Secret Sauce</h2><p>Ask anyone what they love about Senoia and you’ll almost always hear the same answer: the community. Yes, there’s the small-town charm, the Hollywood history, the local shops. But Senoia’s heart runs deeper than surface-level treasures.</p><p>What makes Senoia so special is the sense of belonging it cultivates. Neighbors care, strangers are welcomed, and differences are respected. It doesn’t require uniformity, only unity.</p></div></div></section><section className="on-paper2" id="crooks-corner"><div className="wrap"><SectionHead index="02" title="Crook’s Corner" /><p className="intro-copy">Formerly our Historical Society column — renamed in Issue 06 to honor Ellis Crook, who spent 95 years calling Senoia home and helped preserve its story before his passing on June 22, 2026.</p><div className="hist-row"><div className="hist-img"><img src={image('lifestyle-history.jpg')} alt="The Senoia town sign downtown" loading="lazy" /></div><div className="hist-copy"><span className="tag">Keeping Senoia’s Story Alive</span><h2>The Senoia Area Historical Society</h2><p>What began with $55.89 left over from a 1976 Bicentennial celebration became the seed money for something lasting — a Society dedicated to making sure Senoia’s stories are never lost to time.</p><div className="hist-timeline">{[['1976', 'A Bicentennial celebration leaves $55.89 — the Society’s seed money.'], ['1980', 'The Senoia Area Historical Society officially incorporates.'], ['1989', 'Senoia’s Historic District is added to the National Register of Historic Places.'], ['1990', 'The Society purchases the historic 1870s Carmichael home at 6 Couch Street.'], ['2010', 'The Senoia Area History Museum opens its doors on July 18.']].map(([year, text]) => <div className="t-row" key={year}><span className="yr">{year}</span>{text}</div>)}</div><p className="small-copy">Open weekends · <a href="https://www.senoiahistory.com" target="_blank" rel="noopener noreferrer">senoiahistory.com</a></p></div></div></div></section><section id="recipe"><div className="wrap"><SectionHead index="03" title="Recipe" /><div className="recipe-row"><div className="recipe-img"><img src={image('lifestyle-recipe.jpg')} alt="Senoia Sunrise cocktail poolside" loading="lazy" /></div><div className="recipe-copy"><span className="tag">Issue 06</span><h2>Senoia Sunrise</h2><p className="dek">Some cocktails are made for celebrations. Others are made for slow summer afternoons. The Senoia Sunrise is both.</p><ul className="ing-list"><li>2 oz Doc Brown’s Day Swigger Southern Ember Whiskey</li><li>3 oz fresh orange juice</li><li>Splash of fresh lime juice</li><li>Sparkling water, to top</li><li>Fresh peach slice, for garnish</li></ul><ol className="steps-list"><li>Fill a cocktail shaker with ice.</li><li>Add the whiskey, orange juice, and lime juice. Shake well until chilled.</li><li>Fill a rocks glass with fresh ice and strain the cocktail into the glass.</li><li>Top with sparkling water.</li><li>Garnish with a fresh peach slice.</li></ol></div></div></div></section><section className="on-paper2"><div className="wrap"><SectionHead index="04" title="Around Town" /><div className="mouse-row"><div className="mouse-copy"><span className="tag">Issue 03 · Downtown Scavenger Hunt</span><h2>A Little Mouse, A Big Idea</h2><p>Local artist Catrina Didier noticed the iconic red brick downtown and wondered: what if there was a mouse painted somewhere in town? The idea grew legs — or tiny painted paws — into the Downtown Senoia Mouse Hunt.</p><p>Pick up an activity booklet at the Welcome Center, track down each hand-painted mouse hidden in shop windows, and return your completed map for a prize. Proceeds support Catrina’s mission work at home and abroad.</p></div><div className="mouse-img"><img src={image('lifestyle-secretsauce.jpg')} alt="Downtown Senoia Main Street" loading="lazy" /></div></div></div></section></PageShell>;
+  const recipesQuery = usePublishedContent('recipe');
+  const lifestyleQuery = usePublishedContent('lifestyle-column');
+  const recipes = recipesQuery.data ?? [];
+  const secretSauce = lifestyleQuery.data?.filter((item) => item.details?.subsection === 'secret-sauce') ?? [];
+  const aroundTown = lifestyleQuery.data?.filter((item) => item.details?.subsection === 'around-town') ?? [];
+
+  return (
+    <PageShell seo={{ title: 'Lifestyle — Home Cooking, Essays & Life Around Senoia', description: 'Home cooking and the small reflections that give Senoia its character.', path: '/lifestyle' }}>
+      <PageHero kicker="Lifestyle" title={<>The flavor of<br />life around town</>}>Home cooking and the small reflections that give Senoia its character.</PageHero>
+
+      {/* ── Secret Sauce ──────────────────────────────────────────────── */}
+      <section id="secret-sauce">
+        <div className="wrap-narrow">
+          <SectionHead index="01" title="Secret Sauce" />
+          {lifestyleQuery.isPending && <div className="public-content-state">Loading the latest Secret Sauce columns…</div>}
+          {lifestyleQuery.isError && <div className="public-content-state">Columns are temporarily unavailable.</div>}
+          {!lifestyleQuery.isPending && !lifestyleQuery.isError && secretSauce.length === 0 && (
+            <div className="public-content-state">No Secret Sauce columns are published right now.</div>
+          )}
+          {secretSauce.map((item) => (
+            <div className="sauce-card" key={item.id} data-testid={`public-published-${item.slug}`}>
+              {item.details?.issue && <span className="tag">Issue {item.details.issue}</span>}
+              <h2>{item.title}</h2>
+              <p>{item.body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Recipe ────────────────────────────────────────────────────── */}
+      <section className="on-paper2" id="recipe">
+        <div className="wrap">
+          <SectionHead index="02" title="Recipe" />
+          {recipesQuery.isPending && <div className="public-content-state">Loading the latest recipe…</div>}
+          {recipesQuery.isError && <div className="public-content-state">Recipe is temporarily unavailable.</div>}
+          {!recipesQuery.isPending && !recipesQuery.isError && recipes.length === 0 && (
+            <div className="public-content-state">No recipes are published right now.</div>
+          )}
+          {recipes.map((item) => {
+            let ingredients: string[] = [];
+            let steps: string[] = [];
+            try { ingredients = JSON.parse(item.details?.ingredients ?? '[]') as string[]; } catch { /* ignore */ }
+            try { steps = JSON.parse(item.details?.steps ?? '[]') as string[]; } catch { /* ignore */ }
+            return (
+              <div className="recipe-row" key={item.id} data-testid={`public-published-${item.slug}`}>
+                {item.coverUrl
+                  ? <div className="recipe-img"><img src={item.coverUrl} alt={item.title} loading="lazy" data-testid={`img-cover-${item.slug}`} /></div>
+                  : <div className="recipe-img"><img src={image('lifestyle-recipe.jpg')} alt={item.title} loading="lazy" /></div>
+                }
+                <div className="recipe-copy">
+                  {item.details?.issue && <span className="tag">Issue {item.details.issue}</span>}
+                  <h2>{item.title}</h2>
+                  <p className="dek">{item.summary}</p>
+                  {item.details?.servings && <p className="servings"><strong>Yield:</strong> {item.details.servings}</p>}
+                  {ingredients.length > 0 && (
+                    <ul className="ing-list">{ingredients.map((ing, i) => <li key={i}>{ing}</li>)}</ul>
+                  )}
+                  {steps.length > 0 && (
+                    <ol className="steps-list">{steps.map((step, i) => <li key={i}>{step}</li>)}</ol>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ── Around Town ───────────────────────────────────────────────── */}
+      <section id="around-town">
+        <div className="wrap">
+          <SectionHead index="03" title="Around Town" />
+          {!lifestyleQuery.isPending && !lifestyleQuery.isError && aroundTown.length === 0 && (
+            <div className="public-content-state">No Around Town stories are published right now.</div>
+          )}
+          {aroundTown.map((item) => (
+            <div className="mouse-row" key={item.id} data-testid={`public-published-${item.slug}`}>
+              <div className="mouse-copy">
+                {item.details?.issue && (
+                  <span className="tag">Issue {item.details.issue}{item.details?.tag ? ` · ${item.details.tag}` : ''}</span>
+                )}
+                <h2>{item.title}</h2>
+                <p>{item.summary}</p>
+                {item.body && <p>{item.body}</p>}
+              </div>
+              {item.coverUrl
+                ? <div className="mouse-img"><img src={item.coverUrl} alt={item.title} loading="lazy" data-testid={`img-cover-${item.slug}`} /></div>
+                : <div className="mouse-img"><img src={image('lifestyle-secretsauce.jpg')} alt="Downtown Senoia" loading="lazy" /></div>
+              }
+            </div>
+          ))}
+        </div>
+      </section>
+    </PageShell>
+  );
+}
+
+export function CrooksCorner() {
+  const query = usePublishedContent('crooks-corner');
+  const items = query.data ?? [];
+  return (
+    <PageShell seo={{ title: "Crook's Corner — Local History — Life Around Senoia", description: "Senoia's history preserved by the people who lived it — named for Ellis Crook, 1931–2026.", path: '/crooks-corner' }}>
+      <PageHero kicker="Crook's Corner" title={<>Keeping Senoia's<br />story alive</>}>
+        Formerly our Historical Society column — renamed in Issue 06 to honor Ellis Crook, who spent 95 years calling Senoia home and helped preserve its story before his passing on June 22, 2026.
+      </PageHero>
+      <section>
+        <div className="wrap">
+          <SectionHead index="01" title="Historical Features" />
+          <PublicContentState query={query} emptyMessage="No Crook's Corner features are published right now." />
+          {items.map((item) => {
+            let timeline: { year: string; event: string }[] = [];
+            try { timeline = JSON.parse(item.details?.timeline ?? '[]') as { year: string; event: string }[]; } catch { /* ignore */ }
+            return (
+              <div className="hist-row" key={item.id} data-testid={`public-published-${item.slug}`}>
+                {item.coverUrl
+                  ? <div className="hist-img"><img src={item.coverUrl} alt={item.title} loading="lazy" data-testid={`img-cover-${item.slug}`} /></div>
+                  : <div className="hist-img"><img src={image('lifestyle-history.jpg')} alt="Senoia historical photo" loading="lazy" /></div>
+                }
+                <div className="hist-copy">
+                  {item.details?.issue && <span className="tag">Issue {item.details.issue}</span>}
+                  <h2>{item.title}</h2>
+                  <p>{item.summary}</p>
+                  {item.body && <p>{item.body}</p>}
+                  {timeline.length > 0 && (
+                    <div className="hist-timeline">
+                      {timeline.map(({ year, event }) => (
+                        <div className="t-row" key={year}><span className="yr">{year}</span>{event}</div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+    </PageShell>
+  );
 }
 
 export function Events() {

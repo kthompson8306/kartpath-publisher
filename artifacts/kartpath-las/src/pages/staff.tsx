@@ -26,10 +26,26 @@ const CONTENT_TYPES = [
   { value: EditorialContentType['pet-of-the-month'], label: 'Pet of the Month', short: 'Pet' },
   { value: EditorialContentType['business-listing'], label: 'Business Listing', short: 'Business' },
   { value: EditorialContentType.event, label: 'Event', short: 'Event' },
+  { value: EditorialContentType['crooks-corner'], label: "Crook's Corner", short: "Crook's" },
+  { value: EditorialContentType.recipe, label: 'Recipe', short: 'Recipe' },
+  { value: EditorialContentType['lifestyle-column'], label: 'Lifestyle Column', short: 'Lifestyle' },
 ] as const;
 
 type ContentType = (typeof CONTENT_TYPES)[number]['value'];
-type FormState = Omit<CreateContentItem, 'publicationId' | 'details'> & { detailsText: string };
+type TimelineEntry = { year: string; event: string };
+type FormState = Omit<CreateContentItem, 'publicationId' | 'details'> & {
+  detailsText: string;
+  // Shared structured field for new types
+  issue: string;
+  // lifestyle-column specific
+  subsection: 'secret-sauce' | 'around-town' | '';
+  // recipe specific
+  servings: string;
+  ingredients: string[];
+  steps: string[];
+  // crooks-corner specific
+  timeline: TimelineEntry[];
+};
 
 const EMPTY_FORM: FormState = {
   contentType: EditorialContentType['featured-family'],
@@ -39,6 +55,12 @@ const EMPTY_FORM: FormState = {
   body: '',
   detailsText: '{}',
   coverMediaId: null,
+  issue: '',
+  subsection: '',
+  servings: '',
+  ingredients: [''],
+  steps: [''],
+  timeline: [{ year: '', event: '' }],
 };
 
 function Initials({ name }: { name: string }) {
@@ -473,19 +495,124 @@ function Editor({
           <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Story body</span>
           <textarea value={form.body} onChange={(event) => update('body', event.target.value)} rows={9} placeholder="Write the full story here." className="w-full resize-y border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2.5 font-editorial text-lg leading-[1.35] outline-none focus:border-[hsl(var(--brick))]" data-testid="textarea-content-body" />
         </label>
-        <div className="grid gap-5 sm:grid-cols-2">
-          <label className="block">
-            <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Details JSON</span>
-            <textarea value={form.detailsText} onChange={(event) => update('detailsText', event.target.value)} rows={5} placeholder={'{"address":"..."}'} className="w-full resize-y border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2.5 font-meta text-xs leading-5 outline-none focus:border-[hsl(var(--brick))]" data-testid="textarea-content-details" />
-            <span className="mt-1.5 block font-ui text-[10px] leading-4 text-[hsl(var(--muted-foreground))]">Use string values for lane-specific facts such as address, date, or contact.</span>
-          </label>
-          <CoverPhotoUploader
-            coverMediaId={form.coverMediaId}
-            existingCoverUrl={item?.coverUrl}
-            publicationId={publicationId}
-            onChange={(mediaId) => update('coverMediaId', mediaId)}
-          />
-        </div>
+        {/* ── Structured editors for new content types ─────────────────── */}
+        {(() => {
+          const ct = form.contentType;
+          const updateIngredient = (i: number, v: string) => { const list = [...form.ingredients]; list[i] = v; setForm({ ...form, ingredients: list }); };
+          const addIngredient = () => setForm({ ...form, ingredients: [...form.ingredients, ''] });
+          const removeIngredient = (i: number) => setForm({ ...form, ingredients: form.ingredients.length > 1 ? form.ingredients.filter((_, idx) => idx !== i) : [''] });
+          const updateStep = (i: number, v: string) => { const list = [...form.steps]; list[i] = v; setForm({ ...form, steps: list }); };
+          const addStep = () => setForm({ ...form, steps: [...form.steps, ''] });
+          const removeStep = (i: number) => setForm({ ...form, steps: form.steps.length > 1 ? form.steps.filter((_, idx) => idx !== i) : [''] });
+          const updateTimeline = (i: number, field: 'year' | 'event', v: string) => { const list = [...form.timeline]; list[i] = { ...list[i], [field]: v }; setForm({ ...form, timeline: list }); };
+          const addTimelineRow = () => setForm({ ...form, timeline: [...form.timeline, { year: '', event: '' }] });
+          const removeTimelineRow = (i: number) => setForm({ ...form, timeline: form.timeline.length > 1 ? form.timeline.filter((_, idx) => idx !== i) : [{ year: '', event: '' }] });
+
+          if (ct === 'recipe') return (
+            <div className="space-y-4 rounded border border-[hsl(var(--honey)/.4)] bg-[hsl(var(--honey)/.06)] p-4">
+              <p className="font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--brick))]">Recipe fields</p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="block">
+                  <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Issue number</span>
+                  <input value={form.issue} onChange={(e) => update('issue', e.target.value)} placeholder="06" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" data-testid="input-recipe-issue" />
+                </label>
+                <label className="block">
+                  <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Servings / yield</span>
+                  <input value={form.servings} onChange={(e) => update('servings', e.target.value)} placeholder="Makes 1 cocktail" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" data-testid="input-recipe-servings" />
+                </label>
+              </div>
+              <div>
+                <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Ingredients</span>
+                <div className="space-y-1.5" data-testid="list-ingredients">
+                  {form.ingredients.map((ing, i) => (
+                    <div key={i} className="flex gap-2">
+                      <input value={ing} onChange={(e) => updateIngredient(i, e.target.value)} placeholder={`Ingredient ${i + 1}`} className="h-9 flex-1 border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" data-testid={`input-ingredient-${i}`} />
+                      <button type="button" onClick={() => removeIngredient(i)} className="grid size-9 shrink-0 place-items-center border border-[hsl(var(--border))] text-[hsl(var(--brick))] hover:border-[hsl(var(--brick))]" aria-label="Remove ingredient"><X size={12} /></button>
+                    </div>
+                  ))}
+                </div>
+                <button type="button" onClick={addIngredient} className="mt-2 inline-flex items-center gap-1.5 font-ui text-[10px] uppercase tracking-[.12em] text-[hsl(var(--brick))] hover:text-[hsl(var(--destructive))]" data-testid="button-add-ingredient"><Plus size={11} /> Add ingredient</button>
+              </div>
+              <div>
+                <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Steps</span>
+                <div className="space-y-1.5" data-testid="list-steps">
+                  {form.steps.map((step, i) => (
+                    <div key={i} className="flex gap-2">
+                      <div className="flex flex-1 items-start gap-2">
+                        <span className="mt-2.5 shrink-0 font-meta text-[9px] text-[hsl(var(--muted-foreground))]">{i + 1}.</span>
+                        <textarea value={step} onChange={(e) => updateStep(i, e.target.value)} rows={2} placeholder={`Step ${i + 1}`} className="flex-1 resize-y border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2 font-meta text-xs leading-5 outline-none focus:border-[hsl(var(--brick))]" data-testid={`textarea-step-${i}`} />
+                      </div>
+                      <button type="button" onClick={() => removeStep(i)} className="mt-0.5 grid size-9 shrink-0 place-items-center border border-[hsl(var(--border))] text-[hsl(var(--brick))] hover:border-[hsl(var(--brick))]" aria-label="Remove step"><X size={12} /></button>
+                    </div>
+                  ))}
+                </div>
+                <button type="button" onClick={addStep} className="mt-2 inline-flex items-center gap-1.5 font-ui text-[10px] uppercase tracking-[.12em] text-[hsl(var(--brick))] hover:text-[hsl(var(--destructive))]" data-testid="button-add-step"><Plus size={11} /> Add step</button>
+              </div>
+            </div>
+          );
+
+          if (ct === 'crooks-corner') return (
+            <div className="space-y-4 rounded border border-[hsl(var(--honey)/.4)] bg-[hsl(var(--honey)/.06)] p-4">
+              <p className="font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--brick))]">Crook's Corner fields</p>
+              <label className="block">
+                <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Issue number</span>
+                <input value={form.issue} onChange={(e) => update('issue', e.target.value)} placeholder="06" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" data-testid="input-crooks-issue" />
+              </label>
+              <div>
+                <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Timeline entries</span>
+                <div className="space-y-1.5" data-testid="list-timeline">
+                  {form.timeline.map((entry, i) => (
+                    <div key={i} className="flex gap-2">
+                      <input value={entry.year} onChange={(e) => updateTimeline(i, 'year', e.target.value)} placeholder="Year" className="h-9 w-20 shrink-0 border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" data-testid={`input-timeline-year-${i}`} />
+                      <input value={entry.event} onChange={(e) => updateTimeline(i, 'event', e.target.value)} placeholder="Event description" className="h-9 flex-1 border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" data-testid={`input-timeline-event-${i}`} />
+                      <button type="button" onClick={() => removeTimelineRow(i)} className="grid size-9 shrink-0 place-items-center border border-[hsl(var(--border))] text-[hsl(var(--brick))] hover:border-[hsl(var(--brick))]" aria-label="Remove timeline row"><X size={12} /></button>
+                    </div>
+                  ))}
+                </div>
+                <button type="button" onClick={addTimelineRow} className="mt-2 inline-flex items-center gap-1.5 font-ui text-[10px] uppercase tracking-[.12em] text-[hsl(var(--brick))] hover:text-[hsl(var(--destructive))]" data-testid="button-add-timeline"><Plus size={11} /> Add timeline entry</button>
+              </div>
+            </div>
+          );
+
+          if (ct === 'lifestyle-column') return (
+            <div className="space-y-4 rounded border border-[hsl(var(--honey)/.4)] bg-[hsl(var(--honey)/.06)] p-4">
+              <p className="font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--brick))]">Lifestyle Column fields</p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="block">
+                  <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Issue number</span>
+                  <input value={form.issue} onChange={(e) => update('issue', e.target.value)} placeholder="06" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" data-testid="input-lifestyle-issue" />
+                </label>
+                <label className="block">
+                  <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Subsection</span>
+                  <span className="relative block">
+                    <select value={form.subsection} onChange={(e) => update('subsection', e.target.value)} className="h-9 w-full appearance-none border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 pr-8 font-ui text-xs outline-none focus:border-[hsl(var(--brick))]" data-testid="select-lifestyle-subsection">
+                      <option value="">— choose —</option>
+                      <option value="secret-sauce">Secret Sauce</option>
+                      <option value="around-town">Around Town</option>
+                    </select>
+                    <ChevronDown size={13} className="pointer-events-none absolute right-3 top-2.5 text-[hsl(var(--muted-foreground))]" />
+                  </span>
+                </label>
+              </div>
+            </div>
+          );
+
+          // Generic types: plain JSON details textarea
+          return (
+            <label className="block">
+              <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Details JSON</span>
+              <textarea value={form.detailsText} onChange={(event) => update('detailsText', event.target.value)} rows={5} placeholder={'{"address":"..."}'} className="w-full resize-y border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2.5 font-meta text-xs leading-5 outline-none focus:border-[hsl(var(--brick))]" data-testid="textarea-content-details" />
+              <span className="mt-1.5 block font-ui text-[10px] leading-4 text-[hsl(var(--muted-foreground))]">Use string values for lane-specific facts such as address, date, or contact.</span>
+            </label>
+          );
+        })()}
+        {/* ── Cover photo (always shown) ─────────────────────────────────── */}
+        <CoverPhotoUploader
+          coverMediaId={form.coverMediaId}
+          existingCoverUrl={item?.coverUrl}
+          publicationId={publicationId}
+          onChange={(mediaId) => update('coverMediaId', mediaId)}
+        />
         {error && <div className="flex items-start gap-2 border border-[hsl(var(--brick)/.4)] bg-[hsl(var(--brick)/.07)] px-3 py-2.5 font-ui text-xs leading-5 text-[hsl(var(--brick))]" role="alert" data-testid="status-editor-error"><CircleAlert size={15} className="mt-0.5 shrink-0" /> {error}</div>}
         <div className="flex flex-col-reverse gap-2 border-t border-[hsl(var(--border))] pt-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -543,7 +670,40 @@ export default function Staff() {
   useEffect(() => {
     if (selectedId && detailQuery.data) {
       const item = detailQuery.data;
-      setForm({ contentType: item.contentType, slug: item.slug, title: item.title, summary: item.summary, body: item.body, detailsText: JSON.stringify(item.details ?? {}, null, 2), coverMediaId: item.coverMediaId });
+      const ct = item.contentType;
+      const d = item.details ?? {};
+      let ingredients: string[] = [''];
+      let steps: string[] = [''];
+      let timeline: TimelineEntry[] = [{ year: '', event: '' }];
+      let subsection: 'secret-sauce' | 'around-town' | '' = '';
+      if (ct === 'recipe') {
+        try { ingredients = JSON.parse(d.ingredients ?? '[]'); } catch { /* keep default */ }
+        try { steps = JSON.parse(d.steps ?? '[]'); } catch { /* keep default */ }
+        if (!ingredients.length) ingredients = [''];
+        if (!steps.length) steps = [''];
+      }
+      if (ct === 'crooks-corner') {
+        try { timeline = JSON.parse(d.timeline ?? '[]'); } catch { /* keep default */ }
+        if (!timeline.length) timeline = [{ year: '', event: '' }];
+      }
+      if (ct === 'lifestyle-column') {
+        subsection = (d.subsection as 'secret-sauce' | 'around-town' | '') ?? '';
+      }
+      setForm({
+        contentType: item.contentType,
+        slug: item.slug,
+        title: item.title,
+        summary: item.summary,
+        body: item.body,
+        detailsText: JSON.stringify(d, null, 2),
+        coverMediaId: item.coverMediaId,
+        issue: d.issue ?? '',
+        subsection,
+        servings: d.servings ?? '',
+        ingredients,
+        steps,
+        timeline,
+      });
       setEditorError('');
     }
   }, [selectedId, detailQuery.data]);
@@ -577,7 +737,7 @@ export default function Staff() {
     setEditorError('');
   };
 
-  const parseDetails = () => {
+  const parseDetailsJson = () => {
     try {
       const parsed: unknown = JSON.parse(form.detailsText || '{}');
       if (!parsed || Array.isArray(parsed) || typeof parsed !== 'object' || Object.values(parsed).some((value) => typeof value !== 'string')) {
@@ -591,11 +751,31 @@ export default function Staff() {
   };
 
   const bodyForSave = () => {
-    const details = parseDetails();
-    if (!details || !publicationId) return null;
-    if (!form.title.trim() || !form.slug.trim() || !form.summary.trim() || !form.body.trim()) {
-      setEditorError('Headline, slug, standfirst, and story body are required.');
+    if (!publicationId) return null;
+    if (!form.title.trim() || !form.slug.trim() || !form.summary.trim()) {
+      setEditorError('Headline, slug, and standfirst are required.');
       return null;
+    }
+    const ct = form.contentType;
+    let details: Record<string, string>;
+    if (ct === 'recipe') {
+      const ings = form.ingredients.map((s) => s.trim()).filter(Boolean);
+      const stps = form.steps.map((s) => s.trim()).filter(Boolean);
+      if (!ings.length) { setEditorError('At least one ingredient is required for a recipe.'); return null; }
+      if (!stps.length) { setEditorError('At least one step is required for a recipe.'); return null; }
+      details = { issue: form.issue.trim(), servings: form.servings.trim(), ingredients: JSON.stringify(ings), steps: JSON.stringify(stps) };
+    } else if (ct === 'crooks-corner') {
+      const tl = form.timeline.filter((e) => e.year.trim() || e.event.trim());
+      details = { issue: form.issue.trim(), timeline: JSON.stringify(tl) };
+    } else if (ct === 'lifestyle-column') {
+      if (!form.subsection) { setEditorError('Subsection (Secret Sauce or Around Town) is required for a Lifestyle Column.'); return null; }
+      if (!form.body.trim()) { setEditorError('Story body is required.'); return null; }
+      details = { issue: form.issue.trim(), subsection: form.subsection };
+    } else {
+      if (!form.body.trim()) { setEditorError('Headline, slug, standfirst, and story body are required.'); return null; }
+      const parsed = parseDetailsJson();
+      if (!parsed) return null;
+      details = parsed;
     }
     return {
       publicationId,

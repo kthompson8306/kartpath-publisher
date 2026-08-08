@@ -8,7 +8,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
 import { Redirect, Route, Switch, Router as WouterRouter, useLocation } from 'wouter';
 import Staff from '@/pages/staff';
-import { About, Advertise, Directory, Editions, Events, Lifestyle, Nonprofit, People, PublicHome } from '@/pages/public-pages';
+import { About, Advertise, CrooksCorner, Directory, Editions, Events, Lifestyle, Nonprofit, People, PublicHome } from '@/pages/public-pages';
 
 const queryClient = new QueryClient();
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -117,6 +117,7 @@ function Router() {
       <Route path="/people" component={People} />
       <Route path="/nonprofit" component={Nonprofit} />
       <Route path="/lifestyle" component={Lifestyle} />
+      <Route path="/crooks-corner" component={CrooksCorner} />
       <Route path="/events" component={Events} />
       <Route path="/directory" component={Directory} />
       <Route path="/editions" component={Editions} />
