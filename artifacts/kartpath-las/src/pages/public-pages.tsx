@@ -182,13 +182,25 @@ export function PublicHome() {
   const featured = items.find((item) => item.contentType === 'featured-family');
   const nonprofit = items.find((item) => item.contentType === 'nonprofit-spotlight');
   const achiever = items.find((item) => item.contentType === 'young-achiever');
+  const crooksCorner = items.find((item) => item.contentType === 'crooks-corner');
+  const recipe = items.find((item) => item.contentType === 'recipe');
   const latest = items.slice(0, 3);
+
+  // Focal-point helper: converts stored 0–1 values to CSS background-position percentages.
+  const focalPos = (item: typeof featured) =>
+    `${(((item as any)?.coverFocalX ?? 0.5) * 100).toFixed(1)}% ${(((item as any)?.coverFocalY ?? 0.5) * 100).toFixed(1)}%`;
+
+  // Strip slots: 4 diverse content types, each falls back gracefully to a placeholder.
+  const stripSlots = [nonprofit, achiever, crooksCorner, recipe];
+
   return <PageShell seo={{ title: 'Life Around Senoia — Local Stories, People & Places', description: 'Life Around Senoia is a bi-monthly magazine and digital publication for the people, businesses, and stories of Senoia, Georgia.', path: '/' }}>
     <section className="mega-hero">
       <div
         className="mega-hero-bg"
         style={featured?.coverUrl ? {
           backgroundImage: `linear-gradient(to right, rgba(11,14,10,0.80) 0%, rgba(11,14,10,0.35) 60%), url(${featured.coverUrl})`,
+          backgroundPosition: `0% 0%, ${focalPos(featured)}`,
+          backgroundSize: `auto, cover`,
         } : undefined}
       >
         <span className="giant-num">LAS</span>
@@ -214,18 +226,26 @@ export function PublicHome() {
         </div>
       </div>
       <div className="hero-strip-imgs">
-        {[nonprofit, achiever].filter(Boolean).map((item) => (
-          <div
-            className="strip-img"
-            key={item!.id}
-            style={item!.coverUrl ? { backgroundImage: `url(${item!.coverUrl})` } : undefined}
-          >
-            <span className="lbl">
-              {item!.contentType.replaceAll('-', ' ')}
-              <b>{item!.title}</b>
-            </span>
-          </div>
-        ))}
+        {stripSlots.map((item, i) =>
+          item ? (
+            <div
+              className="strip-img"
+              key={item.id}
+              style={item.coverUrl ? {
+                backgroundImage: `url(${item.coverUrl})`,
+                backgroundPosition: focalPos(item),
+              } : undefined}
+            >
+              <span className="lbl">
+                {item.contentType.replaceAll('-', ' ')}
+                <b>{item.title}</b>
+              </span>
+            </div>
+          ) : (
+            // Placeholder for slot with no published content yet
+            <div className="strip-img strip-img--empty" key={i} />
+          )
+        )}
       </div>
     </section>
     <div className="wrap"><AdZone /></div>
