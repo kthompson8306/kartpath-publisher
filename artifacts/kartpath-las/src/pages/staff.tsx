@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, Check, ChevronDown, ChevronUp, CircleAlert, Clock3, Eye, FilePlus2, ImageIcon, Loader2, Pencil, Plus, RefreshCw, Save, Send, ShieldCheck, Trash2, Undo2, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, ChevronDown, ChevronUp, CircleAlert, Clock3, Download, Eye, FilePlus2, ImageIcon, Loader2, Pencil, Plus, RefreshCw, Save, Send, ShieldCheck, Trash2, Undo2, X } from 'lucide-react';
 import { Link } from 'wouter';
 import {
   EditorialContentType,
@@ -874,10 +874,6 @@ function Editor({
               <p className="font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--brick))]">Event fields</p>
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="block">
-                  <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Issue number</span>
-                  <input value={form.issue} onChange={(e) => update('issue', e.target.value)} placeholder="06" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" data-testid="input-event-issue" />
-                </label>
-                <label className="block">
                   <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Date</span>
                   <input type="date" value={form.eventDate} onChange={(e) => update('eventDate', e.target.value)} className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" data-testid="input-event-date" />
                 </label>
@@ -917,10 +913,6 @@ function Editor({
             <div className="space-y-4 rounded border border-[hsl(var(--honey)/.4)] bg-[hsl(var(--honey)/.06)] p-4">
               <p className="font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--brick))]">Business Listing fields</p>
               <div className="grid gap-4 sm:grid-cols-2">
-                <label className="block">
-                  <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Issue number</span>
-                  <input value={form.issue} onChange={(e) => update('issue', e.target.value)} placeholder="06" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" data-testid="input-biz-issue" />
-                </label>
                 <label className="block">
                   <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Category</span>
                   <span className="relative block">
@@ -1535,15 +1527,49 @@ function SubscribersPanel({ publicationId }: { publicationId: string }) {
   const subscribersQuery = useListSubscribers({ publicationId });
   const subscribers: SubscriberRecord[] = subscribersQuery.data?.subscribers ?? [];
 
+  const downloadCsv = () => {
+    const rows = subscribers as (SubscriberRecord & { firstName?: string; lastName?: string; phone?: string; city?: string })[];
+    const header = ['First Name', 'Last Name', 'Email', 'Phone', 'City', 'Signup Date', 'Status'];
+    const lines = rows.map((s) => [
+      s.firstName ?? '',
+      s.lastName ?? '',
+      s.email,
+      s.phone ?? '',
+      s.city ?? '',
+      new Date(s.subscribedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      s.status,
+    ].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(','));
+    const csv = [header.join(','), ...lines].join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `subscribers-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="mt-7">
-      <div className="mb-6">
-        <SectionKicker>Newsletter</SectionKicker>
-        <h2 className="mt-1 font-display text-3xl font-semibold tracking-[-.04em]">Subscribers</h2>
-        <p className="mt-2 font-ui text-xs leading-5 text-[hsl(var(--muted-foreground))]">
-          Everyone who has signed up via the newsletter form on the public site.
-          {!subscribersQuery.isPending && !subscribersQuery.isError && ` ${subscribers.length} subscriber${subscribers.length === 1 ? '' : 's'} total.`}
-        </p>
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <SectionKicker>Newsletter</SectionKicker>
+          <h2 className="mt-1 font-display text-3xl font-semibold tracking-[-.04em]">Subscribers</h2>
+          <p className="mt-2 font-ui text-xs leading-5 text-[hsl(var(--muted-foreground))]">
+            Everyone who has signed up via the newsletter form on the public site.
+            {!subscribersQuery.isPending && !subscribersQuery.isError && ` ${subscribers.length} subscriber${subscribers.length === 1 ? '' : 's'} total.`}
+          </p>
+        </div>
+        {subscribers.length > 0 && (
+          <button
+            type="button"
+            onClick={downloadCsv}
+            className="mt-1 shrink-0 inline-flex items-center gap-1.5 border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 font-ui text-[10px] uppercase tracking-[.12em] transition-colors hover:border-[hsl(var(--brick))] hover:text-[hsl(var(--brick))]"
+            data-testid="button-export-csv"
+          >
+            <Download size={11} /> Export CSV
+          </button>
+        )}
       </div>
       {subscribersQuery.isPending && (
         <div className="space-y-px border border-[hsl(var(--border))] bg-[hsl(var(--border))]">
@@ -1757,7 +1783,6 @@ export default function Staff() {
       if (!form.eventDate) { setEditorError('A date is required for an event.'); return null; }
       if (!form.venue.trim()) { setEditorError('A venue name is required for an event.'); return null; }
       details = {
-        issue: form.issue.trim(),
         date: form.eventDate,
         startTime: form.startTime,
         endTime: form.endTime,
@@ -1770,7 +1795,6 @@ export default function Staff() {
     } else if (ct === 'business-listing') {
       if (!form.bizCategory) { setEditorError('A category is required for a business listing.'); return null; }
       details = {
-        issue: form.issue.trim(),
         category: form.bizCategory,
         phone: form.bizPhone.trim(),
         website: form.bizWebsite.trim(),

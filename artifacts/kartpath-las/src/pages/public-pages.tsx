@@ -243,7 +243,8 @@ export function PublicHome() {
       <div className="hero-strip-imgs">
         {stripSlots.map((item, i) =>
           item ? (
-            <div
+            <Link
+              href={articlePath(item.contentType, item.slug)}
               className="strip-img"
               key={item.id}
               style={item.coverUrl ? {
@@ -255,7 +256,7 @@ export function PublicHome() {
                 {item.contentType.replaceAll('-', ' ')}
                 <b>{item.title}</b>
               </span>
-            </div>
+            </Link>
           ) : (
             // Placeholder for slot with no published content yet
             <div className="strip-img strip-img--empty" key={i} />
@@ -632,6 +633,7 @@ export function Events() {
       const location = item.details.location ?? item.details.address ?? 'Senoia, Georgia';
       return <article className="event-row" key={item.id} data-testid={`public-published-${item.slug}`}><div className="when">{month}<span className="day">{day}</span></div><div><span className="tag">Event</span><h3>{item.title}</h3><div className="loc">{location}</div><p>{item.summary}</p></div></article>;
     })}</div></div></section>
+    <section><div className="wrap"><div className="involved-strip"><span className="mono-label">Got Something Happening?</span><h2>Submit your event to the Senoia calendar</h2><Link href="/submit/event" className="btn-sharp honey-button">Submit an Event <ArrowRight size={14} /></Link></div></div></section>
   </PageShell>;
 }
 
@@ -648,7 +650,7 @@ export function Directory() {
   return <PageShell seo={{ title: 'Business Directory — Life Around Senoia', description: 'Find published storefronts, services, restaurants, and local businesses across Senoia, Georgia.', path: '/directory' }}>
     <PageHero kicker="Business Directory" title={<>Every storefront and<br />service on Main Street</>}>Published businesses and services from Life Around Senoia.</PageHero>
     <section><div className="wrap"><div className="dir-controls"><label className="dir-search"><Search size={17} /><input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search businesses or categories..." aria-label="Search businesses" /></label><div className="filter-pills">{categories.map((cat) => <button type="button" className={`filter-pill ${category === cat ? 'active' : ''}`} onClick={() => setCategory(cat)} key={cat}>{cat}</button>)}</div></div><PublicContentState query={contentQuery} emptyMessage="No businesses are published right now." /><div className="biz-grid">{filtered.map((item) => <article className="biz-card" key={item.id} data-testid={`public-published-${item.slug}`}><span className="cat">{item.details.category ?? 'Business Listing'}</span><h2>{item.title}</h2><p className="contact">{item.summary}<br />{item.details.phone ?? item.details.website ?? ''}</p>{item.body && <p>{item.body}</p>}</article>)}</div>{!contentQuery.isPending && !contentQuery.isError && contentQuery.data?.length && filtered.length === 0 ? <div className="empty-state">No businesses match that search. Try another category or phrase.</div> : null}</div></section>
-    <section><div className="wrap"><div className="involved-strip"><span className="mono-label">Own a Business in Senoia?</span><h2>Get listed — and get considered for a feature</h2><Link href="/advertise" className="btn-sharp honey-button">Add Your Business <ArrowRight size={14} /></Link></div></div></section>
+    <section><div className="wrap"><div className="involved-strip"><span className="mono-label">Own a Business in Senoia?</span><h2>Get listed — and get considered for a feature</h2><Link href="/submit/business" className="btn-sharp honey-button">Submit a Business <ArrowRight size={14} /></Link></div></div></section>
   </PageShell>;
 }
 
