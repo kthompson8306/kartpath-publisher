@@ -193,7 +193,7 @@ function Newsletter() {
   return <section className="newsletter" id="newsletter"><div className="wrap"><span className="mono-label">Join The List</span><h2>Senoia stories, straight to your inbox — no fluff, just the town.</h2>{submitted ? <p className="form-confirm">You're on the list — look for Life Around Senoia in your inbox soon.</p> : <>{subError && <p style={{ color: 'var(--brick)', marginBottom: 12, font: '.9rem var(--ui)' }}>{subError}</p>}<form className="news-input-row" onSubmit={handleSubmit}><input required type="email" name="email" aria-label="Email address" placeholder="you@email.com" /><button type="submit" disabled={subscribeMutation.isPending}>{subscribeMutation.isPending ? '…' : 'Subscribe'}</button></form></>}</div></section>;
 }
 
-function renderBody(body: string | null | undefined): React.ReactNode {
+export function renderBody(body: string | null | undefined): React.ReactNode {
   if (!body) return null;
   // Split on double newlines first; fall back to single newlines for legacy content
   let blocks = body.split(/\n\n+/).map((b) => b.trim()).filter(Boolean);

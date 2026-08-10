@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, Check, ChevronDown, CircleAlert, Clock3, FilePlus2, ImageIcon, Loader2, Pencil, Plus, RefreshCw, Save, Send, ShieldCheck, Trash2, Undo2, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, ChevronDown, CircleAlert, Clock3, Eye, FilePlus2, ImageIcon, Loader2, Pencil, Plus, RefreshCw, Save, Send, ShieldCheck, Trash2, Undo2, X } from 'lucide-react';
 import { Link } from 'wouter';
 import {
   EditorialContentType,
@@ -27,6 +27,7 @@ import {
 import type { ContentItem, CreateContentItem, NominationRecord, StaffInviteRecord, StaffMember, SubscriberRecord, UpdateNominationStatusBodyStatus } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { LasMark, SectionKicker } from '@/components/las-brand';
+import { renderBody } from './public-pages';
 
 const CONTENT_TYPES = [
   { value: EditorialContentType['featured-family'], label: 'Featured Family', short: 'Family' },
@@ -426,6 +427,49 @@ function CoverPhotoUploader({
   );
 }
 
+// ─── Staff preview ───────────────────────────────────────────────────────────
+
+function StaffPreview({ form, coverUrl }: { form: FormState; coverUrl: string | null }) {
+  const ingredients = form.contentType === 'recipe' ? form.ingredients.filter(Boolean) : [];
+  const steps = form.contentType === 'recipe' ? form.steps.filter(Boolean) : [];
+  const timeline = form.contentType === 'crooks-corner' ? form.timeline.filter((t) => t.year || t.event) : [];
+
+  return (
+    <div data-testid="section-preview">
+      <p className="mb-3 flex items-center gap-1.5 font-ui text-[9px] uppercase tracking-[.15em] text-[hsl(var(--brick)/.7)]">
+        <Eye size={10} />
+        Draft preview — public-site rendering
+      </p>
+      <article className="family-row published-story-row" style={{ gridTemplateColumns: '1fr', marginBottom: 0 }}>
+        <div className="family-img" style={{ minHeight: 260 }}>
+          {coverUrl
+            ? <img src={coverUrl} alt={form.title || 'Cover photo'} className="family-photo" style={{ objectPosition: 'center' }} />
+            : <><span className="family-issue-badge">Draft preview</span><div className="published-story-mark">LAS</div></>
+          }
+        </div>
+        <div className="family-copy">
+          <span className="tag">{form.contentType.replaceAll('-', ' ')}</span>
+          <h2>{form.title || <em style={{ opacity: 0.35 }}>No headline yet</em>}</h2>
+          <p className="dek">{form.summary || <em style={{ opacity: 0.35 }}>No standfirst yet</em>}</p>
+          {renderBody(form.body)}
+          {form.contentType === 'recipe' && (
+            <>
+              {form.servings && <p><strong>Yield:</strong> {form.servings}</p>}
+              {ingredients.length > 0 && <ul className="ing-list">{ingredients.map((ing, i) => <li key={i}>{ing}</li>)}</ul>}
+              {steps.length > 0 && <ol className="steps-list">{steps.map((step, i) => <li key={i}>{step}</li>)}</ol>}
+            </>
+          )}
+          {form.contentType === 'crooks-corner' && timeline.length > 0 && (
+            <div className="hist-timeline">
+              {timeline.map(({ year, event }, i) => <div className="t-row" key={i}><span className="yr">{year}</span>{event}</div>)}
+            </div>
+          )}
+        </div>
+      </article>
+    </div>
+  );
+}
+
 // ─── Editor ─────────────────────────────────────────────────────────────────
 
 function Editor({
@@ -457,6 +501,8 @@ function Editor({
 }) {
   const update = (key: keyof FormState, value: string | null) => setForm({ ...form, [key]: value });
   const hasItem = Boolean(selectedId || isCreating);
+  const [previewMode, setPreviewMode] = useState(false);
+  useEffect(() => { setPreviewMode(false); }, [selectedId, isCreating]);
   if (!hasItem) {
     return (
       <div className="flex min-h-[520px] flex-col items-center justify-center border border-[hsl(var(--border))] bg-[hsl(var(--card)/.55)] p-8 text-center" data-testid="state-editor-idle">
@@ -474,9 +520,20 @@ function Editor({
           <h2 className="mt-1 font-display text-3xl font-semibold leading-none tracking-[-.04em]">{isCreating ? 'Put a voice on the page.' : 'Edit this story.'}</h2>
           {item && <p className="mt-2 font-meta text-[9px] uppercase tracking-[.11em] text-[hsl(var(--muted-foreground))]">Last changed {formatDate(item.updatedAt)}</p>}
         </div>
-        <button type="button" onClick={onCancel} className="grid size-8 place-items-center border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] transition-colors hover:border-[hsl(var(--brick))] hover:text-[hsl(var(--brick))]" aria-label="Close editor" data-testid="button-close-editor"><X size={15} /></button>
+        <div className="flex items-center gap-2">
+          <div className="flex border border-[hsl(var(--border))]" role="group" aria-label="Editor mode">
+            <button type="button" onClick={() => setPreviewMode(false)} className={`px-3 py-1.5 font-ui text-[9px] uppercase tracking-[.12em] transition-colors ${!previewMode ? 'bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]' : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'}`} data-testid="button-mode-edit" aria-pressed={!previewMode}>Edit</button>
+            <button type="button" onClick={() => setPreviewMode(true)} className={`inline-flex items-center gap-1 px-3 py-1.5 font-ui text-[9px] uppercase tracking-[.12em] transition-colors ${previewMode ? 'bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]' : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'}`} data-testid="button-mode-preview" aria-pressed={previewMode}><Eye size={10} />Preview</button>
+          </div>
+          <button type="button" onClick={onCancel} className="grid size-8 place-items-center border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] transition-colors hover:border-[hsl(var(--brick))] hover:text-[hsl(var(--brick))]" aria-label="Close editor" data-testid="button-close-editor"><X size={15} /></button>
+        </div>
       </div>
-      <div className="space-y-5 p-5 sm:p-6">
+      {previewMode ? (
+        <div className="p-5 sm:p-6">
+          <StaffPreview form={form} coverUrl={item?.coverUrl ?? null} />
+        </div>
+      ) : (
+        <div className="space-y-5 p-5 sm:p-6">
         <div className="grid gap-5 sm:grid-cols-[1fr_1fr]">
           <label className="block sm:col-span-2">
             <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Headline</span>
@@ -629,17 +686,18 @@ function Editor({
           publicationId={publicationId}
           onChange={(mediaId) => update('coverMediaId', mediaId)}
         />
-        {error && <div className="flex items-start gap-2 border border-[hsl(var(--brick)/.4)] bg-[hsl(var(--brick)/.07)] px-3 py-2.5 font-ui text-xs leading-5 text-[hsl(var(--brick))]" role="alert" data-testid="status-editor-error"><CircleAlert size={15} className="mt-0.5 shrink-0" /> {error}</div>}
-        <div className="flex flex-col-reverse gap-2 border-t border-[hsl(var(--border))] pt-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            {!isCreating && item && <button type="button" onClick={onDelete} disabled={saving} className="inline-flex items-center gap-2 px-1 py-2 font-ui text-[10px] uppercase tracking-[.12em] text-[hsl(var(--brick))] transition-colors hover:text-[hsl(var(--destructive))] disabled:opacity-50" data-testid="button-editor-delete"><Trash2 size={14} /> Delete story</button>}
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {!isCreating && item && <button type="button" onClick={onPublish} disabled={saving} className="inline-flex items-center justify-center gap-2 border border-[hsl(var(--primary))] px-3.5 py-2.5 font-ui text-[10px] font-bold uppercase tracking-[.12em] text-[hsl(var(--primary))] transition-colors hover:bg-[hsl(var(--primary))] hover:text-[hsl(var(--primary-foreground))] disabled:opacity-50" data-testid="button-editor-publish">{item.status === EditorialStatus.published ? <Undo2 size={14} /> : <Send size={14} />} {item.status === EditorialStatus.published ? 'Unpublish' : 'Publish'}</button>}
-            <button type="button" onClick={onSave} disabled={saving} className="inline-flex items-center justify-center gap-2 bg-[hsl(var(--primary))] px-4 py-2.5 font-ui text-[10px] font-bold uppercase tracking-[.12em] text-[hsl(var(--primary-foreground))] transition-colors hover:bg-[hsl(var(--pine-2))] disabled:cursor-wait disabled:opacity-60" data-testid="button-save-content">
-              {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} {isCreating ? 'Save draft' : 'Save changes'}
-            </button>
-          </div>
+        </div>
+      )}
+      {error && <div className="mx-5 flex items-start gap-2 border border-[hsl(var(--brick)/.4)] bg-[hsl(var(--brick)/.07)] px-3 py-2.5 font-ui text-xs leading-5 text-[hsl(var(--brick))] sm:mx-6" role="alert" data-testid="status-editor-error"><CircleAlert size={15} className="mt-0.5 shrink-0" /> {error}</div>}
+      <div className="flex flex-col-reverse gap-2 border-t border-[hsl(var(--border))] px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <div>
+          {!isCreating && item && <button type="button" onClick={onDelete} disabled={saving} className="inline-flex items-center gap-2 px-1 py-2 font-ui text-[10px] uppercase tracking-[.12em] text-[hsl(var(--brick))] transition-colors hover:text-[hsl(var(--destructive))] disabled:opacity-50" data-testid="button-editor-delete"><Trash2 size={14} /> Delete story</button>}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {!isCreating && item && <button type="button" onClick={onPublish} disabled={saving} className="inline-flex items-center justify-center gap-2 border border-[hsl(var(--primary))] px-3.5 py-2.5 font-ui text-[10px] font-bold uppercase tracking-[.12em] text-[hsl(var(--primary))] transition-colors hover:bg-[hsl(var(--primary))] hover:text-[hsl(var(--primary-foreground))] disabled:opacity-50" data-testid="button-editor-publish">{item.status === EditorialStatus.published ? <Undo2 size={14} /> : <Send size={14} />} {item.status === EditorialStatus.published ? 'Unpublish' : 'Publish'}</button>}
+          <button type="button" onClick={onSave} disabled={saving} className="inline-flex items-center justify-center gap-2 bg-[hsl(var(--primary))] px-4 py-2.5 font-ui text-[10px] font-bold uppercase tracking-[.12em] text-[hsl(var(--primary-foreground))] transition-colors hover:bg-[hsl(var(--pine-2))] disabled:cursor-wait disabled:opacity-60" data-testid="button-save-content">
+            {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} {isCreating ? 'Save draft' : 'Save changes'}
+          </button>
         </div>
       </div>
     </div>
