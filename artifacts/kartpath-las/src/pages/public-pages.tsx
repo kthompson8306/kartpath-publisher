@@ -290,7 +290,7 @@ function Newsletter() {
       onError: () => setSubError('Something went wrong. Please try again or email hello@kartpathmedia.com.'),
     });
   };
-  return <section className="newsletter" id="newsletter"><div className="wrap"><span className="mono-label">Join The List</span><h2>Senoia stories, straight to your inbox — no fluff, just the town.</h2>{submitted ? <p className="form-confirm">You're on the list — look for Life Around Senoia in your inbox soon.</p> : <>{subError && <p style={{ color: 'var(--brick)', marginBottom: 12, font: '.9rem var(--ui)' }}>{subError}</p>}<form className="subscribe-form" onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', maxWidth: '560px' }}><input required type="text" name="firstName" placeholder="First name" aria-label="First name" style={{ gridColumn: '1', padding: '10px 14px', font: '.92rem var(--ui)', border: '1px solid rgba(247,245,238,.25)', background: 'rgba(247,245,238,.08)', color: 'var(--paper)', outline: 'none' }} /><input required type="text" name="lastName" placeholder="Last name" aria-label="Last name" style={{ gridColumn: '2', padding: '10px 14px', font: '.92rem var(--ui)', border: '1px solid rgba(247,245,238,.25)', background: 'rgba(247,245,238,.08)', color: 'var(--paper)', outline: 'none' }} /><input required type="email" name="email" placeholder="Email address" aria-label="Email address" style={{ gridColumn: '1 / -1', padding: '10px 14px', font: '.92rem var(--ui)', border: '1px solid rgba(247,245,238,.25)', background: 'rgba(247,245,238,.08)', color: 'var(--paper)', outline: 'none' }} /><input type="tel" name="phone" placeholder="Phone (optional)" aria-label="Phone number" style={{ gridColumn: '1', padding: '10px 14px', font: '.92rem var(--ui)', border: '1px solid rgba(247,245,238,.25)', background: 'rgba(247,245,238,.08)', color: 'var(--paper)', outline: 'none' }} /><input type="text" name="city" placeholder="City" aria-label="City" style={{ gridColumn: '2', padding: '10px 14px', font: '.92rem var(--ui)', border: '1px solid rgba(247,245,238,.25)', background: 'rgba(247,245,238,.08)', color: 'var(--paper)', outline: 'none' }} /><button type="submit" disabled={subscribeMutation.isPending} style={{ gridColumn: '1 / -1' }}>{subscribeMutation.isPending ? '…' : 'Subscribe'}</button></form></>}</div></section>;
+  return <section className="newsletter" id="newsletter" style={{ background: 'var(--ink)', color: 'var(--paper)' }}><div className="wrap"><span className="mono-label">Join The List</span><h2>Senoia stories, straight to your inbox — no fluff, just the town.</h2>{submitted ? <p className="form-confirm">You're on the list — look for Life Around Senoia in your inbox soon.</p> : <>{subError && <p style={{ color: 'var(--brick)', marginBottom: 12, font: '.9rem var(--ui)' }}>{subError}</p>}<form className="subscribe-form" onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', maxWidth: '560px' }}><input required type="text" name="firstName" placeholder="First name" aria-label="First name" style={{ gridColumn: '1', padding: '10px 14px', font: '.92rem var(--ui)', border: '1px solid rgba(247,245,238,.25)', background: 'rgba(247,245,238,.08)', color: 'var(--paper)', outline: 'none' }} /><input required type="text" name="lastName" placeholder="Last name" aria-label="Last name" style={{ gridColumn: '2', padding: '10px 14px', font: '.92rem var(--ui)', border: '1px solid rgba(247,245,238,.25)', background: 'rgba(247,245,238,.08)', color: 'var(--paper)', outline: 'none' }} /><input required type="email" name="email" placeholder="Email address" aria-label="Email address" style={{ gridColumn: '1 / -1', padding: '10px 14px', font: '.92rem var(--ui)', border: '1px solid rgba(247,245,238,.25)', background: 'rgba(247,245,238,.08)', color: 'var(--paper)', outline: 'none' }} /><input type="tel" name="phone" placeholder="Phone (optional)" aria-label="Phone number" style={{ gridColumn: '1', padding: '10px 14px', font: '.92rem var(--ui)', border: '1px solid rgba(247,245,238,.25)', background: 'rgba(247,245,238,.08)', color: 'var(--paper)', outline: 'none' }} /><input type="text" name="city" placeholder="City" aria-label="City" style={{ gridColumn: '2', padding: '10px 14px', font: '.92rem var(--ui)', border: '1px solid rgba(247,245,238,.25)', background: 'rgba(247,245,238,.08)', color: 'var(--paper)', outline: 'none' }} /><button type="submit" disabled={subscribeMutation.isPending} style={{ gridColumn: '1 / -1' }}>{subscribeMutation.isPending ? '…' : 'Subscribe'}</button></form></>}</div></section>;
 }
 
 export function renderBody(body: string | null | undefined): React.ReactNode {
@@ -839,7 +839,52 @@ function ArticleDetailInner({ pubSlug, slug, sectionLabel, sectionPath }: {
     {/* Article body */}
     <section>
       <div className="wrap-narrow article-body">
-        {renderBody(article.body)}
+        {(() => {
+          // For recipe articles, render structured ingredients + steps from details.
+          // The body field may contain a flat text version; filter it to just the intro
+          // (any blocks before a line starting with "Ingredients" or "Instructions").
+          if (article.contentType === 'recipe' && article.details) {
+            const rawIngredients = (article.details as Record<string, string>).ingredients;
+            const rawSteps = (article.details as Record<string, string>).steps;
+            const servings = (article.details as Record<string, string>).servings;
+            const ingredients: string[] = rawIngredients ? (() => { try { return JSON.parse(rawIngredients); } catch { return []; } })() : [];
+            const steps: string[] = rawSteps ? (() => { try { return JSON.parse(rawSteps); } catch { return []; } })() : [];
+
+            // Intro = body blocks that don't start with "Ingredients" or "Instructions"
+            const introBlocks = (article.body ?? '').split(/\n\n+/).map(b => b.trim()).filter(Boolean)
+              .filter(b => !/^ingredients\b/i.test(b) && !/^instructions\b/i.test(b) && !/^steps\b/i.test(b));
+
+            return <>
+              {introBlocks.map((block, i) => <p key={i}>{block}</p>)}
+              {(ingredients.length > 0 || steps.length > 0) && (
+                <div className="recipe-structured" style={{ marginTop: '2rem' }}>
+                  {servings && (
+                    <p style={{ fontFamily: 'var(--mono)', fontSize: '.8rem', textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--ink-soft)', marginBottom: '1.5rem' }}>
+                      {servings}
+                    </p>
+                  )}
+                  {ingredients.length > 0 && (
+                    <div style={{ marginBottom: '2rem' }}>
+                      <h3 className="body-subhead" style={{ marginBottom: '.75rem' }}>Ingredients</h3>
+                      <ul style={{ paddingLeft: '1.25rem', lineHeight: 1.7, fontFamily: 'var(--read)', fontSize: '1.05rem' }}>
+                        {ingredients.map((ing, i) => <li key={i}>{ing}</li>)}
+                      </ul>
+                    </div>
+                  )}
+                  {steps.length > 0 && (
+                    <div>
+                      <h3 className="body-subhead" style={{ marginBottom: '.75rem' }}>Instructions</h3>
+                      <ol style={{ paddingLeft: '1.25rem', lineHeight: 1.7, fontFamily: 'var(--read)', fontSize: '1.05rem' }}>
+                        {steps.map((step, i) => <li key={i} style={{ marginBottom: '.5rem' }}>{step}</li>)}
+                      </ol>
+                    </div>
+                  )}
+                </div>
+              )}
+            </>;
+          }
+          return renderBody(article.body);
+        })()}
       </div>
     </section>
 
