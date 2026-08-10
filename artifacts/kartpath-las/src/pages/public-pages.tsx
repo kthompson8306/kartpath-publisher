@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { ArrowLeft, ArrowRight, ArrowUpRight, Menu, Search, X } from 'lucide-react';
 import { Link, useParams } from 'wouter';
-import { getGetPublishedArticleQueryKey, getListPublishedContentItemsQueryKey, useGetPublishedArticle, useListPublishedContentItems, useSubmitBusinessListing, useSubmitEventSubmission, useSubscribeToPublication, useSubmitNomination } from '@workspace/api-client-react';
+import { getGetPublishedArticleQueryKey, getGetPublicationBySlugQueryKey, getListPublishedContentItemsQueryKey, useGetPublicationBySlug, useGetPublishedArticle, useListPublishedContentItems, useSubmitBusinessListing, useSubmitEventSubmission, useSubscribeToPublication, useSubmitNomination } from '@workspace/api-client-react';
 import type { ContentItem, EditorialContentType } from '@workspace/api-client-react';
 
 type SeoProps = { title: string; description: string; path: string };
@@ -178,12 +178,27 @@ function SectionHead({ index, title, link }: { index: string; title: string; lin
 
 export function PublicHome() {
   const query = usePublishedContent();
+  const pubQuery = useGetPublicationBySlug(PUBLICATION_SLUG, {
+    query: {
+      queryKey: getGetPublicationBySlugQueryKey(PUBLICATION_SLUG),
+      staleTime: 0,
+      refetchOnMount: 'always',
+      retry: false,
+    },
+  });
   const items = query.data ?? [];
-  const featured = items.find((item) => item.contentType === 'featured-family');
-  const nonprofit = items.find((item) => item.contentType === 'nonprofit-spotlight');
-  const achiever = items.find((item) => item.contentType === 'young-achiever');
-  const crooksCorner = items.find((item) => item.contentType === 'crooks-corner');
-  const recipe = items.find((item) => item.contentType === 'recipe');
+  const curation = pubQuery.data?.settings?.homepageCuration;
+
+  // Resolve a curated slot: prefer the pinned UUID, fall back to latest of that type.
+  const resolveSlot = (pinnedId: string | null | undefined, contentType: string) =>
+    (pinnedId ? items.find((item) => item.id === pinnedId) : undefined) ??
+    items.find((item) => item.contentType === contentType);
+
+  const featured = resolveSlot(curation?.hero, 'featured-family');
+  const nonprofit = resolveSlot(curation?.strip?.[0], 'nonprofit-spotlight');
+  const achiever = resolveSlot(curation?.strip?.[1], 'young-achiever');
+  const crooksCorner = resolveSlot(curation?.strip?.[2], 'crooks-corner');
+  const recipe = resolveSlot(curation?.strip?.[3], 'recipe');
   const latest = items.slice(0, 3);
 
   // Focal-point helper: converts stored 0–1 values to CSS background-position percentages.

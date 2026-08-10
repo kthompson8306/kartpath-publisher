@@ -57,6 +57,13 @@
             "when": 1786990000000,
             "tag": "0007_engagement_contact_fields",
             "breakpoints": true
+        },
+        {
+            "idx": 8,
+            "version": "7",
+            "when": 1754870400000,
+            "tag": "0008_homepage_curation",
+            "breakpoints": true
         }
     ]
 }

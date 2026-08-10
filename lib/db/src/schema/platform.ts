@@ -52,6 +52,10 @@ export const publicationSettingsTable = pgTable("publication_settings", {
   defaultMetaDescription: text("default_meta_description").notNull(),
   socialLinks: jsonb("social_links").$type<Record<string, string>>().notNull(),
   contactEmail: text("contact_email"),
+  homepageCuration: jsonb("homepage_curation").$type<{
+    hero: string | null;
+    strip: (string | null)[];
+  }>(),
   ...timestamps,
 });
 

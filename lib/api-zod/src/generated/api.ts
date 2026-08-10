@@ -42,10 +42,22 @@ export const GetPublicationBySlugResponse = zod.object({
   "defaultSeoTitle": zod.string(),
   "defaultMetaDescription": zod.string(),
   "socialLinks": zod.record(zod.string(), zod.string()),
-  "contactEmail": zod.string().nullable()
+  "contactEmail": zod.string().nullable(),
+  "homepageCuration": zod.object({
+    "hero": zod.string().nullable(),
+    "strip": zod.array(zod.string().nullable())
+  }).nullable().optional()
 })
 })
 
+
+export const PatchHomepageCurationBody = zod.object({
+  "publicationId": zod.string().uuid(),
+  "hero": zod.string().uuid().nullable(),
+  "strip": zod.array(zod.string().uuid().nullable()).length(4)
+})
+
+export const PatchHomepageCurationQueryParams = zod.object({})
 
 /**
  * Returns only published editorial content belonging to the publication identified by the slug. This endpoint is intentionally unauthenticated for public publication pages.

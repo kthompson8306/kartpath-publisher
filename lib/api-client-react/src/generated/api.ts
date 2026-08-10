@@ -44,6 +44,7 @@ import type {
   MediaAsset,
   NominationList,
   NominationRecord,
+  PatchHomepageCurationBody,
   Publication,
   PublishContentItem,
   PublishedArticle,
@@ -2034,6 +2035,49 @@ export const useRemoveGalleryItem = <TError = ErrorType<Error>, TContext = unkno
   options?: { mutation?: UseMutationOptions<Awaited<ReturnType<typeof removeGalleryItem>>, TError, {id: string; mediaId: string; params: RemoveGalleryItemQueryParams}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationResult<Awaited<ReturnType<typeof removeGalleryItem>>, TError, {id: string; mediaId: string; params: RemoveGalleryItemQueryParams}, TContext> => {
   return useMutation(getRemoveGalleryItemMutationOptions(options));
+}
+
+export const getPatchHomepageCurationUrl = () => `/api/editorial/homepage-curation`
+
+/**
+ * @summary Update homepage curation slots for a publication
+ */
+export const patchHomepageCuration = async (patchHomepageCurationBody: PatchHomepageCurationBody, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+  return customFetch<void>(getPatchHomepageCurationUrl(), {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(patchHomepageCurationBody),
+  });
+}
+
+export const getPatchHomepageCurationMutationOptions = <TError = ErrorType<Error>, TContext = unknown>(
+  options?: { mutation?: UseMutationOptions<Awaited<ReturnType<typeof patchHomepageCuration>>, TError, { data: BodyType<PatchHomepageCurationBody> }, TContext>, request?: SecondParameter<typeof customFetch> }
+): UseMutationOptions<Awaited<ReturnType<typeof patchHomepageCuration>>, TError, { data: BodyType<PatchHomepageCurationBody> }, TContext> => {
+  const mutationKey = ['patchHomepageCuration'];
+  const { mutation: mutationOptions, request: requestOptions } = options ?
+    options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+    options
+    : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+  const mutationFn: MutationFunction<Awaited<ReturnType<typeof patchHomepageCuration>>, { data: BodyType<PatchHomepageCurationBody> }> = (props) => {
+    const { data } = props ?? {};
+    return patchHomepageCuration(data, requestOptions);
+  };
+  return { mutationFn, ...mutationOptions };
+}
+
+export type PatchHomepageCurationMutationResult = NonNullable<Awaited<ReturnType<typeof patchHomepageCuration>>>
+export type PatchHomepageCurationMutationBody = BodyType<PatchHomepageCurationBody>
+export type PatchHomepageCurationMutationError = ErrorType<Error>
+
+/**
+ * @summary Update homepage curation slots for a publication
+ */
+export const usePatchHomepageCuration = <TError = ErrorType<Error>, TContext = unknown>(
+  options?: { mutation?: UseMutationOptions<Awaited<ReturnType<typeof patchHomepageCuration>>, TError, { data: BodyType<PatchHomepageCurationBody> }, TContext>, request?: SecondParameter<typeof customFetch> }
+): UseMutationResult<Awaited<ReturnType<typeof patchHomepageCuration>>, TError, { data: BodyType<PatchHomepageCurationBody> }, TContext> => {
+  return useMutation(getPatchHomepageCurationMutationOptions(options));
 }
 
 

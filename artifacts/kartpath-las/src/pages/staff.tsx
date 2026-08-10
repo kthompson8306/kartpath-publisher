@@ -6,6 +6,7 @@ import {
   EditorialStatus,
   getGetContentItemQueryKey,
   getGetCurrentUserQueryKey,
+  getGetPublicationBySlugQueryKey,
   getListContentItemsQueryKey,
   getListGalleryItemsQueryKey,
   getListNominationsQueryKey,
@@ -17,11 +18,13 @@ import {
   useDeleteContentItem,
   useGetContentItem,
   useGetCurrentUser,
+  useGetPublicationBySlug,
   useListContentItems,
   useListGalleryItems,
   useListNominations,
   useListStaffRoster,
   useListSubscribers,
+  usePatchHomepageCuration,
   usePublishContentItem,
   useRemoveGalleryItem,
   useReorderGallery,
@@ -34,6 +37,132 @@ import type { ContentItem, CreateContentItem, GalleryItem, NominationRecord, Sta
 import { useQueryClient } from '@tanstack/react-query';
 import { LasMark, SectionKicker } from '@/components/las-brand';
 import { renderBody } from './public-pages';
+
+function HomepageTab({ publicationId, publicationSlug }: { publicationId: string; publicationSlug: string }) {
+  const pubQuery = useGetPublicationBySlug(publicationSlug, {
+    query: {
+      queryKey: getGetPublicationBySlugQueryKey(publicationSlug),
+      staleTime: 0,
+      refetchOnMount: 'always',
+      retry: false,
+    },
+  });
+  const itemsQuery = useListContentItems(
+    { publicationId, status: EditorialStatus.published as any },
+    { query: { enabled: Boolean(publicationId), retry: false } },
+  );
+  const saveMutation = usePatchHomepageCuration();
+
+  const existingCuration = pubQuery.data?.settings?.homepageCuration;
+  const [hero, setHero] = useState<string>('');
+  const [strip, setStrip] = useState<string[]>(['', '', '', '']);
+  const [initialized, setInitialized] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    if (!initialized && pubQuery.data) {
+      setInitialized(true);
+      if (existingCuration) {
+        setHero(existingCuration.hero ?? '');
+        setStrip([
+          existingCuration.strip?.[0] ?? '',
+          existingCuration.strip?.[1] ?? '',
+          existingCuration.strip?.[2] ?? '',
+          existingCuration.strip?.[3] ?? '',
+        ]);
+      }
+    }
+  }, [initialized, pubQuery.data, existingCuration]);
+
+  const SLOT_LABELS = [
+    'Hero — Featured Family fallback',
+    'Strip Slot 1 — Nonprofit Spotlight fallback',
+    'Strip Slot 2 — Young Achiever fallback',
+    "Strip Slot 3 — Crook's Corner fallback",
+    'Strip Slot 4 — Recipe fallback',
+  ];
+  const slotValues = [hero, ...strip];
+  const setSlotValue = (idx: number, value: string) => {
+    setSaved(false);
+    if (idx === 0) {
+      setHero(value);
+    } else {
+      setStrip((prev) => { const next = [...prev]; next[idx - 1] = value; return next; });
+    }
+  };
+
+  const handleSave = () => {
+    setSaved(false);
+    saveMutation.mutate(
+      { data: { publicationId, hero: hero || null, strip: strip.map((s) => s || null) as (string | null)[] } },
+      { onSuccess: () => { setSaved(true); void pubQuery.refetch(); } },
+    );
+  };
+
+  const items = itemsQuery.data ?? [];
+
+  return (
+    <div className="mt-7 max-w-xl space-y-6">
+      <div>
+        <SectionKicker>Homepage</SectionKicker>
+        <h2 className="mt-1 font-display text-3xl font-semibold tracking-[-.04em]">Curate the front page</h2>
+        <p className="mt-2 font-ui text-xs leading-5 text-[hsl(var(--muted-foreground))]">
+          Pin a specific story to each homepage slot. Leave a slot empty to fall back to the latest published content of that type automatically.
+        </p>
+      </div>
+
+      {pubQuery.isPending && (
+        <div className="space-y-4">
+          {[0, 1, 2, 3, 4].map((i) => <div key={i} className="h-14 animate-pulse bg-[hsl(var(--muted))]" />)}
+        </div>
+      )}
+
+      {!pubQuery.isPending && SLOT_LABELS.map((label, idx) => (
+        <div key={idx}>
+          <label className="mb-1.5 block font-ui text-[10px] font-bold uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">{label}</label>
+          {itemsQuery.isPending ? (
+            <div className="h-10 animate-pulse bg-[hsl(var(--muted))]" />
+          ) : (
+            <select
+              value={slotValues[idx]}
+              onChange={(e) => setSlotValue(idx, e.target.value)}
+              className="w-full border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-3 py-2.5 font-ui text-xs text-[hsl(var(--foreground))] focus:outline-none focus:ring-1 focus:ring-[hsl(var(--brick))]"
+            >
+              <option value="">— Auto (latest of this type) —</option>
+              {items.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.title} — {item.contentType.replaceAll('-', ' ')}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+      ))}
+
+      {!pubQuery.isPending && (
+        <div className="flex items-center gap-4 pt-1">
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saveMutation.isPending}
+            className="inline-flex items-center gap-2 border border-[hsl(var(--brick))] bg-[hsl(var(--brick))] px-4 py-2 font-ui text-[10px] font-bold uppercase tracking-[.12em] text-white transition-opacity disabled:opacity-50"
+          >
+            {saveMutation.isPending ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
+            {saveMutation.isPending ? 'Saving…' : 'Save curation'}
+          </button>
+          {saved && (
+            <span className="inline-flex items-center gap-1.5 font-ui text-xs text-[hsl(var(--pine-2))]">
+              <Check size={13} /> Saved
+            </span>
+          )}
+          {saveMutation.isError && (
+            <span className="font-ui text-xs text-[hsl(var(--brick))]">Save failed — try again.</span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const CONTENT_TYPES = [
   { value: EditorialContentType['featured-family'], label: 'Featured Family', short: 'Family' },
@@ -1345,7 +1474,7 @@ export default function Staff() {
   const isUnauthorized = userQuery.isError;
   const safePublicationId = publicationId ?? '00000000-0000-0000-0000-000000000000';
   const isAdmin = access?.role === 'publication-admin';
-  const [activeTab, setActiveTab] = useState<'editorial' | 'team' | 'nominations' | 'subscribers'>('editorial');
+  const [activeTab, setActiveTab] = useState<'editorial' | 'team' | 'nominations' | 'subscribers' | 'homepage'>('editorial');
   const [status, setStatus] = useState<'' | EditorialStatus>('');
   const [contentType, setContentType] = useState<'' | ContentType>('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -1624,6 +1753,15 @@ export default function Staff() {
                 >
                   Subscribers
                 </button>
+                <button
+                  role="tab"
+                  aria-selected={activeTab === 'homepage'}
+                  onClick={() => setActiveTab('homepage')}
+                  className={`px-4 pb-3 font-ui text-[10px] font-bold uppercase tracking-[.13em] transition-colors ${activeTab === 'homepage' ? 'border-b-2 border-[hsl(var(--brick))] text-[hsl(var(--brick))]' : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'}`}
+                  data-testid="tab-homepage"
+                >
+                  Homepage
+                </button>
               </div>
             )}
 
@@ -1637,6 +1775,10 @@ export default function Staff() {
 
             {activeTab === 'subscribers' && isAdmin && publicationId && (
               <SubscribersPanel publicationId={publicationId} />
+            )}
+
+            {activeTab === 'homepage' && isAdmin && publicationId && access?.publicationSlug && (
+              <HomepageTab publicationId={publicationId} publicationSlug={access.publicationSlug} />
             )}
 
             {activeTab === 'editorial' && (

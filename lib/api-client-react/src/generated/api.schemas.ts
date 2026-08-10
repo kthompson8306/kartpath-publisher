@@ -19,6 +19,19 @@ export type PublicationSettingsNavigationItemsItem = { [key: string]: unknown };
 
 export type PublicationSettingsSocialLinks = {[key: string]: string};
 
+export interface HomepageCuration {
+  /** @nullable */
+  hero: string | null;
+  strip: (string | null)[];
+}
+
+export interface PatchHomepageCurationBody {
+  publicationId: string;
+  /** @nullable */
+  hero: string | null;
+  strip: (string | null)[];
+}
+
 export interface PublicationSettings {
   themeTokens: PublicationSettingsThemeTokens;
   navigationItems: PublicationSettingsNavigationItemsItem[];
@@ -28,6 +41,7 @@ export interface PublicationSettings {
   socialLinks: PublicationSettingsSocialLinks;
   /** @nullable */
   contactEmail: string | null;
+  homepageCuration?: HomepageCuration | null;
 }
 
 export interface Publication {

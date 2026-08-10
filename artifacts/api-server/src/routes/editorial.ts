@@ -9,6 +9,7 @@ import {
   GetContentItemResponse,
   ListContentItemsQueryParams,
   ListContentItemsResponse,
+  PatchHomepageCurationBody,
   PublishContentItemBody,
   PublishContentItemParams,
   PublishContentItemResponse,
@@ -17,7 +18,7 @@ import {
   UpdateContentItemResponse,
 } from "@workspace/api-zod";
 import { and, desc, eq } from "drizzle-orm";
-import { contentItemsTable, db, mediaAssetsTable } from "@workspace/db";
+import { contentItemsTable, db, mediaAssetsTable, publicationSettingsTable } from "@workspace/db";
 import { type AuthenticatedRequest, requireStaff } from "../lib/auth";
 import {
   getUserPublicationAccess,
@@ -319,6 +320,32 @@ router.delete(
       metadata: { contentType: item.contentType, slug: item.slug },
     });
     res.status(204).send();
+  },
+);
+
+router.patch(
+  "/editorial/homepage-curation",
+  requireStaff,
+  async (req, res): Promise<void> => {
+    const parsed = PatchHomepageCurationBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid homepage curation data" });
+      return;
+    }
+    const scope = await requireEditorialAccess(req, res, parsed.data.publicationId, true);
+    if (!scope) return;
+
+    await db
+      .update(publicationSettingsTable)
+      .set({
+        homepageCuration: {
+          hero: parsed.data.hero,
+          strip: parsed.data.strip,
+        },
+      })
+      .where(eq(publicationSettingsTable.publicationId, parsed.data.publicationId));
+
+    res.json({ ok: true });
   },
 );
 
