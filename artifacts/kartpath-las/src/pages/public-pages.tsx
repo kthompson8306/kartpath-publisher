@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { ArrowRight, Menu, Search, X } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, Menu, Search, X } from 'lucide-react';
 import { Link, useParams } from 'wouter';
 import { getListPublishedContentItemsQueryKey, useListPublishedContentItems, useSubscribeToPublication, useSubmitNomination } from '@workspace/api-client-react';
 import type { ContentItem, EditorialContentType } from '@workspace/api-client-react';
@@ -118,8 +118,10 @@ export function PublicHeader() {
           <div className={`nav-links ${open ? 'is-open' : ''}`}>
             <Link href="/">Home</Link>
             {nav.map(([label, href]) => <Link key={href} href={href}>{label}</Link>)}
+            <Link href="/sign-in" className="nav-staff-mobile">Staff sign in <ArrowUpRight size={12} /></Link>
           </div>
           <Link href="/advertise" className="btn-sharp nav-ad">Advertise <ArrowRight size={14} /></Link>
+          <Link href="/sign-in" className="btn-sharp nav-staff">Staff sign in <ArrowUpRight size={14} /></Link>
           <button type="button" className="mobile-toggle" onClick={() => setOpen(!open)} aria-label={open ? 'Close navigation' : 'Open navigation'}>{open ? <X size={20} /> : <Menu size={20} />}</button>
         </nav>
       </header>
