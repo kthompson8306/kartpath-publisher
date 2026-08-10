@@ -1,5 +1,6 @@
 import { createInsertSchema } from "drizzle-zod";
 import {
+  doublePrecision,
   index,
   jsonb,
   pgTable,
@@ -36,6 +37,8 @@ export const contentItemsTable = pgTable(
     body: text("body").notNull(),
     details: jsonb("details").$type<Record<string, string>>().notNull(),
     coverMediaId: uuid("cover_media_id"),
+    coverFocalX: doublePrecision("cover_focal_x").notNull().default(0.5),
+    coverFocalY: doublePrecision("cover_focal_y").notNull().default(0.5),
     createdBy: uuid("created_by").references(() => usersTable.id, {
       onDelete: "set null",
     }),

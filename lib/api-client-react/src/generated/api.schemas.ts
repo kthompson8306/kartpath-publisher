@@ -133,6 +133,10 @@ export interface ContentItem {
   /** @nullable */
   coverAltText: string | null;
   /** @nullable */
+  coverFocalX: number | null;
+  /** @nullable */
+  coverFocalY: number | null;
+  /** @nullable */
   createdBy: string | null;
   /** @nullable */
   updatedBy: string | null;
@@ -164,6 +168,8 @@ export interface CreateContentItem {
   details: CreateContentItemDetails;
   /** @nullable */
   coverMediaId: string | null;
+  coverFocalX?: number;
+  coverFocalY?: number;
 }
 
 export type UpdateContentItem = CreateContentItem;

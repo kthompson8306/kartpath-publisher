@@ -37,13 +37,13 @@ function serializeItem(
   item: typeof contentItemsTable.$inferSelect,
   mediaObjectPath?: string | null,
   mediaAltText?: string | null,
-  mediaCoverPosition?: string | null,
 ) {
   return {
     ...item,
     coverUrl: coverUrl(mediaObjectPath),
     coverAltText: mediaAltText ?? null,
-    coverPosition: mediaCoverPosition ?? null,
+    coverFocalX: item.coverFocalX ?? 0.5,
+    coverFocalY: item.coverFocalY ?? 0.5,
     createdAt: item.createdAt.toISOString(),
     updatedAt: item.updatedAt.toISOString(),
     publishedAt: item.publishedAt?.toISOString() ?? null,
@@ -69,16 +69,16 @@ async function requireEditorialAccess(req: Parameters<typeof requireStaff>[0], r
 }
 
 // Validate coverMediaId belongs to the publication and is ready
-async function resolveCoverMedia(coverMediaId: string | null, publicationId: string): Promise<{ valid: boolean; objectPath: string | null; altText: string | null; coverPosition: string | null }> {
-  if (!coverMediaId) return { valid: true, objectPath: null, altText: null, coverPosition: null };
+async function resolveCoverMedia(coverMediaId: string | null, publicationId: string): Promise<{ valid: boolean; objectPath: string | null; altText: string | null }> {
+  if (!coverMediaId) return { valid: true, objectPath: null, altText: null };
   const [media] = await db
-    .select({ id: mediaAssetsTable.id, objectPath: mediaAssetsTable.objectPath, altText: mediaAssetsTable.altText, coverPosition: mediaAssetsTable.coverPosition, status: mediaAssetsTable.status, publicationId: mediaAssetsTable.publicationId })
+    .select({ id: mediaAssetsTable.id, objectPath: mediaAssetsTable.objectPath, altText: mediaAssetsTable.altText, status: mediaAssetsTable.status, publicationId: mediaAssetsTable.publicationId })
     .from(mediaAssetsTable)
     .where(eq(mediaAssetsTable.id, coverMediaId));
   if (!media || media.publicationId !== publicationId || media.status !== "ready") {
-    return { valid: false, objectPath: null, altText: null, coverPosition: null };
+    return { valid: false, objectPath: null, altText: null };
   }
-  return { valid: true, objectPath: media.objectPath, altText: media.altText ?? null, coverPosition: media.coverPosition ?? null };
+  return { valid: true, objectPath: media.objectPath, altText: media.altText ?? null };
 }
 
 router.get(
@@ -98,7 +98,7 @@ router.get(
     if (parsed.data.contentType) conditions.push(eq(contentItemsTable.contentType, parsed.data.contentType));
 
     const rows = await db
-      .select({ item: contentItemsTable, mediaObjectPath: mediaAssetsTable.objectPath, mediaAltText: mediaAssetsTable.altText, mediaCoverPosition: mediaAssetsTable.coverPosition })
+      .select({ item: contentItemsTable, mediaObjectPath: mediaAssetsTable.objectPath, mediaAltText: mediaAssetsTable.altText })
       .from(contentItemsTable)
       .leftJoin(
         mediaAssetsTable,
@@ -107,7 +107,7 @@ router.get(
       .where(and(...conditions))
       .orderBy(desc(contentItemsTable.updatedAt));
 
-    res.json(ListContentItemsResponse.parse(rows.map(({ item, mediaObjectPath, mediaAltText, mediaCoverPosition }) => serializeItem(item, mediaObjectPath, mediaAltText, mediaCoverPosition))));
+    res.json(ListContentItemsResponse.parse(rows.map(({ item, mediaObjectPath, mediaAltText }) => serializeItem(item, mediaObjectPath, mediaAltText))));
   },
 );
 
@@ -123,8 +123,7 @@ router.post(
     const scope = await requireEditorialAccess(req, res, parsed.data.publicationId, true);
     if (!scope) return;
 
-    // Validate coverMediaId if provided
-    const { valid, objectPath, altText, coverPosition: mediaCoverPosition } = await resolveCoverMedia(parsed.data.coverMediaId ?? null, parsed.data.publicationId);
+    const { valid, objectPath, altText } = await resolveCoverMedia(parsed.data.coverMediaId ?? null, parsed.data.publicationId);
     if (!valid) {
       res.status(400).json({ error: "Cover media not found, not ready, or belongs to a different publication" });
       return;
@@ -150,7 +149,7 @@ router.post(
         entityId: item.id,
         metadata: { contentType: item.contentType, slug: item.slug },
       });
-      res.status(201).json(CreateContentItemResponse.parse(serializeItem(item, objectPath, altText, mediaCoverPosition)));
+      res.status(201).json(CreateContentItemResponse.parse(serializeItem(item, objectPath, altText)));
     } catch (error) {
       req.log.error({ err: error }, "Unable to create content item");
       res.status(409).json({ error: "A content item with that slug already exists" });
@@ -172,7 +171,7 @@ router.get(
     if (!scope) return;
 
     const [row] = await db
-      .select({ item: contentItemsTable, mediaObjectPath: mediaAssetsTable.objectPath, mediaAltText: mediaAssetsTable.altText, mediaCoverPosition: mediaAssetsTable.coverPosition })
+      .select({ item: contentItemsTable, mediaObjectPath: mediaAssetsTable.objectPath, mediaAltText: mediaAssetsTable.altText })
       .from(contentItemsTable)
       .leftJoin(
         mediaAssetsTable,
@@ -187,7 +186,7 @@ router.get(
       res.status(404).json({ error: "Content item not found" });
       return;
     }
-    res.json(GetContentItemResponse.parse(serializeItem(row.item, row.mediaObjectPath, row.mediaAltText, row.mediaCoverPosition)));
+    res.json(GetContentItemResponse.parse(serializeItem(row.item, row.mediaObjectPath, row.mediaAltText)));
   },
 );
 
@@ -204,8 +203,7 @@ router.patch(
     const scope = await requireEditorialAccess(req, res, parsed.data.publicationId, true);
     if (!scope) return;
 
-    // Validate coverMediaId if provided
-    const { valid, objectPath, altText, coverPosition: mediaCoverPosition } = await resolveCoverMedia(parsed.data.coverMediaId ?? null, parsed.data.publicationId);
+    const { valid, objectPath, altText } = await resolveCoverMedia(parsed.data.coverMediaId ?? null, parsed.data.publicationId);
     if (!valid) {
       res.status(400).json({ error: "Cover media not found, not ready, or belongs to a different publication" });
       return;
@@ -232,7 +230,7 @@ router.patch(
       entityId: item.id,
       metadata: { contentType: item.contentType, slug: item.slug },
     });
-    res.json(UpdateContentItemResponse.parse(serializeItem(item, objectPath, altText, mediaCoverPosition)));
+    res.json(UpdateContentItemResponse.parse(serializeItem(item, objectPath, altText)));
   },
 );
 
@@ -275,20 +273,17 @@ router.post(
       metadata: { contentType: item.contentType, slug: item.slug },
     });
 
-    // Resolve coverUrl, coverAltText, and coverPosition for the published item
     let mediaObjectPath: string | null = null;
     let mediaAltText: string | null = null;
-    let mediaCoverPosition: string | null = null;
     if (item.coverMediaId) {
       const [media] = await db
-        .select({ objectPath: mediaAssetsTable.objectPath, altText: mediaAssetsTable.altText, coverPosition: mediaAssetsTable.coverPosition })
+        .select({ objectPath: mediaAssetsTable.objectPath, altText: mediaAssetsTable.altText })
         .from(mediaAssetsTable)
         .where(and(eq(mediaAssetsTable.id, item.coverMediaId), eq(mediaAssetsTable.status, "ready")));
       mediaObjectPath = media?.objectPath ?? null;
       mediaAltText = media?.altText ?? null;
-      mediaCoverPosition = media?.coverPosition ?? null;
     }
-    res.json(PublishContentItemResponse.parse(serializeItem(item, mediaObjectPath, mediaAltText, mediaCoverPosition)));
+    res.json(PublishContentItemResponse.parse(serializeItem(item, mediaObjectPath, mediaAltText)));
   },
 );
 

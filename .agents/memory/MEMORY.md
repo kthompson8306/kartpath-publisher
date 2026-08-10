@@ -6,3 +6,4 @@
 - [Staff management feature](staff-management.md) — Invite/revoke flow, route patterns, and test setup for the staff endpoints.
 - [Editorial route schemas](editorial-route-schemas.md) — Body schema quirks for integration tests (PATCH requires all fields including coverMediaId:null; Publish requires status; GET list returns plain array not {items:[]}).
 - [Cleanup job pattern](cleanup-job-pattern.md) — Stale pending media cleanup architecture: direct function call testable, scheduler wired into index.ts after listen().
+- [Drizzle migration discipline](drizzle-migration-discipline.md) — New schema columns need a drizzle/ SQL file AND a journal entry; schema edits alone don't update the test DB rebuilt from migrations.

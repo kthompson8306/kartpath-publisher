@@ -55,6 +55,9 @@ type FormState = Omit<CreateContentItem, 'publicationId' | 'details'> & {
   steps: string[];
   // crooks-corner specific
   timeline: TimelineEntry[];
+  // cover photo focal point (0–1 range, default 0.5)
+  coverFocalX: number;
+  coverFocalY: number;
 };
 
 const EMPTY_FORM: FormState = {
@@ -71,6 +74,8 @@ const EMPTY_FORM: FormState = {
   ingredients: [''],
   steps: [''],
   timeline: [{ year: '', event: '' }],
+  coverFocalX: 0.5,
+  coverFocalY: 0.5,
 };
 
 function Initials({ name }: { name: string }) {
@@ -277,19 +282,24 @@ function CoverPhotoUploader({
   existingCoverUrl,
   publicationId,
   onChange,
+  focalX,
+  focalY,
+  onFocalChange,
 }: {
   coverMediaId: string | null;
   existingCoverUrl: string | null | undefined;
   publicationId: string;
   onChange: (mediaId: string | null) => void;
+  focalX: number;
+  focalY: number;
+  onFocalChange: (x: number, y: number) => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadState, setUploadState] = useState<UploadState>('idle');
   const [uploadError, setUploadError] = useState('');
   const [localPreview, setLocalPreview] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
-  // The URL shown to the user: prefer a fresh local blob (just uploaded),
-  // then fall back to the API-resolved coverUrl for the already-saved item.
   const displayUrl = localPreview ?? existingCoverUrl ?? null;
 
   const handleFileChange = async (file: File) => {
@@ -367,11 +377,49 @@ function CoverPhotoUploader({
       <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Cover photo <span className="normal-case tracking-normal">(optional)</span></span>
 
       {displayUrl ? (
-        <div className="relative mb-2 aspect-[16/9] max-h-40 overflow-hidden border border-[hsl(var(--input))] bg-[hsl(var(--muted))]">
+        <div
+          className="relative mb-2 aspect-[16/9] max-h-48 cursor-crosshair select-none overflow-hidden border border-[hsl(var(--input))] bg-[hsl(var(--muted))]"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            setIsDragging(true);
+            const rect = e.currentTarget.getBoundingClientRect();
+            onFocalChange(
+              Math.round(Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)) * 1000) / 1000,
+              Math.round(Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height)) * 1000) / 1000,
+            );
+          }}
+          onMouseMove={(e) => {
+            if (!isDragging) return;
+            const rect = e.currentTarget.getBoundingClientRect();
+            onFocalChange(
+              Math.round(Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)) * 1000) / 1000,
+              Math.round(Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height)) * 1000) / 1000,
+            );
+          }}
+          onMouseUp={() => setIsDragging(false)}
+          onMouseLeave={() => setIsDragging(false)}
+          data-testid="focal-picker"
+        >
           <img src={displayUrl} alt="Cover photo preview" className="size-full object-cover" data-testid="img-cover-preview" />
+          {/* Focal-point crosshair */}
+          <div
+            className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2"
+            style={{ left: `${focalX * 100}%`, top: `${focalY * 100}%` }}
+            data-testid="focal-crosshair"
+          >
+            <div className="relative size-8">
+              <div className="absolute left-0 top-1/2 h-px w-full -translate-y-1/2 bg-white shadow-[0_0_2px_rgba(0,0,0,0.9)]" />
+              <div className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-white shadow-[0_0_2px_rgba(0,0,0,0.9)]" />
+              <div className="absolute left-1/2 top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-[0_0_3px_rgba(0,0,0,0.9)]" />
+            </div>
+          </div>
+          {/* Hint */}
+          <div className="pointer-events-none absolute bottom-1.5 left-1/2 -translate-x-1/2">
+            <span className="whitespace-nowrap rounded bg-black/60 px-2 py-0.5 font-ui text-[8px] uppercase tracking-[.1em] text-white/90">Click or drag · set focal point</span>
+          </div>
           <button
             type="button"
-            onClick={() => { setLocalPreview(null); onChange(null); setUploadState('idle'); }}
+            onClick={(e) => { e.stopPropagation(); setLocalPreview(null); onChange(null); setUploadState('idle'); }}
             className="absolute right-2 top-2 grid size-6 place-items-center bg-[hsl(var(--background)/.8)] text-[hsl(var(--brick))] transition-colors hover:bg-[hsl(var(--brick))] hover:text-white"
             aria-label="Remove cover photo"
             data-testid="button-remove-cover"
@@ -400,7 +448,6 @@ function CoverPhotoUploader({
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) void handleFileChange(file);
-              // reset so same file can be re-selected
               e.target.value = '';
             }}
             data-testid="input-file-cover"
@@ -420,7 +467,7 @@ function CoverPhotoUploader({
       )}
       {!uploadError && (
         <span className="mt-1.5 block font-ui text-[10px] leading-4 text-[hsl(var(--muted-foreground))]">
-          JPEG or PNG recommended. Photo appears on the public page after publishing.
+          {displayUrl ? 'Focal point saves with the story.' : 'JPEG or PNG recommended. Photo appears on the public page after publishing.'}
         </span>
       )}
     </div>
@@ -443,7 +490,7 @@ function StaffPreview({ form, coverUrl }: { form: FormState; coverUrl: string | 
       <article className="family-row published-story-row" style={{ gridTemplateColumns: '1fr', marginBottom: 0 }}>
         <div className="family-img" style={{ minHeight: 260 }}>
           {coverUrl
-            ? <img src={coverUrl} alt={form.title || 'Cover photo'} className="family-photo" style={{ objectPosition: 'center' }} />
+            ? <img src={coverUrl} alt={form.title || 'Cover photo'} className="family-photo" style={{ objectPosition: `${(form.coverFocalX ?? 0.5) * 100}% ${(form.coverFocalY ?? 0.5) * 100}%` }} />
             : <><span className="family-issue-badge">Draft preview</span><div className="published-story-mark">LAS</div></>
           }
         </div>
@@ -685,6 +732,9 @@ function Editor({
           existingCoverUrl={item?.coverUrl}
           publicationId={publicationId}
           onChange={(mediaId) => update('coverMediaId', mediaId)}
+          focalX={form.coverFocalX}
+          focalY={form.coverFocalY}
+          onFocalChange={(x, y) => setForm({ ...form, coverFocalX: x, coverFocalY: y })}
         />
         </div>
       )}
@@ -1155,6 +1205,8 @@ export default function Staff() {
         body: item.body,
         detailsText: JSON.stringify(d, null, 2),
         coverMediaId: item.coverMediaId,
+        coverFocalX: (item as any).coverFocalX ?? 0.5,
+        coverFocalY: (item as any).coverFocalY ?? 0.5,
         issue: d.issue ?? '',
         subsection,
         servings: d.servings ?? '',
@@ -1244,6 +1296,8 @@ export default function Staff() {
       body: form.body.trim(),
       details,
       coverMediaId: form.coverMediaId || null,
+      coverFocalX: form.coverFocalX,
+      coverFocalY: form.coverFocalY,
     } satisfies CreateContentItem;
   };
 

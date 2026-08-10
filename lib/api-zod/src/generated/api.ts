@@ -73,7 +73,8 @@ export const ListPublishedContentItemsResponseItem = zod.object({
   "coverMediaId": zod.string().nullable(),
   "coverUrl": zod.string().nullable(),
   "coverAltText": zod.string().nullable(),
-  "coverPosition": zod.string().nullable(),
+  "coverFocalX": zod.number().nullable(),
+  "coverFocalY": zod.number().nullable(),
   "createdBy": zod.string().nullable(),
   "updatedBy": zod.string().nullable(),
   "publishedAt": zod.coerce.date().nullable(),
@@ -171,7 +172,8 @@ export const ListContentItemsResponseItem = zod.object({
   "coverMediaId": zod.string().nullable(),
   "coverUrl": zod.string().nullable(),
   "coverAltText": zod.string().nullable(),
-  "coverPosition": zod.string().nullable(),
+  "coverFocalX": zod.number().nullable(),
+  "coverFocalY": zod.number().nullable(),
   "createdBy": zod.string().nullable(),
   "updatedBy": zod.string().nullable(),
   "publishedAt": zod.coerce.date().nullable(),
@@ -201,7 +203,9 @@ export const CreateContentItemBody = zod.object({
   "summary": zod.string().min(1),
   "body": zod.string().min(1),
   "details": zod.record(zod.string(), zod.string()),
-  "coverMediaId": zod.string().nullable()
+  "coverMediaId": zod.string().nullable(),
+  "coverFocalX": zod.number().optional(),
+  "coverFocalY": zod.number().optional()
 })
 
 export const CreateContentItemResponse = zod.object({
@@ -217,7 +221,8 @@ export const CreateContentItemResponse = zod.object({
   "coverMediaId": zod.string().nullable(),
   "coverUrl": zod.string().nullable(),
   "coverAltText": zod.string().nullable(),
-  "coverPosition": zod.string().nullable(),
+  "coverFocalX": zod.number().nullable(),
+  "coverFocalY": zod.number().nullable(),
   "createdBy": zod.string().nullable(),
   "updatedBy": zod.string().nullable(),
   "publishedAt": zod.coerce.date().nullable(),
@@ -256,7 +261,8 @@ export const GetContentItemResponse = zod.object({
   "coverMediaId": zod.string().nullable(),
   "coverUrl": zod.string().nullable(),
   "coverAltText": zod.string().nullable(),
-  "coverPosition": zod.string().nullable(),
+  "coverFocalX": zod.number().nullable(),
+  "coverFocalY": zod.number().nullable(),
   "createdBy": zod.string().nullable(),
   "updatedBy": zod.string().nullable(),
   "publishedAt": zod.coerce.date().nullable(),
@@ -292,7 +298,9 @@ export const UpdateContentItemBody = zod.object({
   "summary": zod.string().min(1),
   "body": zod.string().min(1),
   "details": zod.record(zod.string(), zod.string()),
-  "coverMediaId": zod.string().nullable()
+  "coverMediaId": zod.string().nullable(),
+  "coverFocalX": zod.number().optional(),
+  "coverFocalY": zod.number().optional()
 })
 
 export const UpdateContentItemResponse = zod.object({
@@ -308,7 +316,8 @@ export const UpdateContentItemResponse = zod.object({
   "coverMediaId": zod.string().nullable(),
   "coverUrl": zod.string().nullable(),
   "coverAltText": zod.string().nullable(),
-  "coverPosition": zod.string().nullable(),
+  "coverFocalX": zod.number().nullable(),
+  "coverFocalY": zod.number().nullable(),
   "createdBy": zod.string().nullable(),
   "updatedBy": zod.string().nullable(),
   "publishedAt": zod.coerce.date().nullable(),
@@ -368,7 +377,8 @@ export const PublishContentItemResponse = zod.object({
   "coverMediaId": zod.string().nullable(),
   "coverUrl": zod.string().nullable(),
   "coverAltText": zod.string().nullable(),
-  "coverPosition": zod.string().nullable(),
+  "coverFocalX": zod.number().nullable(),
+  "coverFocalY": zod.number().nullable(),
   "createdBy": zod.string().nullable(),
   "updatedBy": zod.string().nullable(),
   "publishedAt": zod.coerce.date().nullable(),

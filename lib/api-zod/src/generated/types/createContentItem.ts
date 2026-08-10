@@ -26,4 +26,6 @@ export interface CreateContentItem {
   details: CreateContentItemDetails;
   /** @nullable */
   coverMediaId: string | null;
+  coverFocalX?: number;
+  coverFocalY?: number;
 }

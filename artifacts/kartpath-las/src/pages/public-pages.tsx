@@ -217,7 +217,7 @@ function PublishedStoryCard({ item, reverse = false }: { item: ContentItem; reve
   return <article className={`family-row published-story-row ${reverse ? 'reverse' : ''}`} data-testid={`public-published-${item.slug}`}>
     <div className="family-img">
       {item.coverUrl
-        ? <img src={item.coverUrl} alt={(item as any).coverAltText ?? item.title} className="family-photo" loading="lazy" data-testid={`img-cover-${item.slug}`} style={{ objectPosition: (item as any).coverPosition ?? 'center' }} />
+        ? <img src={item.coverUrl} alt={(item as any).coverAltText ?? item.title} className="family-photo" loading="lazy" data-testid={`img-cover-${item.slug}`} style={{ objectPosition: `${((item as any).coverFocalX ?? 0.5) * 100}% ${((item as any).coverFocalY ?? 0.5) * 100}%` }} />
         : <><span className="family-issue-badge">Published story</span><div className="published-story-mark">LAS</div></>
       }
     </div>
