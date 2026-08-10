@@ -176,6 +176,141 @@ function SectionHead({ index, title, link }: { index: string; title: string; lin
   return <div className="sec-head"><div className="tt"><span className="tt-idx">§{index}</span><h2>{title}</h2></div>{link && <Link className="view-all" href={link.href}>{link.label} <ArrowRight size={13} /></Link>}</div>;
 }
 
+// Converts stored 0–1 focal-point values to CSS background-position percentages.
+function focalPoint(item: ContentItem | undefined): string {
+  return `${(((item as any)?.coverFocalX ?? 0.5) * 100).toFixed(1)}% ${(((item as any)?.coverFocalY ?? 0.5) * 100).toFixed(1)}%`;
+}
+
+// Hero slideshow — new slides enter from the RIGHT (track slides left).
+function HeroSlideshow({ slides, isPending }: { slides: ContentItem[]; isPending: boolean }) {
+  const [idx, setIdx] = useState(0);
+  const [paused, setPaused] = useState(false);
+
+  useEffect(() => { setIdx(0); }, [slides.length]);
+  useEffect(() => {
+    if (paused || slides.length <= 1) return;
+    const id = setInterval(() => setIdx((i) => (i + 1) % slides.length), 6000);
+    return () => clearInterval(id);
+  }, [paused, slides.length]);
+
+  const N = Math.max(slides.length, 1);
+
+  return (
+    <div className="mega-hero-slides-wrap" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
+      <div className="mega-hero-slides-track" style={{ width: `${N * 100}%`, transform: `translateX(${-(idx * (100 / N))}%)` }}>
+        {isPending ? (
+          <div className="mega-hero-bg" style={{ width: `${100 / N}%`, flexShrink: 0 }}>
+            <span className="giant-num">LAS</span>
+            <div className="mega-hero-inner"><p className="dek">Loading the latest published stories…</p></div>
+          </div>
+        ) : slides.length === 0 ? (
+          <div className="mega-hero-bg" style={{ width: '100%', flexShrink: 0 }}>
+            <span className="giant-num">LAS</span>
+            <div className="mega-hero-inner">
+              <span className="mega-kicker"><i className="dash" />Life Around Senoia</span>
+              <h1>Stories from<br /><em>around town.</em></h1>
+              <p className="dek">No featured stories are published right now.</p>
+            </div>
+          </div>
+        ) : slides.map((item) => (
+          <div key={item.id} className="mega-hero-bg" style={{ width: `${100 / N}%`, flexShrink: 0, ...(item.coverUrl ? { backgroundImage: `linear-gradient(to right, rgba(11,14,10,0.80) 0%, rgba(11,14,10,0.35) 60%), url(${item.coverUrl})`, backgroundPosition: `0% 0%, ${focalPoint(item)}`, backgroundSize: `auto, cover` } : {}) }}>
+            <span className="giant-num">LAS</span>
+            <div className="mega-hero-inner">
+              <span className="mega-kicker"><i className="dash" />Featured Family · Published</span>
+              <h1>{item.title}</h1>
+              <p className="dek">{item.summary}</p>
+              <div className="mega-cta-row">
+                <Link href={`/people/${item.slug}`} className="btn-ghost-dark">Read the Story <ArrowRight size={14} /></Link>
+                <span className="mega-meta">Life Around Senoia · Published editorial</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      {slides.length > 1 && (
+        <div className="hero-slide-dots">
+          {slides.map((_, i) => <button key={i} type="button" className={`dot${i === idx ? ' dot--active' : ''}`} onClick={() => setIdx(i)} aria-label={`Slide ${i + 1}`} />)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Strip box — new slides enter from the LEFT (opposite to hero).
+// Items are laid out in REVERSE order in the DOM, track moves right as idx advances.
+function StripBox({ slides, staggerMs }: { slides: ContentItem[]; staggerMs: number }) {
+  const [idx, setIdx] = useState(0);
+
+  useEffect(() => { setIdx(0); }, [slides.length]);
+  useEffect(() => {
+    if (slides.length <= 1) return;
+    let iid: ReturnType<typeof setInterval>;
+    const tid = setTimeout(() => {
+      iid = setInterval(() => setIdx((i) => (i + 1) % slides.length), 8000);
+    }, staggerMs);
+    return () => { clearTimeout(tid); clearInterval(iid); };
+  }, [slides.length, staggerMs]);
+
+  if (!slides.length) return <div className="strip-img strip-img--empty" />;
+
+  const N = slides.length;
+  const reversed = [...slides].reverse();
+  const tx = -(N - 1 - idx) * (100 / N);
+
+  return (
+    <div className="strip-img strip-img--carousel" style={{ backgroundImage: 'none', padding: 0 }}>
+      <div style={{ display: 'flex', width: `${N * 100}%`, height: '100%', transform: `translateX(${tx}%)`, transition: 'transform 500ms ease-in-out' }}>
+        {reversed.map((item) => (
+          <Link key={item.id} href={articlePath(item.contentType, item.slug)}
+            style={{ width: `${100 / N}%`, flexShrink: 0, height: '100%', display: 'block', position: 'relative', ...(item.coverUrl ? { backgroundImage: `url(${item.coverUrl})`, backgroundSize: 'cover', backgroundPosition: focalPoint(item) } : { background: '#181c17' }) }}>
+            <span className="lbl">
+              {item.contentType === 'lifestyle-column' ? 'secret sauce' : item.contentType.replaceAll('-', ' ')}
+              <b>{item.title}</b>
+            </span>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Pull-quote carousel — cross-fades between articles that have a pull quote set.
+function PullQuoteCarousel({ items }: { items: ContentItem[] }) {
+  const quotes = useMemo(() => items.filter((i) => i.pullQuote), [items]);
+  const [idx, setIdx] = useState(0);
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    if (quotes.length <= 1) return;
+    const id = setInterval(() => {
+      setVisible(false);
+      setTimeout(() => { setIdx((i) => (i + 1) % quotes.length); setVisible(true); }, 400);
+    }, 8000);
+    return () => clearInterval(id);
+  }, [quotes.length]);
+
+  if (!quotes.length) {
+    return (
+      <div className="pull-break">
+        <span className="bigq">"</span>
+        <p>We have the freedom to worship. Across our community each week, church doors open without fear, and families gather to pray.</p>
+        <span className="attr">Secret Sauce — Issue 06</span>
+      </div>
+    );
+  }
+
+  const q = quotes[idx];
+  const tl = q.contentType === 'lifestyle-column' ? 'Secret Sauce' : q.contentType.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
+  return (
+    <div className="pull-break">
+      <span className="bigq">"</span>
+      <p style={{ transition: 'opacity 400ms ease', opacity: visible ? 1 : 0 }}>{q.pullQuote}</p>
+      <span className="attr" style={{ transition: 'opacity 400ms ease', opacity: visible ? 1 : 0 }}>{q.title} — {tl}</span>
+    </div>
+  );
+}
+
 export function PublicHome() {
   const query = usePublishedContent();
   const pubQuery = useGetPublicationBySlug(PUBLICATION_SLUG, {
@@ -189,85 +324,35 @@ export function PublicHome() {
   const items = query.data ?? [];
   const curation = pubQuery.data?.settings?.homepageCuration;
 
-  // Resolve a curated slot: prefer the pinned UUID, fall back to latest of that type.
-  const resolveSlot = (pinnedId: string | null | undefined, contentType: string) =>
-    (pinnedId ? items.find((item) => item.id === pinnedId) : undefined) ??
-    items.find((item) => item.contentType === contentType);
+  // Build a pool: pinned items first (in stated order), then fill with remaining items of that type.
+  const buildPool = (pinnedIds: string[], typeFilter: (i: ContentItem) => boolean, limit: number): ContentItem[] => {
+    const pinned = pinnedIds.map((id) => items.find((i) => i.id === id)).filter((i): i is ContentItem => Boolean(i));
+    const pinnedSet = new Set(pinnedIds);
+    const rest = items.filter((i) => typeFilter(i) && !pinnedSet.has(i.id));
+    return [...pinned, ...rest].slice(0, limit);
+  };
 
-  const featured = resolveSlot(curation?.hero, 'featured-family');
-  const nonprofit = resolveSlot(curation?.strip?.[0], 'nonprofit-spotlight');
-  const achiever = resolveSlot(curation?.strip?.[1], 'young-achiever');
-  const crooksCorner = resolveSlot(curation?.strip?.[2], 'crooks-corner');
-  const recipe = resolveSlot(curation?.strip?.[3], 'recipe');
+  const heroPool = buildPool(curation?.heroOrder ?? [], (i) => i.contentType === 'featured-family', 6);
+  const nonprofitPool = buildPool(curation?.stripNonprofit ?? [], (i) => i.contentType === 'nonprofit-spotlight', 4);
+  const achieverPool = buildPool(curation?.stripAchiever ?? [], (i) => i.contentType === 'young-achiever', 4);
+  const recipePool = buildPool(curation?.stripRecipe ?? [], (i) => i.contentType === 'recipe', 4);
+  const secretSaucePool = buildPool(curation?.stripSecretSauce ?? [], (i) => i.contentType === 'lifestyle-column' && i.details?.subsection === 'secret-sauce', 4);
   const latest = items.slice(0, 3);
-
-  // Focal-point helper: converts stored 0–1 values to CSS background-position percentages.
-  const focalPos = (item: typeof featured) =>
-    `${(((item as any)?.coverFocalX ?? 0.5) * 100).toFixed(1)}% ${(((item as any)?.coverFocalY ?? 0.5) * 100).toFixed(1)}%`;
-
-  // Strip slots: 4 diverse content types, each falls back gracefully to a placeholder.
-  const stripSlots = [nonprofit, achiever, crooksCorner, recipe];
 
   return <PageShell seo={{ title: 'Life Around Senoia — Local Stories, People & Places', description: 'Life Around Senoia is a bi-monthly magazine and digital publication for the people, businesses, and stories of Senoia, Georgia.', path: '/' }}>
     <section className="mega-hero">
-      <div
-        className="mega-hero-bg"
-        style={featured?.coverUrl ? {
-          backgroundImage: `linear-gradient(to right, rgba(11,14,10,0.80) 0%, rgba(11,14,10,0.35) 60%), url(${featured.coverUrl})`,
-          backgroundPosition: `0% 0%, ${focalPos(featured)}`,
-          backgroundSize: `auto, cover`,
-        } : undefined}
-      >
-        <span className="giant-num">LAS</span>
-        <div className="mega-hero-inner">
-          {query.isPending
-            ? <p className="dek">Loading the latest published stories…</p>
-            : featured
-              ? <>
-                  <span className="mega-kicker"><i className="dash" />Featured Family · Published</span>
-                  <h1>{featured.title}</h1>
-                  <p className="dek">{featured.summary}</p>
-                  <div className="mega-cta-row">
-                    <Link href={`/people/${featured.slug}`} className="btn-ghost-dark">Read the Story <ArrowRight size={14} /></Link>
-                    <span className="mega-meta">Life Around Senoia · Published editorial</span>
-                  </div>
-                </>
-              : <>
-                  <span className="mega-kicker"><i className="dash" />Life Around Senoia</span>
-                  <h1>Stories from<br /><em>around town.</em></h1>
-                  <p className="dek">No featured story is published right now.</p>
-                </>
-          }
-        </div>
-      </div>
+      <HeroSlideshow slides={heroPool} isPending={query.isPending} />
       <div className="hero-strip-imgs">
-        {stripSlots.map((item, i) =>
-          item ? (
-            <Link
-              href={articlePath(item.contentType, item.slug)}
-              className="strip-img"
-              key={item.id}
-              style={item.coverUrl ? {
-                backgroundImage: `url(${item.coverUrl})`,
-                backgroundPosition: focalPos(item),
-              } : undefined}
-            >
-              <span className="lbl">
-                {item.contentType.replaceAll('-', ' ')}
-                <b>{item.title}</b>
-              </span>
-            </Link>
-          ) : (
-            // Placeholder for slot with no published content yet
-            <div className="strip-img strip-img--empty" key={i} />
-          )
-        )}
+        <StripBox slides={nonprofitPool} staggerMs={0} />
+        <StripBox slides={achieverPool} staggerMs={2000} />
+        <StripBox slides={recipePool} staggerMs={4000} />
+        <StripBox slides={secretSaucePool} staggerMs={6000} />
       </div>
     </section>
     <div className="wrap"><AdZone /></div>
     <div className="marquee-band"><div className="marquee-track"><span>SENOIA, GEORGIA</span><span>ALIVE AFTER FIVE — SEPT 18, OCT 16, NOV 20</span><span>FARMERS MARKET EVERY SATURDAY</span><span>SENOIA, GEORGIA</span></div></div>
     <div className="wrap"><SectionHead index="01" title="Latest Published Stories" link={{ label: 'View All', href: '/people' }} /><div className="published-home-grid">{latest.map((item) => <Link href={item.contentType === 'nonprofit-spotlight' ? '/nonprofit' : item.contentType === 'business-listing' ? '/directory' : item.contentType === 'event' ? '/events' : '/people'} className="spread-side-item" key={item.id} data-testid={`public-published-${item.slug}`}><span className="tag">{item.contentType.replaceAll('-', ' ')}</span><h3>{item.title}</h3><p>{item.summary}</p></Link>)}{!query.isPending && latest.length === 0 && <PublicContentState query={query} emptyMessage="No editorial stories are published right now." />}</div><SectionHead index="02" title="Explore the Publication" /><div className="index-rail">{[['01', 'People', 'Published families, young achievers, and pets', '/people'], ['02', 'Nonprofit', 'Published organizations holding this town together', '/nonprofit'], ['03', 'Lifestyle', 'History, home cooking, and local reflection', '/lifestyle'], ['04', 'Events', 'Published events around Senoia', '/events'], ['05', 'Directory', 'Published businesses and services', '/directory']].map(([num, title, desc, href]) => <Link href={href} className="index-row" key={num}><span className="idx-num">{num}</span><h3>{title}</h3><span className="idx-desc">{desc}</span><span className="arrow">→</span></Link>)}</div><AdZone label="In-feed placement" /></div>
-    <div className="pull-break"><span className="bigq">“</span><p>We have the freedom to worship. Across our community each week, church doors open without fear, and families gather to pray.</p><span className="attr">Secret Sauce — Issue 06</span></div>
+    <PullQuoteCarousel items={items} />
     <div className="wrap"><SectionHead index="03" title="Digital Editions" /><div className="edition-promo"><div className="edition-cover" style={{ backgroundImage: `url(${image('las6-cover.jpg')})` }}><span>LAS 06</span></div><div className="edition-copy"><span className="mono-label">Latest Published Edition</span><h2>Issue 06 — The Full Flip-Through</h2><p>The Brewington family, the Senoia Optimist Club, Milo Stupski, and a tribute to Ellis Crook — every page exactly as printed, plus our one-year anniversary as a publication.</p><Link href="/editions" className="btn-sharp honey-button">Open Full Edition <ArrowRight size={14} /></Link></div></div></div>
     <Newsletter />
   </PageShell>;

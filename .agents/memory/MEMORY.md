@@ -11,3 +11,4 @@
 - [Gallery feature architecture](gallery-feature-architecture.md) — content_item_gallery join table, immediate-action gallery CRUD, shared ArticleDetail route component reads section from window.location.pathname.
 - [api-zod content type sync](api-zod-content-type-sync.md) — new content types must be added to api-zod generated files (enum + type object) and server restarted; omitting causes HTTP 400 on public list endpoint.
 - [React hooks before returns](react-hooks-before-returns.md) — useState/useMemo/useEffect must precede all early conditional returns; duplicate hook blocks easy to leave behind after a partial fix.
+- [Homepage slideshow architecture](homepage-slideshow.md) — Hero/strip/pull-quote slideshows: pinned-pool curation model, sliding track CSS technique, giant-num lives inside each slide not outside the track.

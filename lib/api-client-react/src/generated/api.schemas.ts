@@ -20,16 +20,20 @@ export type PublicationSettingsNavigationItemsItem = { [key: string]: unknown };
 export type PublicationSettingsSocialLinks = {[key: string]: string};
 
 export interface HomepageCuration {
-  /** @nullable */
-  hero: string | null;
-  strip: (string | null)[];
+  heroOrder: string[];
+  stripNonprofit: string[];
+  stripAchiever: string[];
+  stripRecipe: string[];
+  stripSecretSauce: string[];
 }
 
 export interface PatchHomepageCurationBody {
   publicationId: string;
-  /** @nullable */
-  hero: string | null;
-  strip: (string | null)[];
+  heroOrder: string[];
+  stripNonprofit: string[];
+  stripAchiever: string[];
+  stripRecipe: string[];
+  stripSecretSauce: string[];
 }
 
 export interface PublicationSettings {
@@ -140,6 +144,8 @@ export interface ContentItem {
   title: string;
   summary: string;
   body: string;
+  /** @nullable */
+  pullQuote?: string | null;
   details: ContentItemDetails;
   /** @nullable */
   coverMediaId: string | null;
@@ -180,6 +186,8 @@ export interface CreateContentItem {
   summary: string;
   /** @minLength 1 */
   body: string;
+  /** @nullable */
+  pullQuote?: string | null;
   details: CreateContentItemDetails;
   /** @nullable */
   coverMediaId: string | null;

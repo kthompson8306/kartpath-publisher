@@ -339,8 +339,11 @@ router.patch(
       .update(publicationSettingsTable)
       .set({
         homepageCuration: {
-          hero: parsed.data.hero,
-          strip: parsed.data.strip,
+          heroOrder: parsed.data.heroOrder,
+          stripNonprofit: parsed.data.stripNonprofit,
+          stripAchiever: parsed.data.stripAchiever,
+          stripRecipe: parsed.data.stripRecipe,
+          stripSecretSauce: parsed.data.stripSecretSauce,
         },
       })
       .where(eq(publicationSettingsTable.publicationId, parsed.data.publicationId));

@@ -44,8 +44,11 @@ export const GetPublicationBySlugResponse = zod.object({
   "socialLinks": zod.record(zod.string(), zod.string()),
   "contactEmail": zod.string().nullable(),
   "homepageCuration": zod.object({
-    "hero": zod.string().nullable(),
-    "strip": zod.array(zod.string().nullable())
+    "heroOrder": zod.array(zod.string()),
+    "stripNonprofit": zod.array(zod.string()),
+    "stripAchiever": zod.array(zod.string()),
+    "stripRecipe": zod.array(zod.string()),
+    "stripSecretSauce": zod.array(zod.string())
   }).nullable().optional()
 })
 })
@@ -53,8 +56,11 @@ export const GetPublicationBySlugResponse = zod.object({
 
 export const PatchHomepageCurationBody = zod.object({
   "publicationId": zod.string().uuid(),
-  "hero": zod.string().uuid().nullable(),
-  "strip": zod.array(zod.string().uuid().nullable()).length(4)
+  "heroOrder": zod.array(zod.string().uuid()),
+  "stripNonprofit": zod.array(zod.string().uuid()),
+  "stripAchiever": zod.array(zod.string().uuid()),
+  "stripRecipe": zod.array(zod.string().uuid()),
+  "stripSecretSauce": zod.array(zod.string().uuid())
 })
 
 export const PatchHomepageCurationQueryParams = zod.object({})
@@ -81,6 +87,7 @@ export const ListPublishedContentItemsResponseItem = zod.object({
   "title": zod.string(),
   "summary": zod.string(),
   "body": zod.string(),
+  "pullQuote": zod.string().nullable().optional(),
   "details": zod.record(zod.string(), zod.string()),
   "coverMediaId": zod.string().nullable(),
   "coverUrl": zod.string().nullable(),
@@ -180,6 +187,7 @@ export const ListContentItemsResponseItem = zod.object({
   "title": zod.string(),
   "summary": zod.string(),
   "body": zod.string(),
+  "pullQuote": zod.string().nullable().optional(),
   "details": zod.record(zod.string(), zod.string()),
   "coverMediaId": zod.string().nullable(),
   "coverUrl": zod.string().nullable(),
@@ -214,6 +222,7 @@ export const CreateContentItemBody = zod.object({
   "title": zod.string().min(1),
   "summary": zod.string().min(1),
   "body": zod.string().min(1),
+  "pullQuote": zod.string().nullable().optional(),
   "details": zod.record(zod.string(), zod.string()),
   "coverMediaId": zod.string().nullable(),
   "coverFocalX": zod.number().optional(),
@@ -229,6 +238,7 @@ export const CreateContentItemResponse = zod.object({
   "title": zod.string(),
   "summary": zod.string(),
   "body": zod.string(),
+  "pullQuote": zod.string().nullable().optional(),
   "details": zod.record(zod.string(), zod.string()),
   "coverMediaId": zod.string().nullable(),
   "coverUrl": zod.string().nullable(),
@@ -269,6 +279,7 @@ export const GetContentItemResponse = zod.object({
   "title": zod.string(),
   "summary": zod.string(),
   "body": zod.string(),
+  "pullQuote": zod.string().nullable().optional(),
   "details": zod.record(zod.string(), zod.string()),
   "coverMediaId": zod.string().nullable(),
   "coverUrl": zod.string().nullable(),
@@ -309,6 +320,7 @@ export const UpdateContentItemBody = zod.object({
   "title": zod.string().min(1),
   "summary": zod.string().min(1),
   "body": zod.string().min(1),
+  "pullQuote": zod.string().nullable().optional(),
   "details": zod.record(zod.string(), zod.string()),
   "coverMediaId": zod.string().nullable(),
   "coverFocalX": zod.number().optional(),
@@ -324,6 +336,7 @@ export const UpdateContentItemResponse = zod.object({
   "title": zod.string(),
   "summary": zod.string(),
   "body": zod.string(),
+  "pullQuote": zod.string().nullable().optional(),
   "details": zod.record(zod.string(), zod.string()),
   "coverMediaId": zod.string().nullable(),
   "coverUrl": zod.string().nullable(),

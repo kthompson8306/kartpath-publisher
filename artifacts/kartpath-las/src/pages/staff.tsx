@@ -38,6 +38,51 @@ import { useQueryClient } from '@tanstack/react-query';
 import { LasMark, SectionKicker } from '@/components/las-brand';
 import { renderBody } from './public-pages';
 
+type PinListProps = {
+  label: string;
+  ids: string[];
+  setIds: (next: string[]) => void;
+  options: { id: string; title: string }[];
+  maxSlots: number;
+  fillLabel: string;
+  onDirty: () => void;
+};
+
+function PinList({ label, ids, setIds, options, maxSlots, fillLabel, onDirty }: PinListProps) {
+  const addSlot = () => { if (ids.length < maxSlots) { setIds([...ids, '']); onDirty(); } };
+  const removeSlot = (i: number) => { setIds(ids.filter((_, j) => j !== i)); onDirty(); };
+  const updateSlot = (i: number, val: string) => { const next = [...ids]; next[i] = val; setIds(next); onDirty(); };
+  return (
+    <div className="space-y-2">
+      <div className="mb-1.5 flex items-center justify-between">
+        <span className="font-ui text-[10px] font-bold uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">{label}</span>
+        {ids.length < maxSlots && (
+          <button type="button" onClick={addSlot} className="inline-flex items-center gap-1 font-ui text-[9px] uppercase tracking-[.12em] text-[hsl(var(--brick))] hover:opacity-70">
+            <Plus size={10} /> Add slot
+          </button>
+        )}
+      </div>
+      {ids.length === 0 && (
+        <p className="font-ui text-[10px] italic text-[hsl(var(--muted-foreground))]">Auto — shows latest {fillLabel} content in rotation.</p>
+      )}
+      {ids.map((id, i) => (
+        <div key={i} className="flex items-center gap-2">
+          <span className="w-4 shrink-0 font-meta text-[9px] text-[hsl(var(--muted-foreground))]">{i + 1}</span>
+          <select
+            value={id}
+            onChange={(e) => updateSlot(i, e.target.value)}
+            className="flex-1 border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-2 py-2 font-ui text-xs text-[hsl(var(--foreground))] focus:outline-none focus:ring-1 focus:ring-[hsl(var(--brick))]"
+          >
+            <option value="">— Choose a story —</option>
+            {options.map((opt) => <option key={opt.id} value={opt.id}>{opt.title}</option>)}
+          </select>
+          <button type="button" onClick={() => removeSlot(i)} className="grid size-9 shrink-0 place-items-center border border-[hsl(var(--border))] text-[hsl(var(--brick))] hover:border-[hsl(var(--brick))]" aria-label="Remove slot"><X size={12} /></button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function HomepageTab({ publicationId, publicationSlug }: { publicationId: string; publicationSlug: string }) {
   const pubQuery = useGetPublicationBySlug(publicationSlug, {
     query: {
@@ -58,8 +103,11 @@ function HomepageTab({ publicationId, publicationSlug }: { publicationId: string
   const saveMutation = usePatchHomepageCuration();
 
   const existingCuration = pubQuery.data?.settings?.homepageCuration;
-  const [hero, setHero] = useState<string>('');
-  const [strip, setStrip] = useState<string[]>(['', '', '', '']);
+  const [heroOrder, setHeroOrder] = useState<string[]>([]);
+  const [stripNonprofit, setStripNonprofit] = useState<string[]>([]);
+  const [stripAchiever, setStripAchiever] = useState<string[]>([]);
+  const [stripRecipe, setStripRecipe] = useState<string[]>([]);
+  const [stripSecretSauce, setStripSecretSauce] = useState<string[]>([]);
   const [initialized, setInitialized] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -67,81 +115,57 @@ function HomepageTab({ publicationId, publicationSlug }: { publicationId: string
     if (!initialized && pubQuery.data) {
       setInitialized(true);
       if (existingCuration) {
-        setHero(existingCuration.hero ?? '');
-        setStrip([
-          existingCuration.strip?.[0] ?? '',
-          existingCuration.strip?.[1] ?? '',
-          existingCuration.strip?.[2] ?? '',
-          existingCuration.strip?.[3] ?? '',
-        ]);
+        setHeroOrder(existingCuration.heroOrder ?? []);
+        setStripNonprofit(existingCuration.stripNonprofit ?? []);
+        setStripAchiever(existingCuration.stripAchiever ?? []);
+        setStripRecipe(existingCuration.stripRecipe ?? []);
+        setStripSecretSauce(existingCuration.stripSecretSauce ?? []);
       }
     }
   }, [initialized, pubQuery.data, existingCuration]);
 
-  const SLOT_LABELS = [
-    'Hero — Featured Family fallback',
-    'Strip Slot 1 — Nonprofit Spotlight fallback',
-    'Strip Slot 2 — Young Achiever fallback',
-    "Strip Slot 3 — Crook's Corner fallback",
-    'Strip Slot 4 — Recipe fallback',
-  ];
-  const slotValues = [hero, ...strip];
-  const setSlotValue = (idx: number, value: string) => {
-    setSaved(false);
-    if (idx === 0) {
-      setHero(value);
-    } else {
-      setStrip((prev) => { const next = [...prev]; next[idx - 1] = value; return next; });
-    }
-  };
-
   const handleSave = () => {
     setSaved(false);
     saveMutation.mutate(
-      { data: { publicationId, hero: hero || null, strip: strip.map((s) => s || null) as (string | null)[] } },
+      { data: { publicationId, heroOrder, stripNonprofit, stripAchiever, stripRecipe, stripSecretSauce } },
       { onSuccess: () => { setSaved(true); void pubQuery.refetch(); } },
     );
   };
 
   const items = itemsQuery.data ?? [];
+  const heroOptions = items.filter((i) => i.contentType === 'featured-family');
+  const nonprofitOptions = items.filter((i) => i.contentType === 'nonprofit-spotlight');
+  const achieverOptions = items.filter((i) => i.contentType === 'young-achiever');
+  const recipeOptions = items.filter((i) => i.contentType === 'recipe');
+  const secretSauceOptions = items.filter((i) => i.contentType === 'lifestyle-column' && (i.details as Record<string, string>)?.subsection === 'secret-sauce');
+  const dirty = () => setSaved(false);
 
   return (
-    <div className="mt-7 max-w-xl space-y-6">
+    <div className="mt-7 max-w-xl space-y-8">
       <div>
         <SectionKicker>Homepage</SectionKicker>
         <h2 className="mt-1 font-display text-3xl font-semibold tracking-[-.04em]">Curate the front page</h2>
         <p className="mt-2 font-ui text-xs leading-5 text-[hsl(var(--muted-foreground))]">
-          Pin a specific story to each homepage slot. Leave a slot empty to fall back to the latest published content of that type automatically.
+          Pin stories to lead each section in order — they appear first in the rotation. Leave a section empty to show the latest published content automatically.
         </p>
       </div>
 
-      {pubQuery.isPending && (
-        <div className="space-y-4">
-          {[0, 1, 2, 3, 4].map((i) => <div key={i} className="h-14 animate-pulse bg-[hsl(var(--muted))]" />)}
+      {pubQuery.isPending ? (
+        <div className="space-y-4">{[0, 1, 2, 3, 4].map((i) => <div key={i} className="h-14 animate-pulse bg-[hsl(var(--muted))]" />)}</div>
+      ) : (
+        <div className="space-y-7">
+          <PinList label="Hero — Featured Family" ids={heroOrder} setIds={setHeroOrder} options={heroOptions} maxSlots={6} fillLabel="Featured Family" onDirty={dirty} />
+          <PinList label="Strip — Nonprofit Spotlight" ids={stripNonprofit} setIds={setStripNonprofit} options={nonprofitOptions} maxSlots={4} fillLabel="Nonprofit Spotlight" onDirty={dirty} />
+          <PinList label="Strip — Young Achiever" ids={stripAchiever} setIds={setStripAchiever} options={achieverOptions} maxSlots={4} fillLabel="Young Achiever" onDirty={dirty} />
+          <PinList label="Strip — Recipe" ids={stripRecipe} setIds={setStripRecipe} options={recipeOptions} maxSlots={4} fillLabel="Recipe" onDirty={dirty} />
+          <PinList label="Strip — Secret Sauce" ids={stripSecretSauce} setIds={setStripSecretSauce} options={secretSauceOptions} maxSlots={4} fillLabel="Secret Sauce" onDirty={dirty} />
+          <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--muted)/.4)] px-4 py-3">
+            <p className="font-ui text-[10px] leading-5 text-[hsl(var(--muted-foreground))]">
+              <strong className="font-bold text-[hsl(var(--foreground))]">Pull quotes</strong> — open any article in the Editorial tab and fill in the "Pull quote" field to include it in the homepage quote rotation.
+            </p>
+          </div>
         </div>
       )}
-
-      {!pubQuery.isPending && SLOT_LABELS.map((label, idx) => (
-        <div key={idx}>
-          <label className="mb-1.5 block font-ui text-[10px] font-bold uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">{label}</label>
-          {itemsQuery.isPending ? (
-            <div className="h-10 animate-pulse bg-[hsl(var(--muted))]" />
-          ) : (
-            <select
-              value={slotValues[idx]}
-              onChange={(e) => setSlotValue(idx, e.target.value)}
-              className="w-full border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-3 py-2.5 font-ui text-xs text-[hsl(var(--foreground))] focus:outline-none focus:ring-1 focus:ring-[hsl(var(--brick))]"
-            >
-              <option value="">— Auto (latest of this type) —</option>
-              {items.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.title} — {item.contentType.replaceAll('-', ' ')}
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
-      ))}
 
       {!pubQuery.isPending && (
         <div className="flex items-center gap-4 pt-1">
@@ -227,6 +251,8 @@ type FormState = Omit<CreateContentItem, 'publicationId' | 'details'> & {
   // cover photo focal point (0–1 range, default 0.5)
   coverFocalX: number;
   coverFocalY: number;
+  // pull quote for homepage rotation
+  pullQuote: string;
 };
 
 const EMPTY_FORM: FormState = {
@@ -258,6 +284,7 @@ const EMPTY_FORM: FormState = {
   bizHours: '',
   coverFocalX: 0.5,
   coverFocalY: 0.5,
+  pullQuote: '',
 };
 
 function Initials({ name }: { name: string }) {
@@ -785,6 +812,10 @@ function Editor({
         <label className="block">
           <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Standfirst</span>
           <textarea value={form.summary} onChange={(event) => update('summary', event.target.value)} rows={3} placeholder="The short read on why this matters here." className="w-full resize-y border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2.5 font-editorial text-lg leading-tight outline-none focus:border-[hsl(var(--brick))]" data-testid="textarea-content-summary" />
+        </label>
+        <label className="block">
+          <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Pull quote <span className="normal-case tracking-normal opacity-60">(optional — shown in homepage quote rotation)</span></span>
+          <input value={form.pullQuote} onChange={(event) => update('pullQuote', event.target.value)} maxLength={220} placeholder="A memorable sentence from this piece…" className="h-10 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-editorial text-base outline-none focus:border-[hsl(var(--brick))]" data-testid="input-content-pull-quote" />
         </label>
         <label className="block">
           <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Story body</span>
@@ -1711,6 +1742,7 @@ export default function Staff() {
         bizWebsite: d.website ?? '',
         bizAddress: ct === 'business-listing' ? (d.address ?? '') : '',
         bizHours: d.hours ?? '',
+        pullQuote: item.pullQuote ?? '',
       });
       setEditorError('');
     }
@@ -1815,6 +1847,7 @@ export default function Staff() {
       summary: form.summary.trim(),
       body: form.body.trim(),
       details,
+      pullQuote: form.pullQuote.trim() || null,
       coverMediaId: form.coverMediaId || null,
       coverFocalX: form.coverFocalX,
       coverFocalY: form.coverFocalY,
