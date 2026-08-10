@@ -47,9 +47,13 @@ function HomepageTab({ publicationId, publicationSlug }: { publicationId: string
       retry: false,
     },
   });
+  const itemsQueryParams = useMemo(
+    () => ({ publicationId, status: EditorialStatus.published as any }),
+    [publicationId],
+  );
   const itemsQuery = useListContentItems(
-    { publicationId, status: EditorialStatus.published as any },
-    { query: { enabled: Boolean(publicationId), retry: false } },
+    itemsQueryParams,
+    { query: { enabled: Boolean(publicationId), queryKey: getListContentItemsQueryKey(itemsQueryParams), retry: false } },
   );
   const saveMutation = usePatchHomepageCuration();
 
@@ -179,6 +183,20 @@ const CONTENT_TYPES = [
 
 type ContentType = (typeof CONTENT_TYPES)[number]['value'];
 type TimelineEntry = { year: string; event: string };
+
+const BUSINESS_CATEGORIES = [
+  'Dining & Drinks',
+  'Shopping & Retail',
+  'Professional Services',
+  'Health & Wellness',
+  'Real Estate',
+  'Automotive',
+  'Home & Garden',
+  'Arts & Entertainment',
+  'Beauty & Salon',
+  'Other',
+];
+
 type FormState = Omit<CreateContentItem, 'publicationId' | 'details'> & {
   detailsText: string;
   // Shared structured field for new types
@@ -191,6 +209,21 @@ type FormState = Omit<CreateContentItem, 'publicationId' | 'details'> & {
   steps: string[];
   // crooks-corner specific
   timeline: TimelineEntry[];
+  // event specific
+  eventDate: string;
+  startTime: string;
+  endTime: string;
+  venue: string;
+  eventAddress: string;
+  admission: string;
+  ticketsUrl: string;
+  eventContact: string;
+  // business-listing specific
+  bizCategory: string;
+  bizPhone: string;
+  bizWebsite: string;
+  bizAddress: string;
+  bizHours: string;
   // cover photo focal point (0–1 range, default 0.5)
   coverFocalX: number;
   coverFocalY: number;
@@ -210,6 +243,19 @@ const EMPTY_FORM: FormState = {
   ingredients: [''],
   steps: [''],
   timeline: [{ year: '', event: '' }],
+  eventDate: '',
+  startTime: '',
+  endTime: '',
+  venue: '',
+  eventAddress: '',
+  admission: '',
+  ticketsUrl: '',
+  eventContact: '',
+  bizCategory: '',
+  bizPhone: '',
+  bizWebsite: '',
+  bizAddress: '',
+  bizHours: '',
   coverFocalX: 0.5,
   coverFocalY: 0.5,
 };
@@ -820,6 +866,88 @@ function Editor({
                 </div>
                 <button type="button" onClick={addTimelineRow} className="mt-2 inline-flex items-center gap-1.5 font-ui text-[10px] uppercase tracking-[.12em] text-[hsl(var(--brick))] hover:text-[hsl(var(--destructive))]" data-testid="button-add-timeline"><Plus size={11} /> Add timeline entry</button>
               </div>
+            </div>
+          );
+
+          if (ct === 'event') return (
+            <div className="space-y-4 rounded border border-[hsl(var(--honey)/.4)] bg-[hsl(var(--honey)/.06)] p-4">
+              <p className="font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--brick))]">Event fields</p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="block">
+                  <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Issue number</span>
+                  <input value={form.issue} onChange={(e) => update('issue', e.target.value)} placeholder="06" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" data-testid="input-event-issue" />
+                </label>
+                <label className="block">
+                  <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Date</span>
+                  <input type="date" value={form.eventDate} onChange={(e) => update('eventDate', e.target.value)} className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" data-testid="input-event-date" />
+                </label>
+                <label className="block">
+                  <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Start time</span>
+                  <input type="time" value={form.startTime} onChange={(e) => update('startTime', e.target.value)} className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" data-testid="input-event-start-time" />
+                </label>
+                <label className="block">
+                  <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">End time</span>
+                  <input type="time" value={form.endTime} onChange={(e) => update('endTime', e.target.value)} className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" data-testid="input-event-end-time" />
+                </label>
+                <label className="block">
+                  <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Venue name</span>
+                  <input value={form.venue} onChange={(e) => update('venue', e.target.value)} placeholder="Senoia Coffee & Café" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" data-testid="input-event-venue" />
+                </label>
+                <label className="block">
+                  <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Address</span>
+                  <input value={form.eventAddress} onChange={(e) => update('eventAddress', e.target.value)} placeholder="1 Main Street, Senoia GA 30276" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" data-testid="input-event-address" />
+                </label>
+                <label className="block">
+                  <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Admission / cost</span>
+                  <input value={form.admission} onChange={(e) => update('admission', e.target.value)} placeholder="Free · $10 · $25/person" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" data-testid="input-event-admission" />
+                </label>
+                <label className="block">
+                  <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Website / tickets URL</span>
+                  <input type="url" value={form.ticketsUrl} onChange={(e) => update('ticketsUrl', e.target.value)} placeholder="https://…" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" data-testid="input-event-tickets-url" />
+                </label>
+              </div>
+              <label className="block">
+                <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Contact (phone or email)</span>
+                <input value={form.eventContact} onChange={(e) => update('eventContact', e.target.value)} placeholder="770-555-0100 · hello@example.com" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" data-testid="input-event-contact" />
+              </label>
+            </div>
+          );
+
+          if (ct === 'business-listing') return (
+            <div className="space-y-4 rounded border border-[hsl(var(--honey)/.4)] bg-[hsl(var(--honey)/.06)] p-4">
+              <p className="font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--brick))]">Business Listing fields</p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="block">
+                  <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Issue number</span>
+                  <input value={form.issue} onChange={(e) => update('issue', e.target.value)} placeholder="06" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" data-testid="input-biz-issue" />
+                </label>
+                <label className="block">
+                  <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Category</span>
+                  <span className="relative block">
+                    <select value={form.bizCategory} onChange={(e) => update('bizCategory', e.target.value)} className="h-9 w-full appearance-none border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 pr-8 font-ui text-xs outline-none focus:border-[hsl(var(--brick))]" data-testid="select-biz-category">
+                      <option value="">— choose category —</option>
+                      {BUSINESS_CATEGORIES.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
+                    </select>
+                    <ChevronDown size={13} className="pointer-events-none absolute right-3 top-2.5 text-[hsl(var(--muted-foreground))]" />
+                  </span>
+                </label>
+                <label className="block">
+                  <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Phone</span>
+                  <input type="tel" value={form.bizPhone} onChange={(e) => update('bizPhone', e.target.value)} placeholder="770-555-0100" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" data-testid="input-biz-phone" />
+                </label>
+                <label className="block">
+                  <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Website</span>
+                  <input type="url" value={form.bizWebsite} onChange={(e) => update('bizWebsite', e.target.value)} placeholder="https://…" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" data-testid="input-biz-website" />
+                </label>
+              </div>
+              <label className="block">
+                <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Street address</span>
+                <input value={form.bizAddress} onChange={(e) => update('bizAddress', e.target.value)} placeholder="12 Main Street, Senoia GA 30276" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" data-testid="input-biz-address" />
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Hours</span>
+                <textarea value={form.bizHours} onChange={(e) => update('bizHours', e.target.value)} rows={3} placeholder={'Mon–Fri  9am–5pm\nSat  10am–3pm\nSun  Closed'} className="w-full resize-y border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2.5 font-meta text-xs leading-5 outline-none focus:border-[hsl(var(--brick))]" data-testid="textarea-biz-hours" />
+              </label>
             </div>
           );
 
@@ -1542,6 +1670,21 @@ export default function Staff() {
         ingredients,
         steps,
         timeline,
+        // event
+        eventDate: d.date ?? '',
+        startTime: d.startTime ?? '',
+        endTime: d.endTime ?? '',
+        venue: d.venue ?? '',
+        eventAddress: d.address ?? '',
+        admission: d.admission ?? '',
+        ticketsUrl: d.ticketsUrl ?? '',
+        eventContact: d.contact ?? '',
+        // business-listing
+        bizCategory: d.category ?? '',
+        bizPhone: d.phone ?? '',
+        bizWebsite: d.website ?? '',
+        bizAddress: ct === 'business-listing' ? (d.address ?? '') : '',
+        bizHours: d.hours ?? '',
       });
       setEditorError('');
     }
@@ -1610,6 +1753,30 @@ export default function Staff() {
       if (!form.subsection) { setEditorError('Subsection (Secret Sauce or Around Town) is required for a Lifestyle Column.'); return null; }
       if (!form.body.trim()) { setEditorError('Story body is required.'); return null; }
       details = { issue: form.issue.trim(), subsection: form.subsection };
+    } else if (ct === 'event') {
+      if (!form.eventDate) { setEditorError('A date is required for an event.'); return null; }
+      if (!form.venue.trim()) { setEditorError('A venue name is required for an event.'); return null; }
+      details = {
+        issue: form.issue.trim(),
+        date: form.eventDate,
+        startTime: form.startTime,
+        endTime: form.endTime,
+        venue: form.venue.trim(),
+        address: form.eventAddress.trim(),
+        admission: form.admission.trim(),
+        ticketsUrl: form.ticketsUrl.trim(),
+        contact: form.eventContact.trim(),
+      };
+    } else if (ct === 'business-listing') {
+      if (!form.bizCategory) { setEditorError('A category is required for a business listing.'); return null; }
+      details = {
+        issue: form.issue.trim(),
+        category: form.bizCategory,
+        phone: form.bizPhone.trim(),
+        website: form.bizWebsite.trim(),
+        address: form.bizAddress.trim(),
+        hours: form.bizHours.trim(),
+      };
     } else {
       if (!form.body.trim()) { setEditorError('Headline, slug, standfirst, and story body are required.'); return null; }
       const parsed = parseDetailsJson();
