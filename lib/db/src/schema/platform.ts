@@ -119,6 +119,7 @@ export const mediaAssetsTable = pgTable("media_assets", {
   byteSize: integer("byte_size").notNull(),
   status: text("status").notNull().default("pending"),
   altText: text("alt_text"),
+  coverPosition: text("cover_position"),
   ...timestamps,
 });
 

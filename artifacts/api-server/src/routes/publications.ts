@@ -16,6 +16,7 @@ function serializeItem(
   item: typeof contentItemsTable.$inferSelect,
   mediaObjectPath: string | null,
   mediaAltText: string | null = null,
+  mediaCoverPosition: string | null = null,
 ) {
   const coverUrl = mediaObjectPath
     ? `/api/storage/objects${mediaObjectPath.replace(/^\/objects/, "")}`
@@ -24,6 +25,7 @@ function serializeItem(
     ...item,
     coverUrl,
     coverAltText: mediaAltText,
+    coverPosition: mediaCoverPosition,
     createdAt: item.createdAt.toISOString(),
     updatedAt: item.updatedAt.toISOString(),
     publishedAt: item.publishedAt?.toISOString() ?? null,
@@ -83,6 +85,7 @@ router.get("/publications/:slug/content-items", async (req, res): Promise<void> 
       item: contentItemsTable,
       mediaObjectPath: mediaAssetsTable.objectPath,
       mediaAltText: mediaAssetsTable.altText,
+      mediaCoverPosition: mediaAssetsTable.coverPosition,
     })
     .from(contentItemsTable)
     .leftJoin(
@@ -97,7 +100,7 @@ router.get("/publications/:slug/content-items", async (req, res): Promise<void> 
 
   res.json(
     ListPublishedContentItemsResponse.parse(
-      rows.map(({ item, mediaObjectPath, mediaAltText }) => serializeItem(item, mediaObjectPath ?? null, mediaAltText ?? null)),
+      rows.map(({ item, mediaObjectPath, mediaAltText, mediaCoverPosition }) => serializeItem(item, mediaObjectPath ?? null, mediaAltText ?? null, mediaCoverPosition ?? null)),
     ),
   );
 });
