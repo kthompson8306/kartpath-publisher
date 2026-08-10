@@ -7,3 +7,5 @@
 - [Editorial route schemas](editorial-route-schemas.md) — Body schema quirks for integration tests (PATCH requires all fields including coverMediaId:null; Publish requires status; GET list returns plain array not {items:[]}).
 - [Cleanup job pattern](cleanup-job-pattern.md) — Stale pending media cleanup architecture: direct function call testable, scheduler wired into index.ts after listen().
 - [Drizzle migration discipline](drizzle-migration-discipline.md) — New schema columns need a drizzle/ SQL file AND a journal entry; schema edits alone don't update the test DB rebuilt from migrations.
+- [API client build discipline](api-client-build-discipline.md) — api-client-react uses project references (composite:true); must run `pnpm tsc -p tsconfig.json` in lib/api-client-react after adding exports or kartpath-las tsc sees stale .d.ts.
+- [Gallery feature architecture](gallery-feature-architecture.md) — content_item_gallery join table, immediate-action gallery CRUD, shared ArticleDetail route component reads section from window.location.pathname.

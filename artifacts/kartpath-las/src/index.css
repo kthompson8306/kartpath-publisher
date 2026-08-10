@@ -387,6 +387,72 @@
     inset: -1px;
   }
 
+  /* ── Article detail page ────────────────────────────────────────── */
+  .article-body {
+    padding-top: 48px;
+    padding-bottom: 64px;
+  }
+  .article-body p {
+    font-family: var(--editorial);
+    font-size: 1.1rem;
+    line-height: 1.65;
+    margin-bottom: 1.2em;
+    color: var(--ink);
+  }
+  .article-body h3.body-subhead {
+    font-family: var(--display);
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: -.02em;
+    margin: 36px 0 10px;
+    color: var(--ink);
+  }
+
+  /* ── Gallery grid (public-facing) ────────────────────────────────── */
+  .article-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 16px;
+    margin-top: 24px;
+  }
+  .gallery-figure {
+    margin: 0;
+    break-inside: avoid;
+  }
+  .gallery-figure img {
+    width: 100%;
+    aspect-ratio: 4/3;
+    object-fit: cover;
+    display: block;
+    border: 1px solid var(--line);
+  }
+  .gallery-figure figcaption {
+    padding: 8px 0 0;
+    font-family: var(--ui);
+    font-size: .78rem;
+    color: var(--ink-soft);
+    line-height: 1.4;
+  }
+
+  /* ── "Read full story" link on section list cards ────────────────── */
+  .story-read-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 18px;
+    font-family: var(--mono);
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--brick);
+    text-decoration: none;
+    transition: color 0.15s ease;
+  }
+  .story-read-link:hover {
+    color: var(--pine);
+  }
+
   /* Does not work on elements with overflow:hidden! */
   .hover-elevate:not(.no-default-hover-elevate),
   .active-elevate:not(.no-default-active-elevate),

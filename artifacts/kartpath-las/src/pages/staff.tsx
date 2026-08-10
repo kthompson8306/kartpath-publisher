@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, Check, ChevronDown, CircleAlert, Clock3, Eye, FilePlus2, ImageIcon, Loader2, Pencil, Plus, RefreshCw, Save, Send, ShieldCheck, Trash2, Undo2, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, ChevronDown, ChevronUp, CircleAlert, Clock3, Eye, FilePlus2, ImageIcon, Loader2, Pencil, Plus, RefreshCw, Save, Send, ShieldCheck, Trash2, Undo2, X } from 'lucide-react';
 import { Link } from 'wouter';
 import {
   EditorialContentType,
@@ -7,8 +7,10 @@ import {
   getGetContentItemQueryKey,
   getGetCurrentUserQueryKey,
   getListContentItemsQueryKey,
+  getListGalleryItemsQueryKey,
   getListNominationsQueryKey,
   getListStaffRosterQueryKey,
+  useAddGalleryItem,
   useCreateContentItem,
   useCreateStaffInvite,
   useCancelStaffInvite,
@@ -16,15 +18,19 @@ import {
   useGetContentItem,
   useGetCurrentUser,
   useListContentItems,
+  useListGalleryItems,
   useListNominations,
   useListStaffRoster,
   useListSubscribers,
   usePublishContentItem,
+  useRemoveGalleryItem,
+  useReorderGallery,
   useRevokeStaffAccess,
   useUpdateContentItem,
+  useUpdateGalleryItem,
   useUpdateNominationStatus,
 } from '@workspace/api-client-react';
-import type { ContentItem, CreateContentItem, NominationRecord, StaffInviteRecord, StaffMember, SubscriberRecord, UpdateNominationStatusBodyStatus } from '@workspace/api-client-react';
+import type { ContentItem, CreateContentItem, GalleryItem, NominationRecord, StaffInviteRecord, StaffMember, SubscriberRecord, UpdateNominationStatusBodyStatus } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { LasMark, SectionKicker } from '@/components/las-brand';
 import { renderBody } from './public-pages';
@@ -736,6 +742,10 @@ function Editor({
           focalY={form.coverFocalY}
           onFocalChange={(x, y) => setForm({ ...form, coverFocalX: x, coverFocalY: y })}
         />
+        {/* ── Gallery (existing articles only) ─────────────────────────── */}
+        {selectedId && !isCreating && (
+          <GalleryManager contentItemId={selectedId} publicationId={publicationId} />
+        )}
         </div>
       )}
       {error && <div className="mx-5 flex items-start gap-2 border border-[hsl(var(--brick)/.4)] bg-[hsl(var(--brick)/.07)] px-3 py-2.5 font-ui text-xs leading-5 text-[hsl(var(--brick))] sm:mx-6" role="alert" data-testid="status-editor-error"><CircleAlert size={15} className="mt-0.5 shrink-0" /> {error}</div>}
@@ -750,6 +760,195 @@ function Editor({
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── Gallery management ────────────────────────────────────────────────────────
+
+type GalleryItemRowProps = {
+  item: GalleryItem;
+  isFirst: boolean;
+  isLast: boolean;
+  publicationId: string;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  onRemove: () => void;
+  onCaptionSave: (caption: string) => void;
+};
+
+function GalleryItemRow({ item, isFirst, isLast, onMoveUp, onMoveDown, onRemove, onCaptionSave }: GalleryItemRowProps) {
+  const [caption, setCaption] = useState(item.caption ?? '');
+  return (
+    <div className="flex items-center gap-2 border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-2 py-2" data-testid={`gallery-item-${item.mediaAssetId}`}>
+      {item.mediaUrl
+        ? <img src={item.mediaUrl} alt={item.altText ?? ''} className="size-12 shrink-0 object-cover" />
+        : <div className="grid size-12 shrink-0 place-items-center bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]"><ImageIcon size={16} /></div>
+      }
+      <input
+        value={caption}
+        onChange={(e) => setCaption(e.target.value)}
+        onBlur={() => onCaptionSave(caption)}
+        placeholder="Caption (optional)"
+        className="h-8 flex-1 border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-2 font-ui text-[10px] outline-none focus:border-[hsl(var(--brick))]"
+        data-testid={`input-gallery-caption-${item.mediaAssetId}`}
+      />
+      <div className="flex shrink-0 flex-col gap-0.5">
+        <button type="button" onClick={onMoveUp} disabled={isFirst} className="grid size-5 place-items-center border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] transition-colors hover:border-[hsl(var(--brick))] hover:text-[hsl(var(--brick))] disabled:opacity-30" aria-label="Move up"><ChevronUp size={11} /></button>
+        <button type="button" onClick={onMoveDown} disabled={isLast} className="grid size-5 place-items-center border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] transition-colors hover:border-[hsl(var(--brick))] hover:text-[hsl(var(--brick))] disabled:opacity-30" aria-label="Move down"><ChevronDown size={11} /></button>
+      </div>
+      <button type="button" onClick={onRemove} className="grid size-8 shrink-0 place-items-center border border-[hsl(var(--border))] text-[hsl(var(--brick))] transition-colors hover:border-[hsl(var(--brick))]" aria-label="Remove from gallery" data-testid={`button-gallery-remove-${item.mediaAssetId}`}><X size={13} /></button>
+    </div>
+  );
+}
+
+function GalleryManager({ contentItemId, publicationId }: { contentItemId: string; publicationId: string }) {
+  const queryClient = useQueryClient();
+  const galleryParams = { publicationId };
+  const galleryKey = getListGalleryItemsQueryKey(contentItemId, galleryParams);
+  const galleryQuery = useListGalleryItems(contentItemId, galleryParams, {
+    query: { queryKey: galleryKey, retry: false },
+  });
+
+  const addMutation = useAddGalleryItem();
+  const removeMutation = useRemoveGalleryItem();
+  const reorderMutation = useReorderGallery();
+  const updateMutation = useUpdateGalleryItem();
+
+  const [uploadState, setUploadState] = useState<UploadState>('idle');
+  const [uploadError, setUploadError] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const items = galleryQuery.data ?? [];
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: galleryKey });
+
+  const handleFileChange = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      setUploadError('Only image files are accepted.');
+      return;
+    }
+    setUploadError('');
+    try {
+      setUploadState('requesting');
+      const reqRes = await fetch('/api/storage/uploads/request-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ publicationId, name: file.name, size: file.size, contentType: file.type }),
+      });
+      if (!reqRes.ok) {
+        const err = (await reqRes.json().catch(() => ({}))) as { error?: string };
+        throw new Error(err.error ?? `Request failed (${reqRes.status})`);
+      }
+      const { mediaId, uploadURL } = (await reqRes.json()) as { mediaId: string; uploadURL: string };
+
+      setUploadState('uploading');
+      const putRes = await fetch(uploadURL, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
+      if (!putRes.ok) throw new Error(`File upload failed (${putRes.status})`);
+
+      setUploadState('completing');
+      const completeRes = await fetch(`/api/storage/uploads/${mediaId}/complete`, { method: 'POST', credentials: 'include' });
+      if (!completeRes.ok) {
+        const err = (await completeRes.json().catch(() => ({}))) as { error?: string };
+        throw new Error(err.error ?? `Finalize failed (${completeRes.status})`);
+      }
+
+      addMutation.mutate(
+        { id: contentItemId, data: { publicationId, mediaId } },
+        {
+          onSuccess: () => { setUploadState('done'); void invalidate(); },
+          onError: (err: unknown) => {
+            setUploadError((err as { message?: string })?.message ?? 'Could not add to gallery.');
+            setUploadState('error');
+          },
+        },
+      );
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Upload failed — try again.');
+      setUploadState('error');
+    }
+  };
+
+  const busy = uploadState === 'requesting' || uploadState === 'uploading' || uploadState === 'completing' || addMutation.isPending;
+
+  const handleMove = (mediaId: string, direction: 'up' | 'down') => {
+    const ids = items.map((i) => i.mediaAssetId);
+    const idx = ids.indexOf(mediaId);
+    if (direction === 'up' && idx <= 0) return;
+    if (direction === 'down' && idx >= ids.length - 1) return;
+    const newIds = [...ids];
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+    [newIds[idx], newIds[swapIdx]] = [newIds[swapIdx], newIds[idx]];
+    reorderMutation.mutate(
+      { id: contentItemId, data: { publicationId, items: newIds } },
+      { onSuccess: () => void invalidate() },
+    );
+  };
+
+  const handleRemove = (mediaId: string) => {
+    if (!window.confirm('Remove this photo from the gallery?')) return;
+    removeMutation.mutate(
+      { id: contentItemId, mediaId, params: { publicationId } },
+      { onSuccess: () => void invalidate() },
+    );
+  };
+
+  const handleCaptionSave = (mediaId: string, caption: string) => {
+    updateMutation.mutate(
+      { id: contentItemId, mediaId, data: { publicationId, caption: caption || null } },
+      { onSuccess: () => void invalidate() },
+    );
+  };
+
+  return (
+    <div data-testid="field-gallery">
+      <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">
+        Photo gallery <span className="normal-case tracking-normal">(optional — appears on the article's public page)</span>
+      </span>
+
+      {galleryQuery.isPending && <div className="mb-2 h-10 animate-pulse border border-[hsl(var(--border))] bg-[hsl(var(--muted))]" />}
+      {galleryQuery.isError && <p className="mb-2 font-ui text-[10px] text-[hsl(var(--brick))]">Could not load gallery. Try refreshing.</p>}
+
+      {items.length > 0 && (
+        <div className="mb-3 space-y-1.5" data-testid="gallery-item-list">
+          {items.map((gitem, index) => (
+            <GalleryItemRow
+              key={gitem.id}
+              item={gitem}
+              isFirst={index === 0}
+              isLast={index === items.length - 1}
+              publicationId={publicationId}
+              onMoveUp={() => handleMove(gitem.mediaAssetId, 'up')}
+              onMoveDown={() => handleMove(gitem.mediaAssetId, 'down')}
+              onRemove={() => handleRemove(gitem.mediaAssetId)}
+              onCaptionSave={(caption) => handleCaptionSave(gitem.mediaAssetId, caption)}
+            />
+          ))}
+        </div>
+      )}
+
+      {uploadError && (
+        <div className="mb-2 flex items-start gap-2 border border-[hsl(var(--brick)/.4)] bg-[hsl(var(--brick)/.07)] px-3 py-2 font-ui text-[10px] text-[hsl(var(--brick))]" role="alert" data-testid="status-gallery-upload-error">
+          <CircleAlert size={13} className="mt-0.5 shrink-0" /> {uploadError}
+        </div>
+      )}
+
+      <label className={`inline-flex cursor-pointer items-center gap-2 border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 font-ui text-[10px] uppercase tracking-[.12em] transition-colors hover:border-[hsl(var(--brick))] ${busy ? 'pointer-events-none opacity-50' : ''}`} data-testid="button-add-gallery-photo">
+        {busy ? <Loader2 size={12} className="animate-spin" /> : <ImageIcon size={12} />}
+        {busy ? 'Uploading…' : 'Add gallery photo'}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="sr-only"
+          disabled={busy}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) void handleFileChange(file);
+            e.target.value = '';
+          }}
+        />
+      </label>
     </div>
   );
 }

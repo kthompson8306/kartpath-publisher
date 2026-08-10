@@ -361,3 +361,47 @@ export type ListSubscribersParams = {
 publicationId: PublicationIdQueryParameter;
 };
 
+export interface GalleryItem {
+  id: string;
+  mediaAssetId: string;
+  /** @nullable */
+  mediaUrl: string | null;
+  /** @nullable */
+  altText: string | null;
+  sortOrder: number;
+  /** @nullable */
+  caption: string | null;
+}
+
+export type GalleryItemList = GalleryItem[];
+
+export interface PublishedArticle extends ContentItem {
+  gallery: GalleryItemList;
+}
+
+export interface AddGalleryItemBody {
+  publicationId: string;
+  mediaId: string;
+  caption?: string;
+}
+
+export interface ReorderGalleryBody {
+  publicationId: string;
+  /** Ordered array of mediaAssetIds */
+  items: string[];
+}
+
+export interface UpdateGalleryItemBody {
+  publicationId: string;
+  /** @nullable */
+  caption: string | null;
+}
+
+export type ListGalleryItemsParams = {
+  publicationId: string;
+};
+
+export type RemoveGalleryItemQueryParams = {
+  publicationId: string;
+};
+

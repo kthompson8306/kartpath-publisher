@@ -2,12 +2,19 @@ import { Router, type IRouter } from "express";
 import {
   GetPublicationBySlugParams,
   GetPublicationBySlugResponse,
+  GetPublishedArticleParams,
+  GetPublishedArticleResponse,
   ListPublishedContentItemsParams,
   ListPublishedContentItemsQueryParams,
   ListPublishedContentItemsResponse,
 } from "@workspace/api-zod";
 import { and, asc, eq, sql } from "drizzle-orm";
-import { contentItemsTable, db, mediaAssetsTable } from "@workspace/db";
+import {
+  contentItemGalleryTable,
+  contentItemsTable,
+  db,
+  mediaAssetsTable,
+} from "@workspace/db";
 import { getPublicationBySlug } from "../lib/platform";
 
 const router: IRouter = Router();
@@ -103,6 +110,83 @@ router.get("/publications/:slug/content-items", async (req, res): Promise<void> 
         serializeItem(item, mediaObjectPath ?? null, mediaAltText ?? null),
       ),
     ),
+  );
+});
+
+router.get("/publications/:slug/content-items/:articleSlug", async (req, res): Promise<void> => {
+  const params = GetPublishedArticleParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: "Invalid article request" });
+    return;
+  }
+
+  const result = await getPublicationBySlug(params.data.slug);
+  if (!result?.publication) {
+    res.status(404).json({ error: "Publication not found" });
+    return;
+  }
+
+  const [row] = await db
+    .select({
+      item: contentItemsTable,
+      mediaObjectPath: mediaAssetsTable.objectPath,
+      mediaAltText: mediaAssetsTable.altText,
+    })
+    .from(contentItemsTable)
+    .leftJoin(
+      mediaAssetsTable,
+      and(
+        eq(contentItemsTable.coverMediaId, mediaAssetsTable.id),
+        eq(mediaAssetsTable.status, "ready"),
+      ),
+    )
+    .where(
+      and(
+        eq(contentItemsTable.slug, params.data.articleSlug),
+        eq(contentItemsTable.publicationId, result.publication.id),
+        eq(contentItemsTable.status, "published"),
+      ),
+    );
+
+  if (!row) {
+    res.status(404).json({ error: "Article not found" });
+    return;
+  }
+
+  // Fetch gallery items in sort order
+  const galleryRows = await db
+    .select({
+      item: contentItemGalleryTable,
+      objectPath: mediaAssetsTable.objectPath,
+      altText: mediaAssetsTable.altText,
+    })
+    .from(contentItemGalleryTable)
+    .innerJoin(
+      mediaAssetsTable,
+      eq(contentItemGalleryTable.mediaAssetId, mediaAssetsTable.id),
+    )
+    .where(eq(contentItemGalleryTable.contentItemId, row.item.id))
+    .orderBy(
+      asc(contentItemGalleryTable.sortOrder),
+      asc(contentItemGalleryTable.createdAt),
+    );
+
+  const gallery = galleryRows.map(({ item, objectPath, altText }) => ({
+    id: item.id,
+    mediaAssetId: item.mediaAssetId,
+    mediaUrl: objectPath
+      ? `/api/storage/objects${objectPath.replace(/^\/objects/, "")}`
+      : null,
+    altText: altText ?? null,
+    sortOrder: item.sortOrder,
+    caption: item.caption ?? null,
+  }));
+
+  res.json(
+    GetPublishedArticleResponse.parse({
+      ...serializeItem(row.item, row.mediaObjectPath ?? null, row.mediaAltText ?? null),
+      gallery,
+    }),
   );
 });
 

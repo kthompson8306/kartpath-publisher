@@ -586,3 +586,132 @@ export const ListSubscribersResponse = zod.object({
 })
 
 
+/**
+ * Shared gallery item schema
+ */
+export const GalleryItemSchema = zod.object({
+  "id": zod.string(),
+  "mediaAssetId": zod.string(),
+  "mediaUrl": zod.string().nullable(),
+  "altText": zod.string().nullable(),
+  "sortOrder": zod.number(),
+  "caption": zod.string().nullable(),
+})
+
+
+/**
+ * @summary Get a single published article with its gallery (public, unauthenticated)
+ */
+export const GetPublishedArticleParams = zod.object({
+  "slug": zod.coerce.string(),
+  "articleSlug": zod.coerce.string()
+})
+
+export const GetPublishedArticleResponse = zod.object({
+  "id": zod.string(),
+  "publicationId": zod.string(),
+  "contentType": zod.enum(['featured-family', 'nonprofit-spotlight', 'young-achiever', 'pet-of-the-month', 'business-listing', 'event', 'crooks-corner', 'recipe', 'lifestyle-column']),
+  "status": zod.enum(['draft', 'published']),
+  "slug": zod.string(),
+  "title": zod.string(),
+  "summary": zod.string(),
+  "body": zod.string(),
+  "details": zod.record(zod.string(), zod.string()),
+  "coverMediaId": zod.string().nullable(),
+  "coverUrl": zod.string().nullable(),
+  "coverAltText": zod.string().nullable(),
+  "coverFocalX": zod.number().nullable(),
+  "coverFocalY": zod.number().nullable(),
+  "createdBy": zod.string().nullable(),
+  "updatedBy": zod.string().nullable(),
+  "publishedAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date(),
+  "gallery": zod.array(GalleryItemSchema)
+})
+
+
+/**
+ * @summary List gallery items for a content item (staff only)
+ */
+export const listGalleryItemsPathIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$');
+
+export const ListGalleryItemsParams = zod.object({
+  "id": zod.coerce.string().regex(listGalleryItemsPathIdRegExp)
+})
+
+export const ListGalleryItemsQueryParams = zod.object({
+  "publicationId": zod.coerce.string()
+})
+
+export const ListGalleryItemsResponse = zod.array(GalleryItemSchema)
+
+
+/**
+ * @summary Add a media asset to a content item's gallery (staff only)
+ */
+export const addGalleryItemPathIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$');
+
+export const AddGalleryItemParams = zod.object({
+  "id": zod.coerce.string().regex(addGalleryItemPathIdRegExp)
+})
+
+export const AddGalleryItemBody = zod.object({
+  "publicationId": zod.string(),
+  "mediaId": zod.string(),
+  "caption": zod.string().optional()
+})
+
+export const AddGalleryItemResponse = GalleryItemSchema
+
+
+/**
+ * @summary Reorder gallery items (staff only)
+ */
+export const reorderGalleryPathIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$');
+
+export const ReorderGalleryParams = zod.object({
+  "id": zod.coerce.string().regex(reorderGalleryPathIdRegExp)
+})
+
+export const ReorderGalleryBody = zod.object({
+  "publicationId": zod.string(),
+  "items": zod.array(zod.string())
+})
+
+export const ReorderGalleryResponse = zod.array(GalleryItemSchema)
+
+
+/**
+ * @summary Update a gallery item's caption (staff only)
+ */
+export const updateGalleryItemPathIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$');
+
+export const UpdateGalleryItemParams = zod.object({
+  "id": zod.coerce.string().regex(updateGalleryItemPathIdRegExp),
+  "mediaId": zod.coerce.string()
+})
+
+export const UpdateGalleryItemBody = zod.object({
+  "publicationId": zod.string(),
+  "caption": zod.string().nullable()
+})
+
+export const UpdateGalleryItemResponse = GalleryItemSchema
+
+
+/**
+ * @summary Remove a media asset from a content item's gallery (staff only)
+ */
+export const removeGalleryItemPathIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$');
+
+export const RemoveGalleryItemParams = zod.object({
+  "id": zod.coerce.string().regex(removeGalleryItemPathIdRegExp),
+  "mediaId": zod.coerce.string()
+})
+
+export const RemoveGalleryItemQueryParams = zod.object({
+  "publicationId": zod.coerce.string()
+})
+
+export const RemoveGalleryItemResponse = zod.void()

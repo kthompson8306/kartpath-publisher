@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { ArrowRight, ArrowUpRight, Menu, Search, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ArrowUpRight, Menu, Search, X } from 'lucide-react';
 import { Link, useParams } from 'wouter';
-import { getListPublishedContentItemsQueryKey, useListPublishedContentItems, useSubscribeToPublication, useSubmitNomination } from '@workspace/api-client-react';
+import { getGetPublishedArticleQueryKey, getListPublishedContentItemsQueryKey, useGetPublishedArticle, useListPublishedContentItems, useSubscribeToPublication, useSubmitNomination } from '@workspace/api-client-react';
 import type { ContentItem, EditorialContentType } from '@workspace/api-client-react';
 
 type SeoProps = { title: string; description: string; path: string };
@@ -15,6 +15,22 @@ const imageAssets = import.meta.glob('../assets/las-images/*.jpg', {
 
 const image = (name: string) => imageAssets[`../assets/las-images/${name}`] ?? '';
 const PUBLICATION_SLUG = 'life-around-senoia';
+
+// Maps any content type to its public URL section
+function articlePath(contentType: string, slug: string): string {
+  const section: Record<string, string> = {
+    'featured-family': 'people',
+    'young-achiever': 'people',
+    'pet-of-the-month': 'people',
+    'nonprofit-spotlight': 'nonprofit',
+    'lifestyle-column': 'lifestyle',
+    recipe: 'lifestyle',
+    'crooks-corner': 'crooks-corner',
+    event: 'events',
+    'business-listing': 'directory',
+  };
+  return `/${section[contentType] ?? 'people'}/${slug}`;
+}
 
 function usePublishedContent(contentType?: EditorialContentType) {
   return useListPublishedContentItems(
@@ -214,6 +230,7 @@ export function renderBody(body: string | null | undefined): React.ReactNode {
 }
 
 function PublishedStoryCard({ item, reverse = false }: { item: ContentItem; reverse?: boolean }) {
+  const path = articlePath(item.contentType, item.slug);
   return <article className={`family-row published-story-row ${reverse ? 'reverse' : ''}`} data-testid={`public-published-${item.slug}`}>
     <div className="family-img">
       {item.coverUrl
@@ -221,7 +238,7 @@ function PublishedStoryCard({ item, reverse = false }: { item: ContentItem; reve
         : <><span className="family-issue-badge">Published story</span><div className="published-story-mark">LAS</div></>
       }
     </div>
-    <div className="family-copy"><span className="tag">{item.contentType.replaceAll('-', ' ')}</span><h2>{item.title}</h2><p className="dek">{item.summary}</p>{renderBody(item.body)}<DetailValue item={item} names={['quote', 'pullQuote']} /></div>
+    <div className="family-copy"><span className="tag">{item.contentType.replaceAll('-', ' ')}</span><h2>{item.title}</h2><p className="dek">{item.summary}</p>{renderBody(item.body)}<DetailValue item={item} names={['quote', 'pullQuote']} /><Link href={path} className="story-read-link">Read full story <ArrowRight size={12} /></Link></div>
   </article>;
 }
 
@@ -496,6 +513,113 @@ export function About() {
   const nominateMutation = useSubmitNomination();
   const expectations = [['Featured Family', 'Sharing what makes a local household unique, grounded, and inspiring.'], ['Young Achiever', 'Highlighting a student making an impact in the classroom, on the field, or in the community.'], ['Nonprofit Spotlight', 'Uplifting the organizations making a real difference — and ways you can help.'], ['Pet of the Month', 'Because our furry, feathered, and four-legged friends are family too.'], ['Secret Sauce & Crook’s Corner', 'Reflection and local history — the columns that give the magazine its soul.'], ['Events & Recipes', 'What’s happening downtown and what to serve when you get there.']] as const;
   return <PageShell seo={{ title: 'About Us — Life Around Senoia', description: 'Meet the people behind Life Around Senoia, a magazine written by the town, for the town.', path: '/about' }}><PageHero kicker="About the Publication" title={<>A magazine written by the town, for the town.</>}>Life Around Senoia is a celebration of community, connection, and the people who make this small town special.</PageHero><section><div className="wrap-narrow quote-block"><p>“We’re both fathers, friends, and participants in our communities. This publication is our way of giving back — of highlighting what’s good, celebrating what’s real, and making sure no one in town feels like a stranger.”</p><span className="mono-label">— Kevin Thompson, Publisher</span></div></section><section className="on-paper2"><div className="wrap"><SectionHead index="" title="Our Team" /><div className="team-grid"><article className="team-card"><div className="team-photo" /><div><h2>Kevin Thompson</h2><span className="team-role">Publisher &amp; Founder</span><p>Nearly 20 years in publishing, including work with a niche publisher of nearly 35 enthusiast titles — a journey that led Kevin to launch a business helping publishers and content-driven organizations scale, tell better stories, and grow their communities.</p></div></article><article className="team-card"><div className="team-photo" /><div><h2>Blake Adams</h2><span className="team-role">Advertising Director &amp; Managing Partner</span><p>Born and raised in Fayette and Coweta County, Blake has proudly called Senoia home for over 15 years — active in the local business and creative scene, with a deep passion for connecting people and building things that matter to his hometown.</p></div></article></div><SectionHead index="" title="What To Expect" /><div className="expect-grid">{expectations.map(([title, body]) => <article className="expect-item" key={title}><h3>{title}</h3><p>{body}</p></article>)}</div></div></section><section className="nominate-section" id="nominate"><div className="wrap"><SectionHead index="" title="Nominate a Story" /><p className="nominate-intro">This magazine is shaped by the community. Nominate a Featured Family, Young Achiever, local business, nonprofit, or Pet of the Month.</p><form className="nominate-form" onSubmit={(e) => { e.preventDefault(); setNomError(''); const fd = new FormData(e.currentTarget); nominateMutation.mutate({ slug: PUBLICATION_SLUG, data: { nominatorName: fd.get('nominatorName') as string, nominatorEmail: fd.get('nominatorEmail') as string, category: fd.get('category') as string, story: fd.get('story') as string } }, { onSuccess: () => setSent(true), onError: () => setNomError('Something went wrong. Please try again or email editorial@kartpathmedia.com.') }); }}><label>Your Name<input required type="text" name="nominatorName" /></label><label>Your Email<input required type="email" name="nominatorEmail" /></label><label className="full">I'd like to nominate a...<select name="category"><option>Featured Family</option><option>Young Achiever</option><option>Local Business</option><option>Nonprofit</option><option>Pet of the Month</option><option>Community Event</option></select></label><label className="full">Tell us their story<textarea required name="story" /></label><div className="full">{nomError && <p style={{ color: 'var(--brick)', font: '.88rem var(--ui)', marginBottom: 8 }}>{nomError}</p>}<button className="btn-sharp honey-button" type="submit" disabled={nominateMutation.isPending}>{sent ? 'Nomination received!' : nominateMutation.isPending ? 'Sending…' : 'Submit Nomination'} <ArrowRight size={14} /></button></div></form><p className="nominate-note">Or email <a href="mailto:editorial@kartpathmedia.com">editorial@kartpathmedia.com</a></p></div></section></PageShell>;
+}
+
+// ── Shared article detail page ────────────────────────────────────────────────
+
+function ArticleDetailInner({ pubSlug, slug, sectionLabel, sectionPath }: {
+  pubSlug: string;
+  slug: string;
+  sectionLabel: string;
+  sectionPath: string;
+}) {
+  const query = useGetPublishedArticle(pubSlug, slug, {
+    query: {
+      queryKey: getGetPublishedArticleQueryKey(pubSlug, slug),
+      staleTime: 0,
+      refetchOnMount: 'always',
+      retry: false,
+    },
+  });
+
+  if (query.isPending) {
+    return <PageShell seo={{ title: 'Loading… — Life Around Senoia', description: '', path: `/${sectionPath}/${slug}` }}>
+      <section><div className="wrap" style={{ padding: '80px 0' }}><div className="public-content-state">Loading…</div></div></section>
+    </PageShell>;
+  }
+
+  if (query.isError || !query.data) {
+    return <PageShell seo={{ title: 'Article Not Found — Life Around Senoia', description: 'That article could not be found.', path: `/${sectionPath}` }}>
+      <section><div className="wrap" style={{ padding: '80px 0', textAlign: 'center' }}>
+        <p style={{ marginBottom: 20, font: '1rem var(--ui)', color: 'var(--ink-soft)' }}>That article doesn't exist or hasn't been published yet.</p>
+        <Link href={`/${sectionPath}`} className="btn-sharp honey-button">← Back to {sectionLabel} <ArrowRight size={14} /></Link>
+      </div></section>
+    </PageShell>;
+  }
+
+  const article = query.data;
+  const focalX = (article as any).coverFocalX ?? 0.5;
+  const focalY = (article as any).coverFocalY ?? 0.5;
+
+  return <PageShell seo={{ title: `${article.title} — Life Around Senoia`, description: article.summary, path: `/${sectionPath}/${slug}` }}>
+    {/* Dark header with title */}
+    <section style={{ background: 'var(--ink)', color: 'var(--paper)' }}>
+      <div className="wrap" style={{ paddingTop: '28px', paddingBottom: 0 }}>
+        <Link href={`/${sectionPath}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', font: '700 .72rem var(--mono)', letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--honey)', textDecoration: 'none', marginBottom: '24px' }}>
+          <ArrowLeft size={12} /> {sectionLabel}
+        </Link>
+        <span className="mega-kicker" style={{ fontSize: '.72rem', color: 'rgba(247,245,238,.5)' }}><i className="dash" />{article.contentType.replaceAll('-', ' ')}</span>
+        <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 700, lineHeight: 1.07, letterSpacing: '-.04em', marginTop: '10px', marginBottom: '16px' }}>{article.title}</h1>
+        <p style={{ fontFamily: 'var(--editorial)', fontSize: '1.2rem', lineHeight: 1.3, color: 'rgba(247,245,238,.72)', maxWidth: '660px', marginBottom: '32px' }}>{article.summary}</p>
+      </div>
+    </section>
+
+    {/* Cover photo */}
+    {article.coverUrl && (
+      <div style={{ width: '100%', maxHeight: '520px', overflow: 'hidden', background: 'var(--ink)' }}>
+        <img
+          src={article.coverUrl}
+          alt={(article as any).coverAltText ?? article.title}
+          style={{ width: '100%', height: '520px', objectFit: 'cover', objectPosition: `${focalX * 100}% ${focalY * 100}%`, display: 'block' }}
+        />
+      </div>
+    )}
+
+    {/* Article body */}
+    <section>
+      <div className="wrap-narrow article-body">
+        {renderBody(article.body)}
+      </div>
+    </section>
+
+    {/* Photo gallery */}
+    {article.gallery.length > 0 && (
+      <section className="on-paper2">
+        <div className="wrap">
+          <SectionHead index="" title="Photo Gallery" />
+          <div className="article-gallery">
+            {article.gallery.map((gitem) => (
+              <figure key={gitem.id} className="gallery-figure">
+                {gitem.mediaUrl && (
+                  <img src={gitem.mediaUrl} alt={gitem.altText ?? gitem.caption ?? article.title} loading="lazy" />
+                )}
+                {gitem.caption && <figcaption>{gitem.caption}</figcaption>}
+              </figure>
+            ))}
+          </div>
+        </div>
+      </section>
+    )}
+
+    <Newsletter />
+  </PageShell>;
+}
+
+export function ArticleDetail() {
+  const { slug } = useParams<{ slug: string }>();
+  const path = window.location.pathname;
+  // Determine section from URL path segment
+  const section = path.split('/')[1] ?? 'people';
+  const sectionMap: Record<string, { label: string; path: string }> = {
+    'people': { label: 'People', path: 'people' },
+    'nonprofit': { label: 'Nonprofit', path: 'nonprofit' },
+    'lifestyle': { label: 'Lifestyle', path: 'lifestyle' },
+    'crooks-corner': { label: "Crook's Corner", path: 'crooks-corner' },
+    'events': { label: 'Events', path: 'events' },
+    'directory': { label: 'Directory', path: 'directory' },
+  };
+  const { label, path: sectionPath } = sectionMap[section] ?? { label: 'Stories', path: 'people' };
+  return <ArticleDetailInner pubSlug={PUBLICATION_SLUG} slug={slug ?? ''} sectionLabel={label} sectionPath={sectionPath} />;
 }
 
 export function Advertise() {

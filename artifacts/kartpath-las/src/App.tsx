@@ -8,7 +8,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
 import { Redirect, Route, Switch, Router as WouterRouter, useLocation } from 'wouter';
 import Staff from '@/pages/staff';
-import { About, Advertise, CrooksCorner, Directory, EditionReader, Editions, Events, Lifestyle, Nonprofit, People, PublicHome } from '@/pages/public-pages';
+import { About, Advertise, ArticleDetail, CrooksCorner, Directory, EditionReader, Editions, Events, Lifestyle, Nonprofit, People, PublicHome } from '@/pages/public-pages';
 
 const queryClient = new QueryClient();
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -115,11 +115,17 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={HomeRedirect} />
+      <Route path="/people/:slug" component={ArticleDetail} />
       <Route path="/people" component={People} />
+      <Route path="/nonprofit/:slug" component={ArticleDetail} />
       <Route path="/nonprofit" component={Nonprofit} />
+      <Route path="/lifestyle/:slug" component={ArticleDetail} />
       <Route path="/lifestyle" component={Lifestyle} />
+      <Route path="/crooks-corner/:slug" component={ArticleDetail} />
       <Route path="/crooks-corner" component={CrooksCorner} />
+      <Route path="/events/:slug" component={ArticleDetail} />
       <Route path="/events" component={Events} />
+      <Route path="/directory/:slug" component={ArticleDetail} />
       <Route path="/directory" component={Directory} />
       <Route path="/editions/:issue" component={EditionReader} />
       <Route path="/editions" component={Editions} />
