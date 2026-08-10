@@ -200,13 +200,18 @@ function Newsletter() {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSubError('');
-    const email = (e.currentTarget.elements.namedItem('email') as HTMLInputElement).value;
-    subscribeMutation.mutate({ slug: PUBLICATION_SLUG, data: { email } }, {
+    const fd = new FormData(e.currentTarget);
+    const email = fd.get('email') as string;
+    const firstName = (fd.get('firstName') as string) || undefined;
+    const lastName = (fd.get('lastName') as string) || undefined;
+    const phone = (fd.get('phone') as string) || undefined;
+    const city = (fd.get('city') as string) || undefined;
+    subscribeMutation.mutate({ slug: PUBLICATION_SLUG, data: { email, firstName, lastName, phone, city } }, {
       onSuccess: () => setSubmitted(true),
       onError: () => setSubError('Something went wrong. Please try again or email hello@kartpathmedia.com.'),
     });
   };
-  return <section className="newsletter" id="newsletter"><div className="wrap"><span className="mono-label">Join The List</span><h2>Senoia stories, straight to your inbox — no fluff, just the town.</h2>{submitted ? <p className="form-confirm">You're on the list — look for Life Around Senoia in your inbox soon.</p> : <>{subError && <p style={{ color: 'var(--brick)', marginBottom: 12, font: '.9rem var(--ui)' }}>{subError}</p>}<form className="news-input-row" onSubmit={handleSubmit}><input required type="email" name="email" aria-label="Email address" placeholder="you@email.com" /><button type="submit" disabled={subscribeMutation.isPending}>{subscribeMutation.isPending ? '…' : 'Subscribe'}</button></form></>}</div></section>;
+  return <section className="newsletter" id="newsletter"><div className="wrap"><span className="mono-label">Join The List</span><h2>Senoia stories, straight to your inbox — no fluff, just the town.</h2>{submitted ? <p className="form-confirm">You're on the list — look for Life Around Senoia in your inbox soon.</p> : <>{subError && <p style={{ color: 'var(--brick)', marginBottom: 12, font: '.9rem var(--ui)' }}>{subError}</p>}<form className="subscribe-form" onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', maxWidth: '560px' }}><input required type="text" name="firstName" placeholder="First name" aria-label="First name" style={{ gridColumn: '1', padding: '10px 14px', font: '.92rem var(--ui)', border: '1px solid rgba(247,245,238,.25)', background: 'rgba(247,245,238,.08)', color: 'var(--paper)', outline: 'none' }} /><input required type="text" name="lastName" placeholder="Last name" aria-label="Last name" style={{ gridColumn: '2', padding: '10px 14px', font: '.92rem var(--ui)', border: '1px solid rgba(247,245,238,.25)', background: 'rgba(247,245,238,.08)', color: 'var(--paper)', outline: 'none' }} /><input required type="email" name="email" placeholder="Email address" aria-label="Email address" style={{ gridColumn: '1 / -1', padding: '10px 14px', font: '.92rem var(--ui)', border: '1px solid rgba(247,245,238,.25)', background: 'rgba(247,245,238,.08)', color: 'var(--paper)', outline: 'none' }} /><input type="tel" name="phone" placeholder="Phone (optional)" aria-label="Phone number" style={{ gridColumn: '1', padding: '10px 14px', font: '.92rem var(--ui)', border: '1px solid rgba(247,245,238,.25)', background: 'rgba(247,245,238,.08)', color: 'var(--paper)', outline: 'none' }} /><input type="text" name="city" placeholder="City" aria-label="City" style={{ gridColumn: '2', padding: '10px 14px', font: '.92rem var(--ui)', border: '1px solid rgba(247,245,238,.25)', background: 'rgba(247,245,238,.08)', color: 'var(--paper)', outline: 'none' }} /><button type="submit" disabled={subscribeMutation.isPending} style={{ gridColumn: '1 / -1' }}>{subscribeMutation.isPending ? '…' : 'Subscribe'}</button></form></>}</div></section>;
 }
 
 export function renderBody(body: string | null | undefined): React.ReactNode {
@@ -232,13 +237,13 @@ export function renderBody(body: string | null | undefined): React.ReactNode {
 function PublishedStoryCard({ item, reverse = false }: { item: ContentItem; reverse?: boolean }) {
   const path = articlePath(item.contentType, item.slug);
   return <article className={`family-row published-story-row ${reverse ? 'reverse' : ''}`} data-testid={`public-published-${item.slug}`}>
-    <div className="family-img">
+    <div className="family-img" style={{ maxHeight: '280px', overflow: 'hidden' }}>
       {item.coverUrl
         ? <img src={item.coverUrl} alt={(item as any).coverAltText ?? item.title} className="family-photo" loading="lazy" data-testid={`img-cover-${item.slug}`} style={{ objectPosition: `${((item as any).coverFocalX ?? 0.5) * 100}% ${((item as any).coverFocalY ?? 0.5) * 100}%` }} />
-        : <><span className="family-issue-badge">Published story</span><div className="published-story-mark">LAS</div></>
+        : <><span className="family-issue-badge">Story</span><div className="published-story-mark">LAS</div></>
       }
     </div>
-    <div className="family-copy"><span className="tag">{item.contentType.replaceAll('-', ' ')}</span><h2>{item.title}</h2><p className="dek">{item.summary}</p>{renderBody(item.body)}<DetailValue item={item} names={['quote', 'pullQuote']} /><Link href={path} className="story-read-link">Read full story <ArrowRight size={12} /></Link></div>
+    <div className="family-copy"><span className="tag">{item.contentType.replaceAll('-', ' ')}</span><h2>{item.title}</h2><p className="dek">{item.summary}</p><Link href={path} className="story-read-link">Read full story <ArrowRight size={12} /></Link></div>
   </article>;
 }
 
@@ -252,12 +257,12 @@ export function People() {
   const petsQuery = usePublishedContent('pet-of-the-month');
   return <PageShell seo={{ title: 'People — Families, Kids & Companions of Senoia', description: 'Meet the families, young achievers, and companions who give Senoia its heart in Life Around Senoia.', path: '/people' }}>
     <PageHero kicker="People of Senoia" title={<>Six issues. Six families.<br />One town’s whole heart.</>}>Every issue, we sit down on someone’s porch and listen. These are the families, kids, and companions who’ve let us in.</PageHero>
-    <section><div className="wrap"><SectionHead index="01" title="Published Featured Families" /><PublishedStoryList query={featuredFamiliesQuery} emptyMessage="No featured families are published right now." /></div></section>
+    <section><div className="wrap"><SectionHead index="01" title="Featured Families" /><PublishedStoryList query={featuredFamiliesQuery} emptyMessage="No featured families are published right now." /></div></section>
     <section className="on-paper2"><div className="wrap">
-      <SectionHead index="02" title="Published Young Achievers" /><PublicContentState query={youngAchieversQuery} emptyMessage="No young achievers are published right now." />
-      <div className="people-grid">{youngAchieversQuery.data?.map((item) => <article className="people-card" key={item.id} data-testid={`public-published-${item.slug}`}><div className="pimg">{item.coverUrl ? <img src={item.coverUrl} alt={(item as any).coverAltText ?? item.title} loading="lazy" data-testid={`img-cover-${item.slug}`} /> : <div className="noimg">LAS</div>}</div><div className="pbody"><span className="pmeta">Published Young Achiever</span><h3>{item.title}</h3><p>{item.summary}</p>{renderBody(item.body)}</div></article>)}</div>
-      <SectionHead index="03" title="Published Pets of the Month" /><PublicContentState query={petsQuery} emptyMessage="No pets of the month are published right now." />
-      <div className="people-grid">{petsQuery.data?.map((item) => <article className="people-card" key={item.id} data-testid={`public-published-${item.slug}`}><div className="pimg">{item.coverUrl ? <img src={item.coverUrl} alt={(item as any).coverAltText ?? item.title} loading="lazy" data-testid={`img-cover-${item.slug}`} /> : <div className="noimg">LAS</div>}</div><div className="pbody"><span className="pmeta">Published Pet of the Month</span><h3>{item.title}</h3><p>{item.summary}</p>{renderBody(item.body)}</div></article>)}</div>
+      <SectionHead index="02" title="Young Achievers" /><PublicContentState query={youngAchieversQuery} emptyMessage="No young achievers are published right now." />
+      <div className="people-grid">{youngAchieversQuery.data?.map((item) => <article className="people-card" key={item.id} data-testid={`public-published-${item.slug}`}><div className="pimg" style={{ maxHeight: '200px', overflow: 'hidden' }}>{item.coverUrl ? <img src={item.coverUrl} alt={(item as any).coverAltText ?? item.title} loading="lazy" data-testid={`img-cover-${item.slug}`} /> : <div className="noimg">LAS</div>}</div><div className="pbody"><span className="pmeta">Young Achiever</span><h3>{item.title}</h3><p>{item.summary}</p><Link href={articlePath(item.contentType, item.slug)} className="story-read-link">Read full story <ArrowRight size={12} /></Link></div></article>)}</div>
+      <SectionHead index="03" title="Pets of the Month" /><PublicContentState query={petsQuery} emptyMessage="No pets of the month are published right now." />
+      <div className="people-grid">{petsQuery.data?.map((item) => <article className="people-card" key={item.id} data-testid={`public-published-${item.slug}`}><div className="pimg" style={{ maxHeight: '200px', overflow: 'hidden' }}>{item.coverUrl ? <img src={item.coverUrl} alt={(item as any).coverAltText ?? item.title} loading="lazy" data-testid={`img-cover-${item.slug}`} /> : <div className="noimg">LAS</div>}</div><div className="pbody"><span className="pmeta">Pet of the Month</span><h3>{item.title}</h3><p>{item.summary}</p><Link href={articlePath(item.contentType, item.slug)} className="story-read-link">Read full story <ArrowRight size={12} /></Link></div></article>)}</div>
     </div></section>
   </PageShell>;
 }
@@ -266,7 +271,7 @@ export function Nonprofit() {
   const query = usePublishedContent('nonprofit-spotlight');
   return <PageShell seo={{ title: 'Nonprofit Spotlight — Life Around Senoia', description: 'The organizations quietly holding Senoia together, from the Senoia Optimist Club to i58 Mission.', path: '/nonprofit' }}>
     <PageHero kicker="Nonprofit Spotlight" title={<>The organizations quietly<br />holding this town together</>}>Every issue, we uplift a local nonprofit making a real difference — and give you a way to help.</PageHero>
-    <section><div className="wrap"><SectionHead index="01" title="Published Nonprofit Spotlights" /><PublishedStoryList query={query} emptyMessage="No nonprofit spotlights are published right now." /></div></section>
+    <section><div className="wrap"><SectionHead index="01" title="Nonprofit Spotlights" /><PublishedStoryList query={query} emptyMessage="No nonprofit spotlights are published right now." /></div></section>
     <section><div className="wrap"><div className="involved-strip"><span className="mono-label">Know a Nonprofit We Should Feature?</span><h2>Help us find the next organization worth spotlighting</h2><Link href="/about#nominate" className="btn-sharp honey-button">Nominate a Nonprofit <ArrowRight size={14} /></Link></div></div></section>
   </PageShell>;
 }
@@ -274,94 +279,41 @@ export function Nonprofit() {
 export function Lifestyle() {
   const recipesQuery = usePublishedContent('recipe');
   const lifestyleQuery = usePublishedContent('lifestyle-column');
-  const recipes = recipesQuery.data ?? [];
-  const secretSauce = lifestyleQuery.data?.filter((item) => item.details?.subsection === 'secret-sauce') ?? [];
-  const aroundTown = lifestyleQuery.data?.filter((item) => item.details?.subsection === 'around-town') ?? [];
+  const [filter, setFilter] = useState<'' | 'secret-sauce' | 'recipe' | 'around-town'>('');
+
+  const allItems = useMemo(() => {
+    const lc = lifestyleQuery.data ?? [];
+    const rcp = recipesQuery.data ?? [];
+    return [...lc, ...rcp];
+  }, [lifestyleQuery.data, recipesQuery.data]);
+
+  const filtered = useMemo(() => {
+    if (filter === 'recipe') return recipesQuery.data ?? [];
+    if (filter === 'secret-sauce') return (lifestyleQuery.data ?? []).filter((i) => i.details?.subsection === 'secret-sauce');
+    if (filter === 'around-town') return (lifestyleQuery.data ?? []).filter((i) => i.details?.subsection === 'around-town');
+    return allItems;
+  }, [filter, allItems, recipesQuery.data, lifestyleQuery.data]);
+
+  const isPending = lifestyleQuery.isPending || recipesQuery.isPending;
+  const isError = lifestyleQuery.isError || recipesQuery.isError;
+
+  const filterLabels: Record<string, string> = { '': 'All', 'secret-sauce': 'Secret Sauce', recipe: 'Recipes', 'around-town': 'Around Town' };
 
   return (
     <PageShell seo={{ title: 'Lifestyle — Home Cooking, Essays & Life Around Senoia', description: 'Home cooking and the small reflections that give Senoia its character.', path: '/lifestyle' }}>
       <PageHero kicker="Lifestyle" title={<>The flavor of<br />life around town</>}>Home cooking and the small reflections that give Senoia its character.</PageHero>
-
-      {/* ── Secret Sauce ──────────────────────────────────────────────── */}
-      <section id="secret-sauce">
-        <div className="wrap-narrow">
-          <SectionHead index="01" title="Secret Sauce" />
-          {lifestyleQuery.isPending && <div className="public-content-state">Loading the latest Secret Sauce columns…</div>}
-          {lifestyleQuery.isError && <div className="public-content-state">Columns are temporarily unavailable.</div>}
-          {!lifestyleQuery.isPending && !lifestyleQuery.isError && secretSauce.length === 0 && (
-            <div className="public-content-state">No Secret Sauce columns are published right now.</div>
-          )}
-          {secretSauce.map((item) => (
-            <div className="sauce-card" key={item.id} data-testid={`public-published-${item.slug}`}>
-              {item.details?.issue && <span className="tag">Issue {item.details.issue}</span>}
-              <h2>{item.title}</h2>
-              {renderBody(item.body)}
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── Recipe ────────────────────────────────────────────────────── */}
-      <section className="on-paper2" id="recipe">
+      <section>
         <div className="wrap">
-          <SectionHead index="02" title="Recipe" />
-          {recipesQuery.isPending && <div className="public-content-state">Loading the latest recipe…</div>}
-          {recipesQuery.isError && <div className="public-content-state">Recipe is temporarily unavailable.</div>}
-          {!recipesQuery.isPending && !recipesQuery.isError && recipes.length === 0 && (
-            <div className="public-content-state">No recipes are published right now.</div>
-          )}
-          {recipes.map((item) => {
-            let ingredients: string[] = [];
-            let steps: string[] = [];
-            try { ingredients = JSON.parse(item.details?.ingredients ?? '[]') as string[]; } catch { /* ignore */ }
-            try { steps = JSON.parse(item.details?.steps ?? '[]') as string[]; } catch { /* ignore */ }
-            return (
-              <div className="recipe-row" key={item.id} data-testid={`public-published-${item.slug}`}>
-                {item.coverUrl
-                  ? <div className="recipe-img"><img src={item.coverUrl} alt={(item as any).coverAltText ?? item.title} loading="lazy" data-testid={`img-cover-${item.slug}`} /></div>
-                  : <div className="recipe-img"><img src={image('lifestyle-recipe.jpg')} alt={item.title} loading="lazy" /></div>
-                }
-                <div className="recipe-copy">
-                  {item.details?.issue && <span className="tag">Issue {item.details.issue}</span>}
-                  <h2>{item.title}</h2>
-                  <p className="dek">{item.summary}</p>
-                  {item.details?.servings && <p className="servings"><strong>Yield:</strong> {item.details.servings}</p>}
-                  {ingredients.length > 0 && (
-                    <ul className="ing-list">{ingredients.map((ing, i) => <li key={i}>{ing}</li>)}</ul>
-                  )}
-                  {steps.length > 0 && (
-                    <ol className="steps-list">{steps.map((step, i) => <li key={i}>{step}</li>)}</ol>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* ── Around Town ───────────────────────────────────────────────── */}
-      <section id="around-town">
-        <div className="wrap">
-          <SectionHead index="03" title="Around Town" />
-          {!lifestyleQuery.isPending && !lifestyleQuery.isError && aroundTown.length === 0 && (
-            <div className="public-content-state">No Around Town stories are published right now.</div>
-          )}
-          {aroundTown.map((item) => (
-            <div className="mouse-row" key={item.id} data-testid={`public-published-${item.slug}`}>
-              <div className="mouse-copy">
-                {item.details?.issue && (
-                  <span className="tag">Issue {item.details.issue}{item.details?.tag ? ` · ${item.details.tag}` : ''}</span>
-                )}
-                <h2>{item.title}</h2>
-                <p>{item.summary}</p>
-                {renderBody(item.body)}
-              </div>
-              {item.coverUrl
-                ? <div className="mouse-img"><img src={item.coverUrl} alt={(item as any).coverAltText ?? item.title} loading="lazy" data-testid={`img-cover-${item.slug}`} /></div>
-                : <div className="mouse-img"><img src={image('lifestyle-secretsauce.jpg')} alt="Downtown Senoia" loading="lazy" /></div>
-              }
-            </div>
-          ))}
+          <SectionHead index="01" title="Lifestyle Stories" />
+          <div className="filter-pills" style={{ marginBottom: '32px' }}>
+            {(['', 'secret-sauce', 'recipe', 'around-town'] as const).map((f) => (
+              <button type="button" key={f} className={`filter-pill${filter === f ? ' active' : ''}`} onClick={() => setFilter(f)}>{filterLabels[f]}</button>
+            ))}
+          </div>
+          {isPending && <div className="public-content-state">Loading lifestyle stories…</div>}
+          {isError && <div className="public-content-state">Lifestyle stories are temporarily unavailable.</div>}
+          {!isPending && !isError && filtered.length === 0 && <div className="public-content-state">No lifestyle stories are published in this section yet.</div>}
+          {filtered.map((item, index) => <PublishedStoryCard item={item} reverse={index % 2 === 1} key={item.id} />)}
         </div>
       </section>
     </PageShell>
@@ -420,7 +372,7 @@ export function Events() {
       const month = item.details.month ?? item.details.date ?? 'EVENT';
       const day = item.details.day ?? '';
       const location = item.details.location ?? item.details.address ?? 'Senoia, Georgia';
-      return <article className="event-row" key={item.id} data-testid={`public-published-${item.slug}`}><div className="when">{month}<span className="day">{day}</span></div><div><span className="tag">Published Event</span><h3>{item.title}</h3><div className="loc">{location}</div><p>{item.summary}</p>{renderBody(item.body)}</div></article>;
+      return <article className="event-row" key={item.id} data-testid={`public-published-${item.slug}`}><div className="when">{month}<span className="day">{day}</span></div><div><span className="tag">Event</span><h3>{item.title}</h3><div className="loc">{location}</div><p>{item.summary}</p></div></article>;
     })}</div></div></section>
   </PageShell>;
 }
@@ -443,6 +395,17 @@ export function Directory() {
 }
 
 const issues = [['01', 'Sept 2025', 'The Bergstroms', 'las1-cover.jpg'], ['02', 'Nov–Dec 2025', 'Joe & Dawn McGee', 'las2-cover.jpg'], ['03', 'Winter 2026', 'The Crooks of Senoia', 'las3-cover.jpg'], ['04', 'Spring 2026', 'The Jenkins Family', 'las4-cover.jpg'], ['05', 'May–Jun 2026', 'The Bartels Family', 'las5-cover.jpg'], ['06', 'Jul–Aug 2026', 'The Brewingtons', 'las6-cover.jpg']] as const;
+
+// Issuu embed URLs — add each issue's embed src here once uploaded to Issuu.
+// Format: 'https://e.issuu.com/embed.html?d=<document-id>&u=<username>'
+const issuuEmbeds: Partial<Record<string, string>> = {
+  // '01': 'https://e.issuu.com/embed.html?d=las-issue-01&u=lifearoundsenoia',
+  // '02': 'https://e.issuu.com/embed.html?d=las-issue-02&u=lifearoundsenoia',
+  // '03': 'https://e.issuu.com/embed.html?d=las-issue-03&u=lifearoundsenoia',
+  // '04': 'https://e.issuu.com/embed.html?d=las-issue-04&u=lifearoundsenoia',
+  // '05': 'https://e.issuu.com/embed.html?d=las-issue-05&u=lifearoundsenoia',
+  // '06': 'https://e.issuu.com/embed.html?d=las-issue-06&u=lifearoundsenoia',
+};
 export function Editions() {
   return <PageShell seo={{ title: 'Digital Editions — Life Around Senoia Archive', description: 'Read every issue of Life Around Senoia exactly as it was printed, from Issue 01 through Issue 06.', path: '/editions' }}><PageHero kicker="The Archive" title={<>Every issue,<br />flip-through ready</>}>Read Life Around Senoia exactly as it was printed — full-page spreads, ads and all — right in your browser.</PageHero><section><div className="wrap"><div className="featured-reader"><div className="reader-cover"><img src={image('las6-cover.jpg')} alt="Life Around Senoia Issue 6 cover" /></div><div className="reader-copy"><span className="mono-label">Latest Edition · Issue 06</span><h2>Making Room at the Table</h2><p>The Brewington family, the Senoia Optimist Club’s four decades of service, Milo Stupski, and a tribute to Ellis Crook — plus our one-year anniversary as a publication. July–August 2026.</p><Link href="/editions/06" className="btn-sharp honey-button">Open Full Edition <ArrowRight size={14} /></Link></div></div></div></section><section className="on-paper2"><div className="wrap"><SectionHead index="" title="Full Archive" /><div className="archive-grid">{issues.map(([issue, date, title, cover]) => <Link href={'/editions/' + issue} className="issue-card" key={issue}><div className="issue-cover-img"><img src={image(cover)} alt={`Life Around Senoia Issue ${issue} cover`} loading="lazy" /></div><div className="meta"><span className="date">{date}</span><h3>Issue {issue}</h3><p>{title}</p></div></Link>)}</div></div></section></PageShell>;
 }
@@ -490,6 +453,27 @@ export function EditionReader() {
       </section>
       <section>
         <div className="wrap">
+          <SectionHead index="" title="Full Issue Flip-Through" />
+          {issuuEmbeds[num] ? (
+            <div style={{ position: 'relative', paddingBottom: '66%', height: 0, overflow: 'hidden', background: 'var(--ink)' }}>
+              <iframe
+                src={issuuEmbeds[num]}
+                title={`Life Around Senoia Issue ${num} — Full Flip-Through`}
+                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+                allowFullScreen
+                loading="lazy"
+              />
+            </div>
+          ) : (
+            <div style={{ border: '1px dashed var(--line)', padding: '48px 32px', textAlign: 'center', background: 'var(--paper-2)' }}>
+              <p style={{ font: '700 .72rem var(--mono)', letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--ink-soft)', marginBottom: '12px' }}>Flip-Through Coming Soon</p>
+              <p style={{ font: '1rem var(--editorial)', color: 'var(--ink-soft)', maxWidth: '440px', margin: '0 auto' }}>The full Issuu reader for this issue will appear here once it has been uploaded. Read individual stories below in the meantime.</p>
+            </div>
+          )}
+        </div>
+      </section>
+      <section>
+        <div className="wrap">
           <SectionHead index="" title="Stories in This Edition" />
           <PublishedStoryList query={contentQuery} emptyMessage="No stories have been published yet. Check back soon." />
         </div>
@@ -512,7 +496,7 @@ export function About() {
   const [nomError, setNomError] = useState('');
   const nominateMutation = useSubmitNomination();
   const expectations = [['Featured Family', 'Sharing what makes a local household unique, grounded, and inspiring.'], ['Young Achiever', 'Highlighting a student making an impact in the classroom, on the field, or in the community.'], ['Nonprofit Spotlight', 'Uplifting the organizations making a real difference — and ways you can help.'], ['Pet of the Month', 'Because our furry, feathered, and four-legged friends are family too.'], ['Secret Sauce & Crook’s Corner', 'Reflection and local history — the columns that give the magazine its soul.'], ['Events & Recipes', 'What’s happening downtown and what to serve when you get there.']] as const;
-  return <PageShell seo={{ title: 'About Us — Life Around Senoia', description: 'Meet the people behind Life Around Senoia, a magazine written by the town, for the town.', path: '/about' }}><PageHero kicker="About the Publication" title={<>A magazine written by the town, for the town.</>}>Life Around Senoia is a celebration of community, connection, and the people who make this small town special.</PageHero><section><div className="wrap-narrow quote-block"><p>“We’re both fathers, friends, and participants in our communities. This publication is our way of giving back — of highlighting what’s good, celebrating what’s real, and making sure no one in town feels like a stranger.”</p><span className="mono-label">— Kevin Thompson, Publisher</span></div></section><section className="on-paper2"><div className="wrap"><SectionHead index="" title="Our Team" /><div className="team-grid"><article className="team-card"><div className="team-photo" /><div><h2>Kevin Thompson</h2><span className="team-role">Publisher &amp; Founder</span><p>Nearly 20 years in publishing, including work with a niche publisher of nearly 35 enthusiast titles — a journey that led Kevin to launch a business helping publishers and content-driven organizations scale, tell better stories, and grow their communities.</p></div></article><article className="team-card"><div className="team-photo" /><div><h2>Blake Adams</h2><span className="team-role">Advertising Director &amp; Managing Partner</span><p>Born and raised in Fayette and Coweta County, Blake has proudly called Senoia home for over 15 years — active in the local business and creative scene, with a deep passion for connecting people and building things that matter to his hometown.</p></div></article></div><SectionHead index="" title="What To Expect" /><div className="expect-grid">{expectations.map(([title, body]) => <article className="expect-item" key={title}><h3>{title}</h3><p>{body}</p></article>)}</div></div></section><section className="nominate-section" id="nominate"><div className="wrap"><SectionHead index="" title="Nominate a Story" /><p className="nominate-intro">This magazine is shaped by the community. Nominate a Featured Family, Young Achiever, local business, nonprofit, or Pet of the Month.</p><form className="nominate-form" onSubmit={(e) => { e.preventDefault(); setNomError(''); const fd = new FormData(e.currentTarget); nominateMutation.mutate({ slug: PUBLICATION_SLUG, data: { nominatorName: fd.get('nominatorName') as string, nominatorEmail: fd.get('nominatorEmail') as string, category: fd.get('category') as string, story: fd.get('story') as string } }, { onSuccess: () => setSent(true), onError: () => setNomError('Something went wrong. Please try again or email editorial@kartpathmedia.com.') }); }}><label>Your Name<input required type="text" name="nominatorName" /></label><label>Your Email<input required type="email" name="nominatorEmail" /></label><label className="full">I'd like to nominate a...<select name="category"><option>Featured Family</option><option>Young Achiever</option><option>Local Business</option><option>Nonprofit</option><option>Pet of the Month</option><option>Community Event</option></select></label><label className="full">Tell us their story<textarea required name="story" /></label><div className="full">{nomError && <p style={{ color: 'var(--brick)', font: '.88rem var(--ui)', marginBottom: 8 }}>{nomError}</p>}<button className="btn-sharp honey-button" type="submit" disabled={nominateMutation.isPending}>{sent ? 'Nomination received!' : nominateMutation.isPending ? 'Sending…' : 'Submit Nomination'} <ArrowRight size={14} /></button></div></form><p className="nominate-note">Or email <a href="mailto:editorial@kartpathmedia.com">editorial@kartpathmedia.com</a></p></div></section></PageShell>;
+  return <PageShell seo={{ title: 'About Us — Life Around Senoia', description: 'Meet the people behind Life Around Senoia, a magazine written by the town, for the town.', path: '/about' }}><PageHero kicker="About the Publication" title={<>A magazine written by the town, for the town.</>}>Life Around Senoia is a celebration of community, connection, and the people who make this small town special.</PageHero><section><div className="wrap-narrow quote-block"><p>“We’re both fathers, friends, and participants in our communities. This publication is our way of giving back — of highlighting what’s good, celebrating what’s real, and making sure no one in town feels like a stranger.”</p><span className="mono-label">— Kevin Thompson, Publisher</span></div></section><section className="on-paper2"><div className="wrap"><SectionHead index="" title="Our Team" /><div className="team-grid"><article className="team-card"><div className="team-photo" /><div><h2>Kevin Thompson</h2><span className="team-role">Publisher &amp; Founder</span><p>Nearly 20 years in publishing, including work with a niche publisher of nearly 35 enthusiast titles — a journey that led Kevin to launch a business helping publishers and content-driven organizations scale, tell better stories, and grow their communities.</p></div></article><article className="team-card"><div className="team-photo" /><div><h2>Blake Adams</h2><span className="team-role">Advertising Director &amp; Managing Partner</span><p>Born and raised in Fayette and Coweta County, Blake has proudly called Senoia home for over 15 years — active in the local business and creative scene, with a deep passion for connecting people and building things that matter to his hometown.</p></div></article></div><SectionHead index="" title="What To Expect" /><div className="expect-grid">{expectations.map(([title, body]) => <article className="expect-item" key={title}><h3>{title}</h3><p>{body}</p></article>)}</div></div></section><section className="nominate-section" id="nominate"><div className="wrap"><SectionHead index="" title="Nominate a Story" /><p className="nominate-intro">This magazine is shaped by the community. Nominate a Featured Family, Young Achiever, local business, nonprofit, or Pet of the Month.</p><form className="nominate-form" onSubmit={(e) => { e.preventDefault(); setNomError(''); const fd = new FormData(e.currentTarget); nominateMutation.mutate({ slug: PUBLICATION_SLUG, data: { firstName: fd.get('firstName') as string, lastName: fd.get('lastName') as string, nominatorEmail: fd.get('nominatorEmail') as string, phone: (fd.get('phone') as string) || undefined, city: (fd.get('city') as string) || undefined, category: fd.get('category') as string, story: fd.get('story') as string } }, { onSuccess: () => setSent(true), onError: () => setNomError('Something went wrong. Please try again or email editorial@kartpathmedia.com.') }); }}><label>First Name<input required type="text" name="firstName" /></label><label>Last Name<input required type="text" name="lastName" /></label><label>Email<input required type="email" name="nominatorEmail" /></label><label>Phone<input type="tel" name="phone" /></label><label>City<input type="text" name="city" /></label><label className="full">I'd like to nominate a...<select name="category"><option>Featured Family</option><option>Young Achiever</option><option>Local Business</option><option>Nonprofit</option><option>Pet of the Month</option><option>Community Event</option><option>Other</option></select></label><label className="full">Tell us their story<textarea required name="story" /></label><div className="full">{nomError && <p style={{ color: 'var(--brick)', font: '.88rem var(--ui)', marginBottom: 8 }}>{nomError}</p>}<button className="btn-sharp honey-button" type="submit" disabled={nominateMutation.isPending}>{sent ? 'Nomination received!' : nominateMutation.isPending ? 'Sending…' : 'Submit Nomination'} <ArrowRight size={14} /></button></div></form><p className="nominate-note">Or email <a href="mailto:editorial@kartpathmedia.com">editorial@kartpathmedia.com</a></p></div></section></PageShell>;
 }
 
 // ── Shared article detail page ────────────────────────────────────────────────

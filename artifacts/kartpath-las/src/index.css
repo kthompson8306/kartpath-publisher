@@ -434,6 +434,30 @@
     line-height: 1.4;
   }
 
+  /* ── Section filter pills (e.g. Lifestyle All/Secret Sauce/Recipes) ─ */
+  .filter-pill {
+    display: inline-block;
+    padding: 8px 18px;
+    font-family: var(--mono);
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    border: 1px solid var(--ink);
+    background: transparent;
+    color: var(--ink);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .filter-pill:hover {
+    background: var(--ink);
+    color: var(--paper);
+  }
+  .filter-pill.active {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
   /* ── "Read full story" link on section list cards ────────────────── */
   .story-read-link {
     display: inline-flex;

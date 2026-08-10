@@ -233,6 +233,10 @@ export interface CreateStaffInviteResponse {
 export interface SubscribeInput {
   /** @minLength 3 */
   email: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  city?: string;
 }
 
 export interface SubscribeResponse {
@@ -241,9 +245,13 @@ export interface SubscribeResponse {
 
 export interface SubmitNominationInput {
   /** @minLength 1 */
-  nominatorName: string;
+  firstName: string;
+  /** @minLength 1 */
+  lastName: string;
   /** @minLength 3 */
   nominatorEmail: string;
+  phone?: string;
+  city?: string;
   /** @minLength 1 */
   category: string;
   /** @minLength 1 */
@@ -259,6 +267,10 @@ export interface NominationRecord {
   id: string;
   nominatorName: string;
   nominatorEmail: string;
+  firstName: string | null;
+  lastName: string | null;
+  phone: string | null;
+  city: string | null;
   category: string;
   story: string;
   status: string;

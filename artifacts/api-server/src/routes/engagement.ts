@@ -9,7 +9,7 @@ const router: IRouter = Router();
 // POST /publications/:slug/subscribe — public, no auth required
 router.post("/publications/:slug/subscribe", async (req, res): Promise<void> => {
   const { slug } = req.params;
-  const { email } = req.body as Record<string, unknown>;
+  const { email, firstName, lastName, phone, city } = req.body as Record<string, unknown>;
 
   if (!email || typeof email !== "string" || !email.includes("@") || email.length > 320) {
     res.status(400).json({ error: "Valid email address is required" });
@@ -27,6 +27,10 @@ router.post("/publications/:slug/subscribe", async (req, res): Promise<void> => 
     .values({
       publicationId: pub.publication.id,
       email: email.toLowerCase().trim(),
+      firstName: typeof firstName === "string" && firstName.trim() ? firstName.trim() : null,
+      lastName: typeof lastName === "string" && lastName.trim() ? lastName.trim() : null,
+      phone: typeof phone === "string" && phone.trim() ? phone.trim() : null,
+      city: typeof city === "string" && city.trim() ? city.trim() : null,
       status: "active",
     })
     .onConflictDoNothing();
@@ -37,15 +41,16 @@ router.post("/publications/:slug/subscribe", async (req, res): Promise<void> => 
 // POST /publications/:slug/nominations — public, no auth required
 router.post("/publications/:slug/nominations", async (req, res): Promise<void> => {
   const { slug } = req.params;
-  const { nominatorName, nominatorEmail, category, story } = req.body as Record<string, unknown>;
+  const { firstName, lastName, nominatorEmail, phone, city, category, story } = req.body as Record<string, unknown>;
 
   if (
-    !nominatorName || typeof nominatorName !== "string" || nominatorName.trim().length === 0 ||
+    !firstName || typeof firstName !== "string" || firstName.trim().length === 0 ||
+    !lastName || typeof lastName !== "string" || lastName.trim().length === 0 ||
     !nominatorEmail || typeof nominatorEmail !== "string" || !nominatorEmail.includes("@") ||
     !category || typeof category !== "string" || category.trim().length === 0 ||
     !story || typeof story !== "string" || story.trim().length === 0
   ) {
-    res.status(400).json({ error: "nominatorName, nominatorEmail, category, and story are all required" });
+    res.status(400).json({ error: "firstName, lastName, nominatorEmail, category, and story are all required" });
     return;
   }
 
@@ -59,8 +64,12 @@ router.post("/publications/:slug/nominations", async (req, res): Promise<void> =
     .insert(nominationsTable)
     .values({
       publicationId: pub.publication.id,
-      nominatorName: nominatorName.trim(),
+      nominatorName: `${firstName.trim()} ${lastName.trim()}`,
       nominatorEmail: nominatorEmail.toLowerCase().trim(),
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      phone: typeof phone === "string" && phone.trim() ? phone.trim() : null,
+      city: typeof city === "string" && city.trim() ? city.trim() : null,
       category: category.trim(),
       story: story.trim(),
       status: "new",

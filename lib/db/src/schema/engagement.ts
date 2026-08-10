@@ -9,6 +9,10 @@ export const newsletterSubscribersTable = pgTable(
       .notNull()
       .references(() => publicationsTable.id, { onDelete: "cascade" }),
     email: text("email").notNull(),
+    firstName: text("first_name"),
+    lastName: text("last_name"),
+    phone: text("phone"),
+    city: text("city"),
     status: text("status").notNull().default("active"),
     subscribedAt: timestamp("subscribed_at", { withTimezone: true })
       .notNull()
@@ -27,6 +31,10 @@ export const nominationsTable = pgTable("nominations", {
     .references(() => publicationsTable.id, { onDelete: "cascade" }),
   nominatorName: text("nominator_name").notNull(),
   nominatorEmail: text("nominator_email").notNull(),
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  phone: text("phone"),
+  city: text("city"),
   category: text("category").notNull(),
   story: text("story").notNull(),
   status: text("status").notNull().default("new"),
