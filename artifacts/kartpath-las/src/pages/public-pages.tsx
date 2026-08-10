@@ -184,7 +184,50 @@ export function PublicHome() {
   const achiever = items.find((item) => item.contentType === 'young-achiever');
   const latest = items.slice(0, 3);
   return <PageShell seo={{ title: 'Life Around Senoia — Local Stories, People & Places', description: 'Life Around Senoia is a bi-monthly magazine and digital publication for the people, businesses, and stories of Senoia, Georgia.', path: '/' }}>
-    <section className="mega-hero"><div className="mega-hero-bg"><span className="giant-num">LAS</span><div className="mega-hero-inner">{query.isPending ? <p className="dek">Loading the latest published stories…</p> : featured ? <><span className="mega-kicker"><i className="dash" />Featured Family · Published</span><h1>{featured.title}</h1><p className="dek">{featured.summary}</p><div className="mega-cta-row"><Link href="/people" className="btn-ghost-dark">Read the Story <ArrowRight size={14} /></Link><span className="mega-meta">Life Around Senoia · Published editorial</span></div></> : <><span className="mega-kicker"><i className="dash" />Life Around Senoia</span><h1>Stories from<br /><em>around town.</em></h1><p className="dek">No featured story is published right now.</p></>}</div></div><div className="hero-strip-imgs">{[nonprofit, achiever].filter(Boolean).map((item) => <div className="strip-img published-story-placeholder" key={item!.id}><span className="lbl">{item!.contentType.replaceAll('-', ' ')}<b>{item!.title}</b></span></div>)}</div></section>
+    <section className="mega-hero">
+      <div
+        className="mega-hero-bg"
+        style={featured?.coverUrl ? {
+          backgroundImage: `linear-gradient(to right, rgba(11,14,10,0.80) 0%, rgba(11,14,10,0.35) 60%), url(${featured.coverUrl})`,
+        } : undefined}
+      >
+        <span className="giant-num">LAS</span>
+        <div className="mega-hero-inner">
+          {query.isPending
+            ? <p className="dek">Loading the latest published stories…</p>
+            : featured
+              ? <>
+                  <span className="mega-kicker"><i className="dash" />Featured Family · Published</span>
+                  <h1>{featured.title}</h1>
+                  <p className="dek">{featured.summary}</p>
+                  <div className="mega-cta-row">
+                    <Link href={`/people/${featured.slug}`} className="btn-ghost-dark">Read the Story <ArrowRight size={14} /></Link>
+                    <span className="mega-meta">Life Around Senoia · Published editorial</span>
+                  </div>
+                </>
+              : <>
+                  <span className="mega-kicker"><i className="dash" />Life Around Senoia</span>
+                  <h1>Stories from<br /><em>around town.</em></h1>
+                  <p className="dek">No featured story is published right now.</p>
+                </>
+          }
+        </div>
+      </div>
+      <div className="hero-strip-imgs">
+        {[nonprofit, achiever].filter(Boolean).map((item) => (
+          <div
+            className="strip-img"
+            key={item!.id}
+            style={item!.coverUrl ? { backgroundImage: `url(${item!.coverUrl})` } : undefined}
+          >
+            <span className="lbl">
+              {item!.contentType.replaceAll('-', ' ')}
+              <b>{item!.title}</b>
+            </span>
+          </div>
+        ))}
+      </div>
+    </section>
     <div className="wrap"><AdZone /></div>
     <div className="marquee-band"><div className="marquee-track"><span>SENOIA, GEORGIA</span><span>ALIVE AFTER FIVE — SEPT 18, OCT 16, NOV 20</span><span>FARMERS MARKET EVERY SATURDAY</span><span>SENOIA, GEORGIA</span></div></div>
     <div className="wrap"><SectionHead index="01" title="Latest Published Stories" link={{ label: 'View All', href: '/people' }} /><div className="published-home-grid">{latest.map((item) => <Link href={item.contentType === 'nonprofit-spotlight' ? '/nonprofit' : item.contentType === 'business-listing' ? '/directory' : item.contentType === 'event' ? '/events' : '/people'} className="spread-side-item" key={item.id} data-testid={`public-published-${item.slug}`}><span className="tag">{item.contentType.replaceAll('-', ' ')}</span><h3>{item.title}</h3><p>{item.summary}</p></Link>)}{!query.isPending && latest.length === 0 && <PublicContentState query={query} emptyMessage="No editorial stories are published right now." />}</div><SectionHead index="02" title="Explore the Publication" /><div className="index-rail">{[['01', 'People', 'Published families, young achievers, and pets', '/people'], ['02', 'Nonprofit', 'Published organizations holding this town together', '/nonprofit'], ['03', 'Lifestyle', 'History, home cooking, and local reflection', '/lifestyle'], ['04', 'Events', 'Published events around Senoia', '/events'], ['05', 'Directory', 'Published businesses and services', '/directory']].map(([num, title, desc, href]) => <Link href={href} className="index-row" key={num}><span className="idx-num">{num}</span><h3>{title}</h3><span className="idx-desc">{desc}</span><span className="arrow">→</span></Link>)}</div><AdZone label="In-feed placement" /></div>
