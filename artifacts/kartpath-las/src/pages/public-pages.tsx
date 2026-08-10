@@ -21,7 +21,8 @@ function articlePath(contentType: string, slug: string): string {
   const section: Record<string, string> = {
     'featured-family': 'people',
     'young-achiever': 'people',
-    'pet-of-the-month': 'people',
+    'people-around-town': 'people',
+    'pet-of-the-month': 'lifestyle',
     'nonprofit-spotlight': 'nonprofit',
     'lifestyle-column': 'lifestyle',
     recipe: 'lifestyle',
@@ -252,19 +253,56 @@ function PublishedStoryList({ query, emptyMessage }: { query: ReturnType<typeof 
 }
 
 export function People() {
-  const featuredFamiliesQuery = usePublishedContent('featured-family');
-  const youngAchieversQuery = usePublishedContent('young-achiever');
-  const petsQuery = usePublishedContent('pet-of-the-month');
-  return <PageShell seo={{ title: 'People — Families, Kids & Companions of Senoia', description: 'Meet the families, young achievers, and companions who give Senoia its heart in Life Around Senoia.', path: '/people' }}>
-    <PageHero kicker="People of Senoia" title={<>Six issues. Six families.<br />One town’s whole heart.</>}>Every issue, we sit down on someone’s porch and listen. These are the families, kids, and companions who’ve let us in.</PageHero>
-    <section><div className="wrap"><SectionHead index="01" title="Featured Families" /><PublishedStoryList query={featuredFamiliesQuery} emptyMessage="No featured families are published right now." /></div></section>
-    <section className="on-paper2"><div className="wrap">
-      <SectionHead index="02" title="Young Achievers" /><PublicContentState query={youngAchieversQuery} emptyMessage="No young achievers are published right now." />
-      <div className="people-grid">{youngAchieversQuery.data?.map((item) => <article className="people-card" key={item.id} data-testid={`public-published-${item.slug}`}><div className="pimg" style={{ maxHeight: '200px', overflow: 'hidden' }}>{item.coverUrl ? <img src={item.coverUrl} alt={(item as any).coverAltText ?? item.title} loading="lazy" data-testid={`img-cover-${item.slug}`} /> : <div className="noimg">LAS</div>}</div><div className="pbody"><span className="pmeta">Young Achiever</span><h3>{item.title}</h3><p>{item.summary}</p><Link href={articlePath(item.contentType, item.slug)} className="story-read-link">Read full story <ArrowRight size={12} /></Link></div></article>)}</div>
-      <SectionHead index="03" title="Pets of the Month" /><PublicContentState query={petsQuery} emptyMessage="No pets of the month are published right now." />
-      <div className="people-grid">{petsQuery.data?.map((item) => <article className="people-card" key={item.id} data-testid={`public-published-${item.slug}`}><div className="pimg" style={{ maxHeight: '200px', overflow: 'hidden' }}>{item.coverUrl ? <img src={item.coverUrl} alt={(item as any).coverAltText ?? item.title} loading="lazy" data-testid={`img-cover-${item.slug}`} /> : <div className="noimg">LAS</div>}</div><div className="pbody"><span className="pmeta">Pet of the Month</span><h3>{item.title}</h3><p>{item.summary}</p><Link href={articlePath(item.contentType, item.slug)} className="story-read-link">Read full story <ArrowRight size={12} /></Link></div></article>)}</div>
-    </div></section>
-  </PageShell>;
+  const familiesQuery = usePublishedContent('featured-family');
+  const achieversQuery = usePublishedContent('young-achiever');
+  const aroundTownQuery = usePublishedContent('people-around-town' as EditorialContentType);
+  const [filter, setFilter] = useState<'' | 'featured-family' | 'young-achiever' | 'people-around-town'>('');
+
+  const allItems = useMemo(() => [
+    ...(familiesQuery.data ?? []),
+    ...(achieversQuery.data ?? []),
+    ...(aroundTownQuery.data ?? []),
+  ], [familiesQuery.data, achieversQuery.data, aroundTownQuery.data]);
+
+  const filtered = useMemo(() => {
+    if (filter === 'featured-family') return familiesQuery.data ?? [];
+    if (filter === 'young-achiever') return achieversQuery.data ?? [];
+    if (filter === 'people-around-town') return aroundTownQuery.data ?? [];
+    return allItems;
+  }, [filter, allItems, familiesQuery.data, achieversQuery.data, aroundTownQuery.data]);
+
+  const isPending = familiesQuery.isPending || achieversQuery.isPending || aroundTownQuery.isPending;
+  const isError = familiesQuery.isError || achieversQuery.isError || aroundTownQuery.isError;
+  const filterLabels: Record<string, string> = {
+    '': 'All',
+    'featured-family': 'Featured Families',
+    'young-achiever': 'Young Achievers',
+    'people-around-town': 'People Around Town',
+  };
+
+  return (
+    <PageShell seo={{ title: 'People — Families, Achievers & Community of Senoia', description: 'Meet the families, young achievers, and community members who give Senoia its heart in Life Around Senoia.', path: '/people' }}>
+      <PageHero kicker="People of Senoia" title={<>The faces and<br />families of Senoia</>}>Every issue, we sit down with the people who make this town what it is — families, young achievers, and the community voices that shape it.</PageHero>
+      <section>
+        <div className="wrap">
+          <SectionHead index="01" title="People Stories" />
+          <div className="filter-pills" style={{ marginBottom: '32px' }}>
+            {(['', 'featured-family', 'young-achiever', 'people-around-town'] as const).map((f) => (
+              <button type="button" key={f} className={`filter-pill${filter === f ? ' active' : ''}`} onClick={() => setFilter(f)}>
+                {filterLabels[f]}
+              </button>
+            ))}
+          </div>
+          {isPending && <div className="public-content-state">Loading people stories…</div>}
+          {isError && <div className="public-content-state">People stories are temporarily unavailable.</div>}
+          {!isPending && !isError && filtered.length === 0 && (
+            <div className="public-content-state">No stories are published in this section yet.</div>
+          )}
+          {filtered.map((item, index) => <PublishedStoryCard item={item} reverse={index % 2 === 1} key={item.id} />)}
+        </div>
+      </section>
+    </PageShell>
+  );
 }
 
 export function Nonprofit() {
@@ -410,40 +448,51 @@ export function EventSubmitPage() {
 export function Lifestyle() {
   const recipesQuery = usePublishedContent('recipe');
   const lifestyleQuery = usePublishedContent('lifestyle-column');
-  const [filter, setFilter] = useState<'' | 'secret-sauce' | 'recipe' | 'around-town'>('');
+  const petsQuery = usePublishedContent('pet-of-the-month');
+  const [filter, setFilter] = useState<'' | 'secret-sauce' | 'recipe' | 'around-town' | 'pet-of-the-month'>('');
 
-  const allItems = useMemo(() => {
-    const lc = lifestyleQuery.data ?? [];
-    const rcp = recipesQuery.data ?? [];
-    return [...lc, ...rcp];
-  }, [lifestyleQuery.data, recipesQuery.data]);
+  const allItems = useMemo(() => [
+    ...(lifestyleQuery.data ?? []),
+    ...(recipesQuery.data ?? []),
+    ...(petsQuery.data ?? []),
+  ], [lifestyleQuery.data, recipesQuery.data, petsQuery.data]);
 
   const filtered = useMemo(() => {
     if (filter === 'recipe') return recipesQuery.data ?? [];
     if (filter === 'secret-sauce') return (lifestyleQuery.data ?? []).filter((i) => i.details?.subsection === 'secret-sauce');
     if (filter === 'around-town') return (lifestyleQuery.data ?? []).filter((i) => i.details?.subsection === 'around-town');
+    if (filter === 'pet-of-the-month') return petsQuery.data ?? [];
     return allItems;
-  }, [filter, allItems, recipesQuery.data, lifestyleQuery.data]);
+  }, [filter, allItems, recipesQuery.data, lifestyleQuery.data, petsQuery.data]);
 
-  const isPending = lifestyleQuery.isPending || recipesQuery.isPending;
-  const isError = lifestyleQuery.isError || recipesQuery.isError;
-
-  const filterLabels: Record<string, string> = { '': 'All', 'secret-sauce': 'Secret Sauce', recipe: 'Recipes', 'around-town': 'Around Town' };
+  const isPending = lifestyleQuery.isPending || recipesQuery.isPending || petsQuery.isPending;
+  const isError = lifestyleQuery.isError || recipesQuery.isError || petsQuery.isError;
+  const filterLabels: Record<string, string> = {
+    '': 'All',
+    'secret-sauce': 'Secret Sauce',
+    recipe: 'Recipes',
+    'around-town': 'Around Town',
+    'pet-of-the-month': 'Pets',
+  };
 
   return (
-    <PageShell seo={{ title: 'Lifestyle — Home Cooking, Essays & Life Around Senoia', description: 'Home cooking and the small reflections that give Senoia its character.', path: '/lifestyle' }}>
+    <PageShell seo={{ title: 'Lifestyle — Home Cooking, Essays & Life Around Senoia', description: 'Home cooking, local character, and community life in Senoia.', path: '/lifestyle' }}>
       <PageHero kicker="Lifestyle" title={<>The flavor of<br />life around town</>}>Home cooking and the small reflections that give Senoia its character.</PageHero>
       <section>
         <div className="wrap">
           <SectionHead index="01" title="Lifestyle Stories" />
           <div className="filter-pills" style={{ marginBottom: '32px' }}>
-            {(['', 'secret-sauce', 'recipe', 'around-town'] as const).map((f) => (
-              <button type="button" key={f} className={`filter-pill${filter === f ? ' active' : ''}`} onClick={() => setFilter(f)}>{filterLabels[f]}</button>
+            {(['', 'secret-sauce', 'recipe', 'around-town', 'pet-of-the-month'] as const).map((f) => (
+              <button type="button" key={f} className={`filter-pill${filter === f ? ' active' : ''}`} onClick={() => setFilter(f)}>
+                {filterLabels[f]}
+              </button>
             ))}
           </div>
           {isPending && <div className="public-content-state">Loading lifestyle stories…</div>}
           {isError && <div className="public-content-state">Lifestyle stories are temporarily unavailable.</div>}
-          {!isPending && !isError && filtered.length === 0 && <div className="public-content-state">No lifestyle stories are published in this section yet.</div>}
+          {!isPending && !isError && filtered.length === 0 && (
+            <div className="public-content-state">No stories are published in this section yet.</div>
+          )}
           {filtered.map((item, index) => <PublishedStoryCard item={item} reverse={index % 2 === 1} key={item.id} />)}
         </div>
       </section>
@@ -647,6 +696,25 @@ function ArticleDetailInner({ pubSlug, slug, sectionLabel, sectionPath }: {
     },
   });
 
+  // All hooks must come before any conditional returns (Rules of Hooks).
+  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+  // galleryItems derived from query data — safe to use empty array as fallback.
+  const galleryItems = useMemo(
+    () => (query.data?.gallery ?? []).filter((g) => g.mediaUrl),
+    [query.data],
+  );
+
+  useEffect(() => {
+    if (lightboxIdx === null) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setLightboxIdx(null);
+      if (e.key === 'ArrowRight') setLightboxIdx((i) => i !== null ? Math.min(i + 1, galleryItems.length - 1) : null);
+      if (e.key === 'ArrowLeft') setLightboxIdx((i) => i !== null ? Math.max(i - 1, 0) : null);
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [lightboxIdx, galleryItems.length]);
+
   if (query.isPending) {
     return <PageShell seo={{ title: 'Loading… — Life Around Senoia', description: '', path: `/${sectionPath}/${slug}` }}>
       <section><div className="wrap" style={{ padding: '80px 0' }}><div className="public-content-state">Loading…</div></div></section>
@@ -669,19 +737,19 @@ function ArticleDetailInner({ pubSlug, slug, sectionLabel, sectionPath }: {
   return <PageShell seo={{ title: `${article.title} — Life Around Senoia`, description: article.summary, path: `/${sectionPath}/${slug}` }}>
     {/* Dark header with title */}
     <section style={{ background: 'var(--ink)', color: 'var(--paper)' }}>
-      <div className="wrap" style={{ paddingTop: '28px', paddingBottom: 0 }}>
+      <div className="wrap" style={{ paddingTop: '36px', paddingBottom: '48px' }}>
         <Link href={`/${sectionPath}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', font: '700 .72rem var(--mono)', letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--honey)', textDecoration: 'none', marginBottom: '24px' }}>
           <ArrowLeft size={12} /> {sectionLabel}
         </Link>
         <span className="mega-kicker" style={{ fontSize: '.72rem', color: 'rgba(247,245,238,.5)' }}><i className="dash" />{article.contentType.replaceAll('-', ' ')}</span>
-        <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 700, lineHeight: 1.07, letterSpacing: '-.04em', marginTop: '10px', marginBottom: '16px' }}>{article.title}</h1>
-        <p style={{ fontFamily: 'var(--editorial)', fontSize: '1.2rem', lineHeight: 1.3, color: 'rgba(247,245,238,.72)', maxWidth: '660px', marginBottom: '32px' }}>{article.summary}</p>
+        <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 700, lineHeight: 1.07, letterSpacing: '-.04em', marginTop: '12px', marginBottom: '22px' }}>{article.title}</h1>
+        <p style={{ fontFamily: 'var(--editorial)', fontSize: '1.2rem', lineHeight: 1.4, color: 'rgba(247,245,238,.75)', maxWidth: '660px', marginBottom: 0 }}>{article.summary}</p>
       </div>
     </section>
 
     {/* Cover photo */}
     {article.coverUrl && (
-      <div style={{ width: '100%', maxHeight: '520px', overflow: 'hidden', background: 'var(--ink)' }}>
+      <div style={{ width: '100%', maxHeight: '520px', overflow: 'hidden' }}>
         <img
           src={article.coverUrl}
           alt={(article as any).coverAltText ?? article.title}
@@ -703,20 +771,56 @@ function ArticleDetailInner({ pubSlug, slug, sectionLabel, sectionPath }: {
         <div className="wrap">
           <SectionHead index="" title="Photo Gallery" />
           <div className="article-gallery">
-            {article.gallery.map((gitem) => (
-              <figure key={gitem.id} className="gallery-figure">
-                {gitem.mediaUrl && (
-                  <img src={gitem.mediaUrl} alt={gitem.altText ?? gitem.caption ?? article.title} loading="lazy" />
-                )}
-                {gitem.caption && <figcaption>{gitem.caption}</figcaption>}
-              </figure>
-            ))}
+            {article.gallery.map((gitem) => {
+              const lbIdx = galleryItems.findIndex((g) => g.id === gitem.id);
+              return (
+                <figure
+                  key={gitem.id}
+                  className="gallery-figure"
+                  onClick={gitem.mediaUrl ? () => setLightboxIdx(lbIdx) : undefined}
+                  role={gitem.mediaUrl ? 'button' : undefined}
+                  aria-label={gitem.mediaUrl ? `View ${gitem.caption ?? 'photo'} enlarged` : undefined}
+                  tabIndex={gitem.mediaUrl ? 0 : undefined}
+                  onKeyDown={gitem.mediaUrl ? (e) => e.key === 'Enter' && setLightboxIdx(lbIdx) : undefined}
+                >
+                  {gitem.mediaUrl && (
+                    <img src={gitem.mediaUrl} alt={gitem.altText ?? gitem.caption ?? article.title} loading="lazy" />
+                  )}
+                  {gitem.caption && <figcaption>{gitem.caption}</figcaption>}
+                </figure>
+              );
+            })}
           </div>
         </div>
       </section>
     )}
 
     <Newsletter />
+
+    {/* Lightbox */}
+    {lightboxIdx !== null && (
+      <div className="lightbox-overlay" onClick={() => setLightboxIdx(null)} role="dialog" aria-modal="true" aria-label="Photo enlarged view">
+        <button className="lightbox-close" onClick={() => setLightboxIdx(null)} aria-label="Close lightbox"><X size={18} /></button>
+        {lightboxIdx > 0 && (
+          <button className="lightbox-prev" onClick={(e) => { e.stopPropagation(); setLightboxIdx(lightboxIdx - 1); }} aria-label="Previous photo"><ArrowLeft size={22} /></button>
+        )}
+        {lightboxIdx < galleryItems.length - 1 && (
+          <button className="lightbox-next" onClick={(e) => { e.stopPropagation(); setLightboxIdx(lightboxIdx + 1); }} aria-label="Next photo"><ArrowRight size={22} /></button>
+        )}
+        <div className="lightbox-img-wrap" onClick={(e) => e.stopPropagation()}>
+          <img
+            src={galleryItems[lightboxIdx]!.mediaUrl!}
+            alt={galleryItems[lightboxIdx]!.altText ?? galleryItems[lightboxIdx]!.caption ?? article.title}
+          />
+          {galleryItems[lightboxIdx]!.caption && (
+            <p className="lightbox-caption">{galleryItems[lightboxIdx]!.caption}</p>
+          )}
+          {galleryItems.length > 1 && (
+            <span className="lightbox-counter">{lightboxIdx + 1} / {galleryItems.length}</span>
+          )}
+        </div>
+      </div>
+    )}
   </PageShell>;
 }
 

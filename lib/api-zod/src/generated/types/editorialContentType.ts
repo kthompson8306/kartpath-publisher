@@ -13,6 +13,7 @@ export const EditorialContentType = {
   'featured-family': 'featured-family',
   'nonprofit-spotlight': 'nonprofit-spotlight',
   'young-achiever': 'young-achiever',
+  'people-around-town': 'people-around-town',
   'pet-of-the-month': 'pet-of-the-month',
   'business-listing': 'business-listing',
   event: 'event',

@@ -16,6 +16,7 @@ export const editorialContentTypes = [
   "featured-family",
   "nonprofit-spotlight",
   "young-achiever",
+  "people-around-town",
   "pet-of-the-month",
   "business-listing",
   "event",

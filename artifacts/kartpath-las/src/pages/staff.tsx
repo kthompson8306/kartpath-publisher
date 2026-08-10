@@ -39,6 +39,7 @@ const CONTENT_TYPES = [
   { value: EditorialContentType['featured-family'], label: 'Featured Family', short: 'Family' },
   { value: EditorialContentType['nonprofit-spotlight'], label: 'Nonprofit Spotlight', short: 'Nonprofit' },
   { value: EditorialContentType['young-achiever'], label: 'Young Achiever', short: 'Achiever' },
+  { value: EditorialContentType['people-around-town'], label: 'People Around Town', short: 'Around Town' },
   { value: EditorialContentType['pet-of-the-month'], label: 'Pet of the Month', short: 'Pet' },
   { value: EditorialContentType['business-listing'], label: 'Business Listing', short: 'Business' },
   { value: EditorialContentType.event, label: 'Event', short: 'Event' },
