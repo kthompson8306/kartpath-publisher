@@ -54,6 +54,10 @@ import type {
   StaffRoster,
   StorageUpload,
   StorageUploadInput,
+  SubmitBusinessInput,
+  SubmitBusinessResponse,
+  SubmitEventInput,
+  SubmitEventResponse,
   SubmitNominationInput,
   SubmitNominationResponse,
   SubscribeInput,
@@ -1715,6 +1719,94 @@ export function useListSubscribers<TData = Awaited<ReturnType<typeof listSubscri
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
   return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+// ── Submit business listing (public) ─────────────────────────────
+
+export const getSubmitBusinessListingUrl = (slug: string) =>
+  `/api/publications/${slug}/submissions/business`
+
+export const submitBusinessListing = async (
+  slug: string,
+  submitBusinessInput: SubmitBusinessInput,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<SubmitBusinessResponse> => {
+  return customFetch<SubmitBusinessResponse>(getSubmitBusinessListingUrl(slug), {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(submitBusinessInput),
+  });
+}
+
+export const getSubmitBusinessListingMutationOptions = <TError = ErrorType<Error>, TContext = unknown>(
+  options?: { mutation?: UseMutationOptions<Awaited<ReturnType<typeof submitBusinessListing>>, TError, {slug: string; data: BodyType<SubmitBusinessInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitBusinessListing>>, TError, {slug: string; data: BodyType<SubmitBusinessInput>}, TContext> => {
+  const mutationKey = ['submitBusinessListing'];
+  const {mutation: mutationOptions, request: requestOptions} = options ?
+    options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+    options : {...options, mutation: {...options.mutation, mutationKey}}
+    : {mutation: { mutationKey }, request: undefined};
+  const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitBusinessListing>>, {slug: string; data: BodyType<SubmitBusinessInput>}> = (props) => {
+    const {slug, data} = props ?? {};
+    return submitBusinessListing(slug, data, requestOptions)
+  }
+  return { mutationFn, ...mutationOptions }
+}
+
+export type SubmitBusinessListingMutationResult = NonNullable<Awaited<ReturnType<typeof submitBusinessListing>>>
+export type SubmitBusinessListingMutationBody = BodyType<SubmitBusinessInput>
+export type SubmitBusinessListingMutationError = ErrorType<Error>
+
+export const useSubmitBusinessListing = <TError = ErrorType<Error>, TContext = unknown>(
+  options?: { mutation?: UseMutationOptions<Awaited<ReturnType<typeof submitBusinessListing>>, TError, {slug: string; data: BodyType<SubmitBusinessInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationResult<Awaited<ReturnType<typeof submitBusinessListing>>, TError, {slug: string; data: BodyType<SubmitBusinessInput>}, TContext> => {
+  return useMutation(getSubmitBusinessListingMutationOptions(options));
+}
+
+
+// ── Submit event (public) ─────────────────────────────────────────
+
+export const getSubmitEventSubmissionUrl = (slug: string) =>
+  `/api/publications/${slug}/submissions/event`
+
+export const submitEventSubmission = async (
+  slug: string,
+  submitEventInput: SubmitEventInput,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<SubmitEventResponse> => {
+  return customFetch<SubmitEventResponse>(getSubmitEventSubmissionUrl(slug), {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(submitEventInput),
+  });
+}
+
+export const getSubmitEventSubmissionMutationOptions = <TError = ErrorType<Error>, TContext = unknown>(
+  options?: { mutation?: UseMutationOptions<Awaited<ReturnType<typeof submitEventSubmission>>, TError, {slug: string; data: BodyType<SubmitEventInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitEventSubmission>>, TError, {slug: string; data: BodyType<SubmitEventInput>}, TContext> => {
+  const mutationKey = ['submitEventSubmission'];
+  const {mutation: mutationOptions, request: requestOptions} = options ?
+    options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+    options : {...options, mutation: {...options.mutation, mutationKey}}
+    : {mutation: { mutationKey }, request: undefined};
+  const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitEventSubmission>>, {slug: string; data: BodyType<SubmitEventInput>}> = (props) => {
+    const {slug, data} = props ?? {};
+    return submitEventSubmission(slug, data, requestOptions)
+  }
+  return { mutationFn, ...mutationOptions }
+}
+
+export type SubmitEventSubmissionMutationResult = NonNullable<Awaited<ReturnType<typeof submitEventSubmission>>>
+export type SubmitEventSubmissionMutationBody = BodyType<SubmitEventInput>
+export type SubmitEventSubmissionMutationError = ErrorType<Error>
+
+export const useSubmitEventSubmission = <TError = ErrorType<Error>, TContext = unknown>(
+  options?: { mutation?: UseMutationOptions<Awaited<ReturnType<typeof submitEventSubmission>>, TError, {slug: string; data: BodyType<SubmitEventInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationResult<Awaited<ReturnType<typeof submitEventSubmission>>, TError, {slug: string; data: BodyType<SubmitEventInput>}, TContext> => {
+  return useMutation(getSubmitEventSubmissionMutationOptions(options));
 }
 
 

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { ArrowLeft, ArrowRight, ArrowUpRight, Menu, Search, X } from 'lucide-react';
 import { Link, useParams } from 'wouter';
-import { getGetPublishedArticleQueryKey, getListPublishedContentItemsQueryKey, useGetPublishedArticle, useListPublishedContentItems, useSubscribeToPublication, useSubmitNomination } from '@workspace/api-client-react';
+import { getGetPublishedArticleQueryKey, getListPublishedContentItemsQueryKey, useGetPublishedArticle, useListPublishedContentItems, useSubmitBusinessListing, useSubmitEventSubmission, useSubscribeToPublication, useSubmitNomination } from '@workspace/api-client-react';
 import type { ContentItem, EditorialContentType } from '@workspace/api-client-react';
 
 type SeoProps = { title: string; description: string; path: string };
@@ -274,6 +274,137 @@ export function Nonprofit() {
     <section><div className="wrap"><SectionHead index="01" title="Nonprofit Spotlights" /><PublishedStoryList query={query} emptyMessage="No nonprofit spotlights are published right now." /></div></section>
     <section><div className="wrap"><div className="involved-strip"><span className="mono-label">Know a Nonprofit We Should Feature?</span><h2>Help us find the next organization worth spotlighting</h2><Link href="/about#nominate" className="btn-sharp honey-button">Nominate a Nonprofit <ArrowRight size={14} /></Link></div></div></section>
   </PageShell>;
+}
+
+// ── Business categories ───────────────────────────────────────────────────────
+const BUSINESS_CATEGORIES = [
+  'Dining & Drinks',
+  'Shopping & Retail',
+  'Professional Services',
+  'Health & Wellness',
+  'Real Estate',
+  'Automotive',
+  'Home & Garden',
+  'Arts & Entertainment',
+  'Beauty & Salon',
+  'Other',
+];
+
+// ── Business listing submission page ─────────────────────────────────────────
+export function BusinessSubmitPage() {
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState('');
+  const [showOther, setShowOther] = useState(false);
+  const mutation = useSubmitBusinessListing();
+
+  return (
+    <PageShell seo={{ title: 'Submit a Business — Life Around Senoia', description: 'Add your business to the Life Around Senoia community directory.', path: '/submit/business' }}>
+      <PageHero kicker="Community Directory" title={<>List your business<br />with the community</>}>Help your neighbors find you. Submissions are reviewed by the editorial team before going live.</PageHero>
+      <section className="nominate-section">
+        <div className="wrap">
+          <SectionHead index="" title="Business Listing Submission" />
+          {submitted ? (
+            <p className="form-confirm" style={{ color: 'var(--paper)' }}>Your listing has been submitted — thank you! Our team will review it and reach out if we have any questions before publishing.</p>
+          ) : (
+            <>
+              <p className="nominate-intro">Fill out the form below to submit your business to the <em>Life Around Senoia</em> directory. Only confirmed local businesses are published.</p>
+              {error && <p style={{ color: 'var(--honey)', font: '.9rem var(--ui)', marginBottom: 16 }}>{error}</p>}
+              <form className="nominate-form" onSubmit={(e) => {
+                e.preventDefault();
+                setError('');
+                const fd = new FormData(e.currentTarget);
+                const selectedCat = fd.get('category') as string;
+                const otherCat = (fd.get('otherCategory') as string | null)?.trim() ?? '';
+                const category = selectedCat === 'Other' && otherCat ? otherCat : selectedCat;
+                mutation.mutate({ slug: PUBLICATION_SLUG, data: {
+                  businessName: fd.get('businessName') as string,
+                  category,
+                  phone: (fd.get('phone') as string) || undefined,
+                  website: (fd.get('website') as string) || undefined,
+                  description: (fd.get('description') as string) || undefined,
+                  submitterName: fd.get('submitterName') as string,
+                  submitterEmail: fd.get('submitterEmail') as string,
+                } }, {
+                  onSuccess: () => setSubmitted(true),
+                  onError: () => setError('Something went wrong. Please try again or email kevin@kartpathmedia.com.'),
+                });
+              }}>
+                <label className="full">Business Name *<input required type="text" name="businessName" placeholder="Your business name" /></label>
+                <label className="full">Category *
+                  <select required name="category" onChange={(e) => setShowOther(e.target.value === 'Other')}>
+                    {BUSINESS_CATEGORIES.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
+                  </select>
+                </label>
+                {showOther && <label className="full">Specify your category *<input required type="text" name="otherCategory" placeholder="e.g. Photography Studio" /></label>}
+                <label>Phone<input type="tel" name="phone" placeholder="770-555-0000" /></label>
+                <label>Website<input type="url" name="website" placeholder="https://yourbusiness.com" /></label>
+                <label className="full">Short Description<textarea name="description" rows={4} placeholder="Tell us about your business in a few sentences…" /></label>
+                <label>Your Name *<input required type="text" name="submitterName" placeholder="Your full name" /></label>
+                <label>Your Email *<input required type="email" name="submitterEmail" placeholder="you@email.com" /></label>
+                <div className="full"><button className="btn-sharp honey-button" type="submit" disabled={mutation.isPending}>{mutation.isPending ? 'Submitting…' : 'Submit Listing'} <ArrowRight size={14} /></button></div>
+              </form>
+            </>
+          )}
+        </div>
+      </section>
+    </PageShell>
+  );
+}
+
+// ── Event submission page ─────────────────────────────────────────────────────
+export function EventSubmitPage() {
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState('');
+  const mutation = useSubmitEventSubmission();
+
+  return (
+    <PageShell seo={{ title: 'Submit an Event — Life Around Senoia', description: 'Let the Senoia community know about your upcoming event.', path: '/submit/event' }}>
+      <PageHero kicker="Community Events" title={<>Share your event<br />with Senoia</>}>Got something happening in town? Let us know and we'll consider it for the events calendar.</PageHero>
+      <section className="nominate-section">
+        <div className="wrap">
+          <SectionHead index="" title="Event Submission" />
+          {submitted ? (
+            <p className="form-confirm" style={{ color: 'var(--paper)' }}>Your event has been submitted — thank you! Our team will review it and be in touch if we have any questions before publishing.</p>
+          ) : (
+            <>
+              <p className="nominate-intro">Fill out the form below to submit your event to the <em>Life Around Senoia</em> events calendar. All submissions are reviewed by the editorial team before publishing.</p>
+              {error && <p style={{ color: 'var(--honey)', font: '.9rem var(--ui)', marginBottom: 16 }}>{error}</p>}
+              <form className="nominate-form" onSubmit={(e) => {
+                e.preventDefault();
+                setError('');
+                const fd = new FormData(e.currentTarget);
+                mutation.mutate({ slug: PUBLICATION_SLUG, data: {
+                  eventName: fd.get('eventName') as string,
+                  eventDate: fd.get('eventDate') as string,
+                  eventTime: (fd.get('eventTime') as string) || undefined,
+                  location: fd.get('location') as string,
+                  description: (fd.get('description') as string) || undefined,
+                  ticketUrl: (fd.get('ticketUrl') as string) || undefined,
+                  contactName: fd.get('contactName') as string,
+                  contactEmail: fd.get('contactEmail') as string,
+                  contactPhone: (fd.get('contactPhone') as string) || undefined,
+                } }, {
+                  onSuccess: () => setSubmitted(true),
+                  onError: () => setError('Something went wrong. Please try again or email kevin@kartpathmedia.com.'),
+                });
+              }}>
+                <label className="full">Event Name *<input required type="text" name="eventName" placeholder="Name of your event" /></label>
+                <label>Date *<input required type="date" name="eventDate" /></label>
+                <label>Time<input type="text" name="eventTime" placeholder="e.g. 6:00 PM" /></label>
+                <label className="full">Location / Venue *<input required type="text" name="location" placeholder="e.g. Senoia City Square, 1 Main St" /></label>
+                <label className="full">Description<textarea name="description" rows={4} placeholder="Tell us about the event…" /></label>
+                <label className="full">Ticket / Event Link<input type="url" name="ticketUrl" placeholder="https://eventbrite.com/…" /></label>
+                <label>Contact Name *<input required type="text" name="contactName" placeholder="Your full name" /></label>
+                <label>Contact Email *<input required type="email" name="contactEmail" placeholder="you@email.com" /></label>
+                <label>Contact Phone<input type="tel" name="contactPhone" placeholder="770-555-0000" /></label>
+                <div className="full"><button className="btn-sharp honey-button" type="submit" disabled={mutation.isPending}>{mutation.isPending ? 'Submitting…' : 'Submit Event'} <ArrowRight size={14} /></button></div>
+              </form>
+            </>
+          )}
+        </div>
+      </section>
+    </PageShell>
+  );
 }
 
 export function Lifestyle() {

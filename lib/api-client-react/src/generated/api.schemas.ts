@@ -306,6 +306,49 @@ export interface SubscriberList {
   subscribers: SubscriberRecord[];
 }
 
+// ── Public submission types ───────────────────────────────────────────────────
+
+export interface SubmitBusinessInput {
+  /** @minLength 1 */
+  businessName: string;
+  /** @minLength 1 */
+  category: string;
+  phone?: string;
+  website?: string;
+  description?: string;
+  /** @minLength 1 */
+  submitterName: string;
+  /** @minLength 3 */
+  submitterEmail: string;
+}
+
+export interface SubmitBusinessResponse {
+  id: string;
+  received: boolean;
+}
+
+export interface SubmitEventInput {
+  /** @minLength 1 */
+  eventName: string;
+  /** @minLength 1 */
+  eventDate: string;
+  eventTime?: string;
+  /** @minLength 1 */
+  location: string;
+  description?: string;
+  ticketUrl?: string;
+  /** @minLength 1 */
+  contactName: string;
+  /** @minLength 3 */
+  contactEmail: string;
+  contactPhone?: string;
+}
+
+export interface SubmitEventResponse {
+  id: string;
+  received: boolean;
+}
+
 export type PublicationIdQueryParameter = string;
 
 export type ListPublishedContentItemsParams = {
