@@ -191,15 +191,35 @@ function Newsletter() {
   return <section className="newsletter" id="newsletter"><div className="wrap"><span className="mono-label">Join The List</span><h2>Senoia stories, straight to your inbox — no fluff, just the town.</h2>{submitted ? <p className="form-confirm">You're on the list — look for Life Around Senoia in your inbox soon.</p> : <>{subError && <p style={{ color: 'var(--brick)', marginBottom: 12, font: '.9rem var(--ui)' }}>{subError}</p>}<form className="news-input-row" onSubmit={handleSubmit}><input required type="email" name="email" aria-label="Email address" placeholder="you@email.com" /><button type="submit" disabled={subscribeMutation.isPending}>{subscribeMutation.isPending ? '…' : 'Subscribe'}</button></form></>}</div></section>;
 }
 
+function renderBody(body: string | null | undefined): React.ReactNode {
+  if (!body) return null;
+  // Split on double newlines first; fall back to single newlines for legacy content
+  let blocks = body.split(/\n\n+/).map((b) => b.trim()).filter(Boolean);
+  if (blocks.length === 1 && body.includes('\n')) {
+    blocks = body.split(/\n/).map((b) => b.trim()).filter(Boolean);
+  }
+  return blocks.map((block, i) => {
+    const isSingleLine = !block.includes('\n');
+    const isShort = block.length <= 80;
+    const noTerminalPunct = !/[.!?]$/.test(block);
+    const notQuote = !/^["\u201c]/.test(block);
+    const fewPeriods = (block.match(/\./g) ?? []).length <= 1;
+    if (isSingleLine && isShort && noTerminalPunct && notQuote && fewPeriods) {
+      return <h3 key={i} className="body-subhead">{block}</h3>;
+    }
+    return <p key={i}>{block.split('\n').join(' ')}</p>;
+  });
+}
+
 function PublishedStoryCard({ item, reverse = false }: { item: ContentItem; reverse?: boolean }) {
   return <article className={`family-row published-story-row ${reverse ? 'reverse' : ''}`} data-testid={`public-published-${item.slug}`}>
     <div className="family-img">
       {item.coverUrl
-        ? <img src={item.coverUrl} alt={item.title} className="family-photo" loading="lazy" data-testid={`img-cover-${item.slug}`} />
+        ? <img src={item.coverUrl} alt={(item as any).coverAltText ?? item.title} className="family-photo" loading="lazy" data-testid={`img-cover-${item.slug}`} />
         : <><span className="family-issue-badge">Published story</span><div className="published-story-mark">LAS</div></>
       }
     </div>
-    <div className="family-copy"><span className="tag">{item.contentType.replaceAll('-', ' ')}</span><h2>{item.title}</h2><p className="dek">{item.summary}</p><p>{item.body}</p><DetailValue item={item} names={['quote', 'pullQuote']} /></div>
+    <div className="family-copy"><span className="tag">{item.contentType.replaceAll('-', ' ')}</span><h2>{item.title}</h2><p className="dek">{item.summary}</p>{renderBody(item.body)}<DetailValue item={item} names={['quote', 'pullQuote']} /></div>
   </article>;
 }
 
@@ -216,9 +236,9 @@ export function People() {
     <section><div className="wrap"><SectionHead index="01" title="Published Featured Families" /><PublishedStoryList query={featuredFamiliesQuery} emptyMessage="No featured families are published right now." /></div></section>
     <section className="on-paper2"><div className="wrap">
       <SectionHead index="02" title="Published Young Achievers" /><PublicContentState query={youngAchieversQuery} emptyMessage="No young achievers are published right now." />
-      <div className="people-grid">{youngAchieversQuery.data?.map((item) => <article className="people-card" key={item.id} data-testid={`public-published-${item.slug}`}><div className="pimg">{item.coverUrl ? <img src={item.coverUrl} alt={item.title} loading="lazy" data-testid={`img-cover-${item.slug}`} /> : <div className="noimg">LAS</div>}</div><div className="pbody"><span className="pmeta">Published Young Achiever</span><h3>{item.title}</h3><p>{item.summary}</p><p>{item.body}</p></div></article>)}</div>
+      <div className="people-grid">{youngAchieversQuery.data?.map((item) => <article className="people-card" key={item.id} data-testid={`public-published-${item.slug}`}><div className="pimg">{item.coverUrl ? <img src={item.coverUrl} alt={(item as any).coverAltText ?? item.title} loading="lazy" data-testid={`img-cover-${item.slug}`} /> : <div className="noimg">LAS</div>}</div><div className="pbody"><span className="pmeta">Published Young Achiever</span><h3>{item.title}</h3><p>{item.summary}</p>{renderBody(item.body)}</div></article>)}</div>
       <SectionHead index="03" title="Published Pets of the Month" /><PublicContentState query={petsQuery} emptyMessage="No pets of the month are published right now." />
-      <div className="people-grid">{petsQuery.data?.map((item) => <article className="people-card" key={item.id} data-testid={`public-published-${item.slug}`}><div className="pimg">{item.coverUrl ? <img src={item.coverUrl} alt={item.title} loading="lazy" data-testid={`img-cover-${item.slug}`} /> : <div className="noimg">LAS</div>}</div><div className="pbody"><span className="pmeta">Published Pet of the Month</span><h3>{item.title}</h3><p>{item.summary}</p><p>{item.body}</p></div></article>)}</div>
+      <div className="people-grid">{petsQuery.data?.map((item) => <article className="people-card" key={item.id} data-testid={`public-published-${item.slug}`}><div className="pimg">{item.coverUrl ? <img src={item.coverUrl} alt={(item as any).coverAltText ?? item.title} loading="lazy" data-testid={`img-cover-${item.slug}`} /> : <div className="noimg">LAS</div>}</div><div className="pbody"><span className="pmeta">Published Pet of the Month</span><h3>{item.title}</h3><p>{item.summary}</p>{renderBody(item.body)}</div></article>)}</div>
     </div></section>
   </PageShell>;
 }
@@ -256,7 +276,7 @@ export function Lifestyle() {
             <div className="sauce-card" key={item.id} data-testid={`public-published-${item.slug}`}>
               {item.details?.issue && <span className="tag">Issue {item.details.issue}</span>}
               <h2>{item.title}</h2>
-              <p>{item.body}</p>
+              {renderBody(item.body)}
             </div>
           ))}
         </div>
@@ -279,7 +299,7 @@ export function Lifestyle() {
             return (
               <div className="recipe-row" key={item.id} data-testid={`public-published-${item.slug}`}>
                 {item.coverUrl
-                  ? <div className="recipe-img"><img src={item.coverUrl} alt={item.title} loading="lazy" data-testid={`img-cover-${item.slug}`} /></div>
+                  ? <div className="recipe-img"><img src={item.coverUrl} alt={(item as any).coverAltText ?? item.title} loading="lazy" data-testid={`img-cover-${item.slug}`} /></div>
                   : <div className="recipe-img"><img src={image('lifestyle-recipe.jpg')} alt={item.title} loading="lazy" /></div>
                 }
                 <div className="recipe-copy">
@@ -315,10 +335,10 @@ export function Lifestyle() {
                 )}
                 <h2>{item.title}</h2>
                 <p>{item.summary}</p>
-                {item.body && <p>{item.body}</p>}
+                {renderBody(item.body)}
               </div>
               {item.coverUrl
-                ? <div className="mouse-img"><img src={item.coverUrl} alt={item.title} loading="lazy" data-testid={`img-cover-${item.slug}`} /></div>
+                ? <div className="mouse-img"><img src={item.coverUrl} alt={(item as any).coverAltText ?? item.title} loading="lazy" data-testid={`img-cover-${item.slug}`} /></div>
                 : <div className="mouse-img"><img src={image('lifestyle-secretsauce.jpg')} alt="Downtown Senoia" loading="lazy" /></div>
               }
             </div>
@@ -347,14 +367,14 @@ export function CrooksCorner() {
             return (
               <div className="hist-row" key={item.id} data-testid={`public-published-${item.slug}`}>
                 {item.coverUrl
-                  ? <div className="hist-img"><img src={item.coverUrl} alt={item.title} loading="lazy" data-testid={`img-cover-${item.slug}`} /></div>
+                  ? <div className="hist-img"><img src={item.coverUrl} alt={(item as any).coverAltText ?? item.title} loading="lazy" data-testid={`img-cover-${item.slug}`} /></div>
                   : <div className="hist-img"><img src={image('lifestyle-history.jpg')} alt="Senoia historical photo" loading="lazy" /></div>
                 }
                 <div className="hist-copy">
                   {item.details?.issue && <span className="tag">Issue {item.details.issue}</span>}
                   <h2>{item.title}</h2>
                   <p>{item.summary}</p>
-                  {item.body && <p>{item.body}</p>}
+                  {renderBody(item.body)}
                   {timeline.length > 0 && (
                     <div className="hist-timeline">
                       {timeline.map(({ year, event }) => (
@@ -381,7 +401,7 @@ export function Events() {
       const month = item.details.month ?? item.details.date ?? 'EVENT';
       const day = item.details.day ?? '';
       const location = item.details.location ?? item.details.address ?? 'Senoia, Georgia';
-      return <article className="event-row" key={item.id} data-testid={`public-published-${item.slug}`}><div className="when">{month}<span className="day">{day}</span></div><div><span className="tag">Published Event</span><h3>{item.title}</h3><div className="loc">{location}</div><p>{item.summary}</p><p>{item.body}</p></div></article>;
+      return <article className="event-row" key={item.id} data-testid={`public-published-${item.slug}`}><div className="when">{month}<span className="day">{day}</span></div><div><span className="tag">Published Event</span><h3>{item.title}</h3><div className="loc">{location}</div><p>{item.summary}</p>{renderBody(item.body)}</div></article>;
     })}</div></div></section>
   </PageShell>;
 }

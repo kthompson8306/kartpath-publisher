@@ -15,6 +15,7 @@ const router: IRouter = Router();
 function serializeItem(
   item: typeof contentItemsTable.$inferSelect,
   mediaObjectPath: string | null,
+  mediaAltText: string | null = null,
 ) {
   const coverUrl = mediaObjectPath
     ? `/api/storage/objects${mediaObjectPath.replace(/^\/objects/, "")}`
@@ -22,6 +23,7 @@ function serializeItem(
   return {
     ...item,
     coverUrl,
+    coverAltText: mediaAltText,
     createdAt: item.createdAt.toISOString(),
     updatedAt: item.updatedAt.toISOString(),
     publishedAt: item.publishedAt?.toISOString() ?? null,
@@ -80,6 +82,7 @@ router.get("/publications/:slug/content-items", async (req, res): Promise<void> 
     .select({
       item: contentItemsTable,
       mediaObjectPath: mediaAssetsTable.objectPath,
+      mediaAltText: mediaAssetsTable.altText,
     })
     .from(contentItemsTable)
     .leftJoin(
@@ -94,7 +97,7 @@ router.get("/publications/:slug/content-items", async (req, res): Promise<void> 
 
   res.json(
     ListPublishedContentItemsResponse.parse(
-      rows.map(({ item, mediaObjectPath }) => serializeItem(item, mediaObjectPath ?? null)),
+      rows.map(({ item, mediaObjectPath, mediaAltText }) => serializeItem(item, mediaObjectPath ?? null, mediaAltText ?? null)),
     ),
   );
 });

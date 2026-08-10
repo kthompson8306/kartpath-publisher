@@ -131,6 +131,8 @@ export interface ContentItem {
   /** @nullable */
   coverUrl: string | null;
   /** @nullable */
+  coverAltText: string | null;
+  /** @nullable */
   createdBy: string | null;
   /** @nullable */
   updatedBy: string | null;

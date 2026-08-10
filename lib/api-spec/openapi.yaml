@@ -939,6 +939,8 @@ components:
           type: ["string", "null"]
         coverUrl:
           type: ["string", "null"]
+        coverAltText:
+          type: ["string", "null"]
         createdBy:
           type: ["string", "null"]
         updatedBy:
@@ -964,6 +966,7 @@ components:
         - details
         - coverMediaId
         - coverUrl
+        - coverAltText
         - createdBy
         - updatedBy
         - publishedAt
