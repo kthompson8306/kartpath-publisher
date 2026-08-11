@@ -520,7 +520,8 @@ function CoverPhotoUploader({
   const [uploadState, setUploadState] = useState<UploadState>('idle');
   const [uploadError, setUploadError] = useState('');
   const [localPreview, setLocalPreview] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
+  const [isFocalDragging, setIsFocalDragging] = useState(false);
+  const [isFileDragging, setIsFileDragging] = useState(false);
 
   const displayUrl = localPreview ?? existingCoverUrl ?? null;
 
@@ -595,7 +596,19 @@ function CoverPhotoUploader({
   };
 
   return (
-    <div data-testid="field-cover-photo">
+    <div
+      data-testid="field-cover-photo"
+      onDragOver={(e) => { e.preventDefault(); if (!busy) setIsFileDragging(true); }}
+      onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setIsFileDragging(false); }}
+      onDrop={(e) => {
+        e.preventDefault();
+        setIsFileDragging(false);
+        if (busy) return;
+        const file = e.dataTransfer.files[0];
+        if (file) void handleFileChange(file);
+      }}
+      className={isFileDragging ? 'outline outline-2 outline-offset-2 outline-[hsl(var(--brick))]' : undefined}
+    >
       <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Cover photo <span className="normal-case tracking-normal">(optional)</span></span>
 
       {displayUrl ? (
@@ -603,7 +616,7 @@ function CoverPhotoUploader({
           className="relative mb-2 aspect-[16/9] max-h-48 cursor-crosshair select-none overflow-hidden border border-[hsl(var(--input))] bg-[hsl(var(--muted))]"
           onMouseDown={(e) => {
             e.preventDefault();
-            setIsDragging(true);
+            setIsFocalDragging(true);
             const rect = e.currentTarget.getBoundingClientRect();
             onFocalChange(
               Math.round(Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)) * 1000) / 1000,
@@ -611,15 +624,15 @@ function CoverPhotoUploader({
             );
           }}
           onMouseMove={(e) => {
-            if (!isDragging) return;
+            if (!isFocalDragging) return;
             const rect = e.currentTarget.getBoundingClientRect();
             onFocalChange(
               Math.round(Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)) * 1000) / 1000,
               Math.round(Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height)) * 1000) / 1000,
             );
           }}
-          onMouseUp={() => setIsDragging(false)}
-          onMouseLeave={() => setIsDragging(false)}
+          onMouseUp={() => setIsFocalDragging(false)}
+          onMouseLeave={() => setIsFocalDragging(false)}
           data-testid="focal-picker"
         >
           <img src={displayUrl} alt="Cover photo preview" className="size-full object-cover" data-testid="img-cover-preview" />
@@ -639,6 +652,12 @@ function CoverPhotoUploader({
           <div className="pointer-events-none absolute bottom-1.5 left-1/2 -translate-x-1/2">
             <span className="whitespace-nowrap rounded bg-black/60 px-2 py-0.5 font-ui text-[8px] uppercase tracking-[.1em] text-white/90">Click or drag · set focal point</span>
           </div>
+          {/* File-drag overlay */}
+          {isFileDragging && (
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-[hsl(var(--brick)/.35)]">
+              <span className="rounded bg-black/60 px-3 py-1.5 font-ui text-[10px] uppercase tracking-[.12em] text-white">Drop to replace cover</span>
+            </div>
+          )}
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); setLocalPreview(null); onChange(null); setUploadState('idle'); }}
@@ -650,10 +669,12 @@ function CoverPhotoUploader({
           </button>
         </div>
       ) : (
-        <div className="mb-2 flex aspect-[16/9] max-h-40 items-center justify-center border border-dashed border-[hsl(var(--input))] bg-[hsl(var(--card)/.45)]">
+        <div className={`mb-2 flex aspect-[16/9] max-h-40 flex-col items-center justify-center gap-1.5 border border-dashed transition-colors ${isFileDragging ? 'border-[hsl(var(--brick))] bg-[hsl(var(--brick)/.06)]' : 'border-[hsl(var(--input))] bg-[hsl(var(--card)/.45)]'}`}>
           {busy
             ? <Loader2 size={20} className="animate-spin text-[hsl(var(--muted-foreground))]" />
-            : <ImageIcon size={20} className="text-[hsl(var(--muted-foreground)/.5)]" />}
+            : isFileDragging
+            ? <><ImageIcon size={20} className="text-[hsl(var(--brick))]" /><span className="font-ui text-[9px] uppercase tracking-[.12em] text-[hsl(var(--brick))]">Drop image here</span></>
+            : <><ImageIcon size={20} className="text-[hsl(var(--muted-foreground)/.5)]" /><span className="font-ui text-[9px] text-[hsl(var(--muted-foreground)/.6)]">Drag image here or click below</span></>}
         </div>
       )}
 
@@ -1152,17 +1173,20 @@ function GalleryManager({ contentItemId, publicationId }: { contentItemId: strin
 
   const [uploadState, setUploadState] = useState<UploadState>('idle');
   const [uploadError, setUploadError] = useState('');
+  const [isFileDragging, setIsFileDragging] = useState(false);
+  const [uploadQueue, setUploadQueue] = useState<{ done: number; total: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const items = galleryQuery.data ?? [];
   const invalidate = () => queryClient.invalidateQueries({ queryKey: galleryKey });
 
-  const handleFileChange = async (file: File) => {
+  // Upload a single image file through the full presigned-URL → storage → add-to-gallery flow.
+  // Returns true on success, false on error. Awaits the addMutation so callers can sequence files.
+  const handleFileChange = async (file: File): Promise<boolean> => {
     if (!file.type.startsWith('image/')) {
       setUploadError('Only image files are accepted.');
-      return;
+      return false;
     }
-    setUploadError('');
     try {
       setUploadState('requesting');
       const reqRes = await fetch('/api/storage/uploads/request-url', {
@@ -1188,20 +1212,43 @@ function GalleryManager({ contentItemId, publicationId }: { contentItemId: strin
         throw new Error(err.error ?? `Finalize failed (${completeRes.status})`);
       }
 
-      addMutation.mutate(
-        { id: contentItemId, data: { publicationId, mediaId } },
-        {
-          onSuccess: () => { setUploadState('done'); void invalidate(); },
-          onError: (err: unknown) => {
-            setUploadError((err as { message?: string })?.message ?? 'Could not add to gallery.');
-            setUploadState('error');
+      // Await the gallery-attach mutation so sequential multi-file uploads don't race.
+      await new Promise<void>((resolve, reject) => {
+        addMutation.mutate(
+          { id: contentItemId, data: { publicationId, mediaId } },
+          {
+            onSuccess: () => { setUploadState('done'); void invalidate(); resolve(); },
+            onError: (err: unknown) => {
+              setUploadError((err as { message?: string })?.message ?? 'Could not add to gallery.');
+              setUploadState('error');
+              reject(err);
+            },
           },
-        },
-      );
+        );
+      });
+      return true;
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : 'Upload failed — try again.');
       setUploadState('error');
+      return false;
     }
+  };
+
+  // Upload multiple files sequentially, showing per-file progress.
+  const handleFiles = async (fileList: FileList | File[]) => {
+    const imageFiles = Array.from(fileList).filter((f) => f.type.startsWith('image/'));
+    if (imageFiles.length === 0) {
+      setUploadError('Only image files are accepted.');
+      return;
+    }
+    setUploadError('');
+    setUploadQueue({ done: 0, total: imageFiles.length });
+    for (let i = 0; i < imageFiles.length; i++) {
+      setUploadQueue({ done: i, total: imageFiles.length });
+      const ok = await handleFileChange(imageFiles[i]);
+      if (!ok) break;
+    }
+    setUploadQueue(null);
   };
 
   const busy = uploadState === 'requesting' || uploadState === 'uploading' || uploadState === 'completing' || addMutation.isPending;
@@ -1235,8 +1282,23 @@ function GalleryManager({ contentItemId, publicationId }: { contentItemId: strin
     );
   };
 
+  const busyLabel = uploadQueue
+    ? `Uploading ${uploadQueue.done + 1} of ${uploadQueue.total}…`
+    : 'Uploading…';
+
   return (
-    <div data-testid="field-gallery">
+    <div
+      data-testid="field-gallery"
+      onDragOver={(e) => { e.preventDefault(); if (!busy) setIsFileDragging(true); }}
+      onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setIsFileDragging(false); }}
+      onDrop={(e) => {
+        e.preventDefault();
+        setIsFileDragging(false);
+        if (busy) return;
+        void handleFiles(e.dataTransfer.files);
+      }}
+      className={isFileDragging ? 'outline outline-2 outline-offset-2 outline-[hsl(var(--brick))]' : undefined}
+    >
       <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">
         Photo gallery <span className="normal-case tracking-normal">(optional — appears on the article's public page)</span>
       </span>
@@ -1262,6 +1324,14 @@ function GalleryManager({ contentItemId, publicationId }: { contentItemId: strin
         </div>
       )}
 
+      {/* Drop-zone hint — visible when actively dragging files over the gallery area */}
+      {isFileDragging && (
+        <div className="mb-2 flex items-center justify-center gap-2 border border-dashed border-[hsl(var(--brick))] bg-[hsl(var(--brick)/.06)] py-4 font-ui text-[10px] uppercase tracking-[.12em] text-[hsl(var(--brick))]">
+          <ImageIcon size={14} />
+          Drop to add {/* dynamically shows number if we can read it from dragEvent, otherwise generic */}
+        </div>
+      )}
+
       {uploadError && (
         <div className="mb-2 flex items-start gap-2 border border-[hsl(var(--brick)/.4)] bg-[hsl(var(--brick)/.07)] px-3 py-2 font-ui text-[10px] text-[hsl(var(--brick))]" role="alert" data-testid="status-gallery-upload-error">
           <CircleAlert size={13} className="mt-0.5 shrink-0" /> {uploadError}
@@ -1270,20 +1340,25 @@ function GalleryManager({ contentItemId, publicationId }: { contentItemId: strin
 
       <label className={`inline-flex cursor-pointer items-center gap-2 border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 font-ui text-[10px] uppercase tracking-[.12em] transition-colors hover:border-[hsl(var(--brick))] ${busy ? 'pointer-events-none opacity-50' : ''}`} data-testid="button-add-gallery-photo">
         {busy ? <Loader2 size={12} className="animate-spin" /> : <ImageIcon size={12} />}
-        {busy ? 'Uploading…' : 'Add gallery photo'}
+        {busy ? busyLabel : 'Add photos'}
         <input
           ref={fileInputRef}
           type="file"
           accept="image/*"
+          multiple
           className="sr-only"
           disabled={busy}
           onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) void handleFileChange(file);
+            if (e.target.files && e.target.files.length > 0) void handleFiles(e.target.files);
             e.target.value = '';
           }}
         />
       </label>
+      {!busy && (
+        <p className="mt-1.5 font-ui text-[10px] text-[hsl(var(--muted-foreground))]">
+          Drag images here or click to select multiple at once.
+        </p>
+      )}
     </div>
   );
 }
