@@ -122,7 +122,7 @@ function Seo({ title, description, path }: SeoProps) {
 
 const nav = [
   ['People', '/people'], ['Nonprofit', '/nonprofit'], ['Lifestyle', '/lifestyle'],
-  ["Crook's Corner", '/crooks-corner'], ['Events', '/events'], ['Directory', '/directory'], ['Editions', '/editions'],
+  ["Crook's Corner", '/crooks-corner'], ['Events', '/events'], ['Business Directory', '/directory'], ['Editions', '/editions'],
 ] as const;
 
 export function PublicHeader() {
@@ -153,7 +153,7 @@ export function Footer() {
       <div><div className="brand footer-brand">LIFE <em>around</em> SENOIA</div><p className="footer-tag">A bi-monthly magazine and digital publication for the people, businesses, and stories of Senoia, GA. Published by KartPath Media.</p></div>
       <div><h4>Explore</h4>{nav.slice(0, 4).map(([label, href]) => <Link key={href} href={href}>{label}</Link>)}</div>
       <div><h4>Publication</h4><Link href="/editions">Editions</Link><Link href="/about">About</Link><Link href="/advertise">Advertise</Link></div>
-      <div><h4>Directory</h4><Link href="/directory">Browse All</Link><Link href="/advertise">Add a Business</Link></div>
+      <div><h4>Business Directory</h4><Link href="/directory">Browse All</Link><Link href="/advertise">Add a Business</Link></div>
       <div><h4>Contact</h4><a href="mailto:kevin@kartpathmedia.com">kevin@kartpathmedia.com</a><a href="mailto:blake@kartpathmedia.com">blake@kartpathmedia.com</a></div>
     </div>
     <div className="footer-giant">SENOIA</div>
@@ -352,7 +352,7 @@ export function PublicHome() {
     </section>
     <div className="wrap"><AdZone /></div>
     <div className="marquee-band"><div className="marquee-track"><span>SENOIA, GEORGIA</span><span>ALIVE AFTER FIVE — SEPT 18, OCT 16, NOV 20</span><span>FARMERS MARKET EVERY SATURDAY</span><span>SENOIA, GEORGIA</span></div></div>
-    <div className="wrap"><SectionHead index="01" title="Latest Published Stories" link={{ label: 'View All', href: '/people' }} /><div className="published-home-grid">{latest.map((item) => <Link href={item.contentType === 'nonprofit-spotlight' ? '/nonprofit' : item.contentType === 'business-listing' ? '/directory' : item.contentType === 'event' ? '/events' : '/people'} className="spread-side-item" key={item.id} data-testid={`public-published-${item.slug}`}><span className="tag">{item.contentType.replaceAll('-', ' ')}</span><h3>{item.title}</h3><p>{item.summary}</p></Link>)}{!query.isPending && latest.length === 0 && <PublicContentState query={query} emptyMessage="No editorial stories are published right now." />}</div><SectionHead index="02" title="Explore the Publication" /><div className="index-rail">{[['01', 'People', 'Published families, young achievers, and pets', '/people'], ['02', 'Nonprofit', 'Published organizations holding this town together', '/nonprofit'], ['03', 'Lifestyle', 'History, home cooking, and local reflection', '/lifestyle'], ['04', 'Events', 'Published events around Senoia', '/events'], ['05', 'Directory', 'Published businesses and services', '/directory']].map(([num, title, desc, href]) => <Link href={href} className="index-row" key={num}><span className="idx-num">{num}</span><h3>{title}</h3><span className="idx-desc">{desc}</span><span className="arrow">→</span></Link>)}</div><AdZone label="In-feed placement" /></div>
+    <div className="wrap"><SectionHead index="01" title="Latest Published Stories" link={{ label: 'View All', href: '/people' }} /><div className="published-home-grid">{latest.map((item) => <Link href={item.contentType === 'nonprofit-spotlight' ? '/nonprofit' : item.contentType === 'business-listing' ? '/directory' : item.contentType === 'event' ? '/events' : '/people'} className="spread-side-item" key={item.id} data-testid={`public-published-${item.slug}`}><span className="tag">{item.contentType.replaceAll('-', ' ')}</span><h3>{item.title}</h3><p>{item.summary}</p></Link>)}{!query.isPending && latest.length === 0 && <PublicContentState query={query} emptyMessage="No editorial stories are published right now." />}</div><SectionHead index="02" title="Explore the Publication" /><div className="index-rail">{[['01', 'People', 'Published families, young achievers, and pets', '/people'], ['02', 'Nonprofit', 'Published organizations holding this town together', '/nonprofit'], ['03', 'Lifestyle', 'History, home cooking, and local reflection', '/lifestyle'], ['04', 'Events', 'Published events around Senoia', '/events'], ['05', 'Business Directory', 'Published businesses and services', '/directory']].map(([num, title, desc, href]) => <Link href={href} className="index-row" key={num}><span className="idx-num">{num}</span><h3>{title}</h3><span className="idx-desc">{desc}</span><span className="arrow">→</span></Link>)}</div><AdZone label="In-feed placement" /></div>
     <PullQuoteCarousel items={items} />
     <div className="wrap"><SectionHead index="03" title="Digital Editions" /><div className="edition-promo"><div className="edition-cover" style={{ backgroundImage: `url(${image('las6-cover.jpg')})` }}><span>LAS 06</span></div><div className="edition-copy"><span className="mono-label">Latest Published Edition</span><h2>Issue 06 — The Full Flip-Through</h2><p>The Brewington family, the Senoia Optimist Club, Milo Stupski, and a tribute to Ellis Crook — every page exactly as printed, plus our one-year anniversary as a publication.</p><Link href="/editions" className="btn-sharp honey-button">Open Full Edition <ArrowRight size={14} /></Link></div></div></div>
     <Newsletter />
@@ -487,6 +487,7 @@ const BUSINESS_CATEGORIES = [
   'Health & Wellness',
   'Real Estate',
   'Automotive',
+  'Golf Carts',
   'Home & Garden',
   'Arts & Entertainment',
   'Beauty & Salon',
@@ -741,6 +742,7 @@ export function Directory() {
   }), [category, items, search]);
   return <PageShell seo={{ title: 'Business Directory — Life Around Senoia', description: 'Find published storefronts, services, restaurants, and local businesses across Senoia, Georgia.', path: '/directory' }}>
     <PageHero kicker="Business Directory" title={<>Every storefront and<br />service on Main Street</>}>Published businesses and services from Life Around Senoia.</PageHero>
+    <section className="imp-numbers-section"><div className="wrap"><div className="imp-numbers"><div className="imp-numbers-header"><span className="imp-numbers-label">Important Numbers</span><span className="imp-numbers-sub">Always available — not filtered by search</span></div><div className="imp-numbers-grid"><div className="imp-row imp-row--emergency"><span className="imp-num">911</span><div className="imp-detail"><strong>Emergency</strong><span>Police · Fire · Medical</span></div></div><div className="imp-row"><span className="imp-num">(770) 599-3256</span><div className="imp-detail"><strong>Senoia Police Department</strong><span>Non-emergency · 505 Howard Road, Senoia GA 30276</span><span className="imp-extra">After-hours water/utility issues: (770) 254-3911</span></div></div><div className="imp-row"><span className="imp-num">(770) 254-3900</span><div className="imp-detail"><strong>Coweta County Fire Rescue</strong><span>Non-emergency · Senoia is served by Coweta County Fire Rescue</span></div></div><div className="imp-row"><span className="imp-num">(770) 599-3679</span><div className="imp-detail"><strong>Senoia City Hall &amp; Water / Utility Billing</strong><span>80 Main Street, Senoia GA 30276 · <a href="https://senoia.com" target="_blank" rel="noopener noreferrer">senoia.com</a></span></div></div></div></div></div></section>
     <section><div className="wrap"><div className="dir-controls"><label className="dir-search"><Search size={17} /><input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search businesses or categories..." aria-label="Search businesses" /></label><div className="filter-pills">{categories.map((cat) => <button type="button" className={`filter-pill ${category === cat ? 'active' : ''}`} onClick={() => setCategory(cat)} key={cat}>{cat}</button>)}</div></div><PublicContentState query={contentQuery} emptyMessage="No businesses are published right now." /><div className="biz-grid">{filtered.map((item) => <article className="biz-card" key={item.id} data-testid={`public-published-${item.slug}`}><span className="cat">{item.details.category ?? 'Business Listing'}</span><h2>{item.title}</h2><p className="contact">{item.summary}<br />{item.details.phone ?? item.details.website ?? ''}</p>{item.body && <p>{item.body}</p>}{(item.details.facebook_url || item.details.instagram_url) && (<div className="biz-social">{item.details.facebook_url && <a href={item.details.facebook_url} target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="biz-social-icon"><FaFacebook /></a>}{item.details.instagram_url && <a href={item.details.instagram_url} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="biz-social-icon biz-social-icon--ig"><FaInstagram /></a>}</div>)}</article>)}</div>{!contentQuery.isPending && !contentQuery.isError && contentQuery.data?.length && filtered.length === 0 ? <div className="empty-state">No businesses match that search. Try another category or phrase.</div> : null}</div></section>
     <section><div className="wrap"><div className="involved-strip"><span className="mono-label">Own a Business in Senoia?</span><h2>Get listed — and get considered for a feature</h2><Link href="/submit/business" className="btn-sharp honey-button">Submit a Business <ArrowRight size={14} /></Link></div></div></section>
   </PageShell>;
@@ -1052,7 +1054,7 @@ export function ArticleDetail() {
     'lifestyle': { label: 'Lifestyle', path: 'lifestyle' },
     'crooks-corner': { label: "Crook's Corner", path: 'crooks-corner' },
     'events': { label: 'Events', path: 'events' },
-    'directory': { label: 'Directory', path: 'directory' },
+    'directory': { label: 'Business Directory', path: 'directory' },
   };
   const { label, path: sectionPath } = sectionMap[section] ?? { label: 'Stories', path: 'people' };
   return <ArticleDetailInner pubSlug={PUBLICATION_SLUG} slug={slug ?? ''} sectionLabel={label} sectionPath={sectionPath} />;
