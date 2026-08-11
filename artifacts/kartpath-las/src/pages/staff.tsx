@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { ClerkLoading } from '@clerk/react';
 import { ArrowLeft, ArrowRight, Check, ChevronDown, ChevronUp, CircleAlert, Clock3, Download, Eye, FilePlus2, ImageIcon, Loader2, Pencil, Plus, RefreshCw, Save, Send, ShieldCheck, Trash2, Undo2, X } from 'lucide-react';
 import { Link } from 'wouter';
 import {
@@ -1957,6 +1958,7 @@ export default function Staff() {
     <div className="las-page min-h-[100dvh] bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
       {user && access && <StaffHeader userName={user.displayName} publicationSlug={access.publicationSlug} />}
       <main className="mx-auto max-w-[1500px] px-5 py-9 sm:px-8 lg:px-10 lg:py-12">
+        <ClerkLoading><SkeletonWorkspace /></ClerkLoading>
         {userQuery.isPending && <SkeletonWorkspace />}
         {isUnauthorized && <UnauthorizedState />}
         {user && !userQuery.isPending && !isUnauthorized && !publicationId && <NoPublicationState />}
