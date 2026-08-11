@@ -210,15 +210,18 @@ type ContentType = (typeof CONTENT_TYPES)[number]['value'];
 type TimelineEntry = { year: string; event: string };
 
 const BUSINESS_CATEGORIES = [
-  'Dining & Drinks',
-  'Shopping & Retail',
-  'Professional Services',
-  'Health & Wellness',
-  'Real Estate',
-  'Automotive',
-  'Home & Garden',
   'Arts & Entertainment',
+  'Automotive',
   'Beauty & Salon',
+  'Churches',
+  'Dining & Drinks',
+  'Golf Carts',
+  'Health & Wellness',
+  'Home & Garden',
+  'Nonprofits',
+  'Professional Services',
+  'Real Estate',
+  'Shopping & Retail',
   'Other',
 ];
 
