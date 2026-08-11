@@ -613,7 +613,7 @@ export function Lifestyle() {
   const recipesQuery = usePublishedContent('recipe');
   const lifestyleQuery = usePublishedContent('lifestyle-column');
   const petsQuery = usePublishedContent('pet-of-the-month');
-  const [filter, setFilter] = useState<'' | 'secret-sauce' | 'recipe' | 'around-town' | 'pet-of-the-month'>('');
+  const [filter, setFilter] = useState<'' | 'secret-sauce' | 'recipe' | 'around-town' | 'pet-of-the-month' | 'health-wellness'>('');
 
   const allItems = useMemo(() => [
     ...(lifestyleQuery.data ?? []),
@@ -625,6 +625,7 @@ export function Lifestyle() {
     if (filter === 'recipe') return recipesQuery.data ?? [];
     if (filter === 'secret-sauce') return (lifestyleQuery.data ?? []).filter((i) => i.details?.subsection === 'secret-sauce');
     if (filter === 'around-town') return (lifestyleQuery.data ?? []).filter((i) => i.details?.subsection === 'around-town');
+    if (filter === 'health-wellness') return (lifestyleQuery.data ?? []).filter((i) => i.details?.subsection === 'health-wellness');
     if (filter === 'pet-of-the-month') return petsQuery.data ?? [];
     return allItems;
   }, [filter, allItems, recipesQuery.data, lifestyleQuery.data, petsQuery.data]);
@@ -636,6 +637,7 @@ export function Lifestyle() {
     'secret-sauce': 'Secret Sauce',
     recipe: 'Recipes',
     'around-town': 'Around Town',
+    'health-wellness': 'Health & Wellness',
     'pet-of-the-month': 'Pets',
   };
 
@@ -646,7 +648,7 @@ export function Lifestyle() {
         <div className="wrap">
           <SectionHead index="01" title="Lifestyle Stories" />
           <div className="filter-pills" style={{ marginBottom: '32px' }}>
-            {(['', 'secret-sauce', 'recipe', 'around-town', 'pet-of-the-month'] as const).map((f) => (
+            {(['', 'secret-sauce', 'recipe', 'around-town', 'health-wellness', 'pet-of-the-month'] as const).map((f) => (
               <button type="button" key={f} className={`filter-pill${filter === f ? ' active' : ''}`} onClick={() => setFilter(f)}>
                 {filterLabels[f]}
               </button>
