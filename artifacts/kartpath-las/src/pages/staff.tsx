@@ -250,6 +250,8 @@ type FormState = Omit<CreateContentItem, 'publicationId' | 'details'> & {
   bizInstagram: string;
   bizAddress: string;
   bizHours: string;
+  // digital_edition specific
+  issuuEmbedUrl: string;
   // cover photo focal point (0–1 range, default 0.5)
   coverFocalX: number;
   coverFocalY: number;
@@ -286,6 +288,7 @@ const EMPTY_FORM: FormState = {
   bizInstagram: '',
   bizAddress: '',
   bizHours: '',
+  issuuEmbedUrl: '',
   coverFocalX: 0.5,
   coverFocalY: 0.5,
   pullQuote: '',
@@ -982,6 +985,28 @@ function Editor({
               <label className="block">
                 <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Hours</span>
                 <textarea value={form.bizHours} onChange={(e) => update('bizHours', e.target.value)} rows={3} placeholder={'Mon–Fri  9am–5pm\nSat  10am–3pm\nSun  Closed'} className="w-full resize-y border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2.5 font-meta text-xs leading-5 outline-none focus:border-[hsl(var(--brick))]" data-testid="textarea-biz-hours" />
+              </label>
+            </div>
+          );
+
+          if (ct === 'digital_edition') return (
+            <div className="space-y-4 rounded border border-[hsl(var(--honey)/.4)] bg-[hsl(var(--honey)/.06)] p-4">
+              <p className="font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--brick))]">Digital Edition — Issuu embed</p>
+              <label className="block">
+                <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Issuu Embed URL</span>
+                <input
+                  type="url"
+                  value={form.issuuEmbedUrl}
+                  onChange={(e) => update('issuuEmbedUrl', e.target.value)}
+                  placeholder="https://e.issuu.com/embed.html?d=las-issue-06&u=lifearoundsenoia"
+                  className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]"
+                  data-testid="input-edition-issuu-url"
+                />
+                <span className="mt-1.5 block font-ui text-[10px] leading-4 text-[hsl(var(--muted-foreground))]">
+                  Paste the full Issuu embed URL. In Issuu, open the document → Share → Embed, and copy the <code>src</code> value from the iframe snippet.<br />
+                  Format: <code>https://e.issuu.com/embed.html?d=las-issue-06&amp;u=lifearoundsenoia</code><br />
+                  Leave blank to show the "Flip-Through Coming Soon" placeholder on the public site.
+                </span>
               </label>
             </div>
           );
@@ -1756,6 +1781,7 @@ export default function Staff() {
         bizInstagram: d.instagram_url ?? '',
         bizAddress: ct === 'business-listing' ? (d.address ?? '') : '',
         bizHours: d.hours ?? '',
+        issuuEmbedUrl: d.issuu_embed_url ?? '',
         pullQuote: item.pullQuote ?? '',
       });
       setEditorError('');
@@ -1848,6 +1874,10 @@ export default function Staff() {
         ...(form.bizInstagram.trim() && { instagram_url: form.bizInstagram.trim() }),
         address: form.bizAddress.trim(),
         hours: form.bizHours.trim(),
+      };
+    } else if (ct === 'digital_edition') {
+      details = {
+        ...(form.issuuEmbedUrl.trim() && { issuu_embed_url: form.issuuEmbedUrl.trim() }),
       };
     } else {
       if (!form.body.trim()) { setEditorError('Headline, slug, standfirst, and story body are required.'); return null; }

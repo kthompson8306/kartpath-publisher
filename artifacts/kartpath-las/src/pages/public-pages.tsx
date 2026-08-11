@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { ArrowLeft, ArrowRight, ArrowUpRight, Menu, Search, X } from 'lucide-react';
 import { FaFacebook, FaInstagram } from 'react-icons/fa6';
 import { Link, useParams } from 'wouter';
+import { useQuery } from '@tanstack/react-query';
 import { getGetPublishedArticleQueryKey, getGetPublicationBySlugQueryKey, getListPublishedContentItemsQueryKey, useGetPublicationBySlug, useGetPublishedArticle, useListPublishedContentItems, useSubmitBusinessListing, useSubmitEventSubmission, useSubscribeToPublication, useSubmitNomination } from '@workspace/api-client-react';
 import type { ContentItem, EditorialContentType } from '@workspace/api-client-react';
 
@@ -754,16 +755,20 @@ export function Directory() {
 
 const issues = [['01', 'Sept 2025', 'The Bergstroms', 'las1-cover.jpg'], ['02', 'Nov–Dec 2025', 'Joe & Dawn McGee', 'las2-cover.jpg'], ['03', 'Winter 2026', 'The Crooks of Senoia', 'las3-cover.jpg'], ['04', 'Spring 2026', 'The Jenkins Family', 'las4-cover.jpg'], ['05', 'May–Jun 2026', 'The Bartels Family', 'las5-cover.jpg'], ['06', 'Jul–Aug 2026', 'The Brewingtons', 'las6-cover.jpg']] as const;
 
-// Issuu embed URLs — add each issue's embed src here once uploaded to Issuu.
-// Format: 'https://e.issuu.com/embed.html?d=<document-id>&u=<username>'
-const issuuEmbeds: Partial<Record<string, string>> = {
-  // '01': 'https://e.issuu.com/embed.html?d=las-issue-01&u=lifearoundsenoia',
-  // '02': 'https://e.issuu.com/embed.html?d=las-issue-02&u=lifearoundsenoia',
-  // '03': 'https://e.issuu.com/embed.html?d=las-issue-03&u=lifearoundsenoia',
-  // '04': 'https://e.issuu.com/embed.html?d=las-issue-04&u=lifearoundsenoia',
-  // '05': 'https://e.issuu.com/embed.html?d=las-issue-05&u=lifearoundsenoia',
-  // '06': 'https://e.issuu.com/embed.html?d=las-issue-06&u=lifearoundsenoia',
-};
+// Issuu embed URLs are stored in the DB (digital_edition content items).
+// Staff paste the URL in the CMS — no code change needed per issue.
+function useEditionEmbeds() {
+  return useQuery<Record<string, string | null>>({
+    queryKey: ['edition-embeds', PUBLICATION_SLUG],
+    queryFn: async () => {
+      const res = await fetch(`/api/publications/${PUBLICATION_SLUG}/editions`);
+      if (!res.ok) return {};
+      return res.json() as Promise<Record<string, string | null>>;
+    },
+    staleTime: 0,
+    refetchOnMount: 'always',
+  });
+}
 export function Editions() {
   return <PageShell seo={{ title: 'Digital Editions — Life Around Senoia Archive', description: 'Read every issue of Life Around Senoia exactly as it was printed, from Issue 01 through Issue 06.', path: '/editions' }}><PageHero kicker="The Archive" title={<>Every issue,<br />flip-through ready</>}>Read Life Around Senoia exactly as it was printed — full-page spreads, ads and all — right in your browser.</PageHero><section><div className="wrap"><div className="featured-reader"><div className="reader-cover"><img src={image('las6-cover.jpg')} alt="Life Around Senoia Issue 6 cover" /></div><div className="reader-copy"><span className="mono-label">Latest Edition · Issue 06</span><h2>Making Room at the Table</h2><p>The Brewington family, the Senoia Optimist Club’s four decades of service, Milo Stupski, and a tribute to Ellis Crook — plus our one-year anniversary as a publication. July–August 2026.</p><Link href="/editions/06" className="btn-sharp honey-button">Open Full Edition <ArrowRight size={14} /></Link></div></div></div></section><section className="on-paper2"><div className="wrap"><SectionHead index="" title="Full Archive" /><div className="archive-grid">{issues.map(([issue, date, title, cover]) => <Link href={'/editions/' + issue} className="issue-card" key={issue}><div className="issue-cover-img"><img src={image(cover)} alt={`Life Around Senoia Issue ${issue} cover`} loading="lazy" /></div><div className="meta"><span className="date">{date}</span><h3>Issue {issue}</h3><p>{title}</p></div></Link>)}</div></div></section></PageShell>;
 }
@@ -772,6 +777,8 @@ export function EditionReader() {
   const { issue } = useParams<{ issue: string }>();
   const issueIndex = issues.findIndex(([num]) => num === issue);
   const contentQuery = useIssueContent(issue ?? '');
+  const embedsQuery = useEditionEmbeds();
+  const issuuEmbedUrl = issue && embedsQuery.data ? (embedsQuery.data[issue] ?? null) : null;
 
   if (issueIndex === -1) {
     return <PageShell seo={{ title: 'Edition Not Found — Life Around Senoia', description: 'That edition was not found.', path: '/editions' }}>
@@ -812,10 +819,10 @@ export function EditionReader() {
       <section>
         <div className="wrap">
           <SectionHead index="" title="Full Issue Flip-Through" />
-          {issuuEmbeds[num] ? (
+          {issuuEmbedUrl ? (
             <div style={{ position: 'relative', paddingBottom: '66%', height: 0, overflow: 'hidden', background: 'var(--ink)' }}>
               <iframe
-                src={issuuEmbeds[num]}
+                src={issuuEmbedUrl}
                 title={`Life Around Senoia Issue ${num} — Full Flip-Through`}
                 style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
                 allowFullScreen

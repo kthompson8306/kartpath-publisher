@@ -190,4 +190,41 @@ router.get("/publications/:slug/content-items/:articleSlug", async (req, res): P
   );
 });
 
+// GET /publications/:slug/editions — returns { [issueNum]: issuuEmbedUrl | null }
+// Used by the public EditionReader to fetch embed URLs without hardcoding.
+router.get("/publications/:slug/editions", async (req, res): Promise<void> => {
+  const params = GetPublicationBySlugParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: "Invalid request" });
+    return;
+  }
+
+  const result = await getPublicationBySlug(params.data.slug);
+  if (!result?.publication) {
+    res.status(404).json({ error: "Publication not found" });
+    return;
+  }
+
+  const rows = await db
+    .select({ slug: contentItemsTable.slug, details: contentItemsTable.details })
+    .from(contentItemsTable)
+    .where(
+      and(
+        eq(contentItemsTable.publicationId, result.publication.id),
+        eq(contentItemsTable.contentType, "digital_edition"),
+      ),
+    );
+
+  // Return { "01": "https://...", "02": null, ... }
+  const embedMap: Record<string, string | null> = {};
+  for (const row of rows) {
+    // slug format: "edition-01" → key "01"
+    const num = row.slug.replace(/^edition-/, "");
+    const details = row.details as Record<string, string>;
+    embedMap[num] = details.issuu_embed_url ?? null;
+  }
+
+  res.json(embedMap);
+});
+
 export default router;

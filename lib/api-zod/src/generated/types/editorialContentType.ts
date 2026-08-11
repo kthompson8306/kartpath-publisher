@@ -20,4 +20,5 @@ export const EditorialContentType = {
   'crooks-corner': 'crooks-corner',
   recipe: 'recipe',
   'lifestyle-column': 'lifestyle-column',
+  'digital_edition': 'digital_edition',
 } as const;
