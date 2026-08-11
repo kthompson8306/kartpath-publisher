@@ -190,8 +190,8 @@ router.get("/publications/:slug/content-items/:articleSlug", async (req, res): P
   );
 });
 
-// GET /publications/:slug/editions — returns { [issueNum]: issuuEmbedUrl | null }
-// Used by the public EditionReader to fetch embed URLs without hardcoding.
+// GET /publications/:slug/editions — returns { [issueNum]: { embedUrl, description } }
+// Used by the public EditionReader and Editions archive to fetch per-issue data.
 router.get("/publications/:slug/editions", async (req, res): Promise<void> => {
   const params = GetPublicationBySlugParams.safeParse(req.params);
   if (!params.success) {
@@ -206,7 +206,7 @@ router.get("/publications/:slug/editions", async (req, res): Promise<void> => {
   }
 
   const rows = await db
-    .select({ slug: contentItemsTable.slug, details: contentItemsTable.details })
+    .select({ slug: contentItemsTable.slug, details: contentItemsTable.details, summary: contentItemsTable.summary })
     .from(contentItemsTable)
     .where(
       and(
@@ -215,16 +215,19 @@ router.get("/publications/:slug/editions", async (req, res): Promise<void> => {
       ),
     );
 
-  // Return { "01": "https://...", "02": null, ... }
-  const embedMap: Record<string, string | null> = {};
+  // Return { "01": { embedUrl: "https://...", description: "..." }, "02": { embedUrl: null, description: null }, ... }
+  const editionMap: Record<string, { embedUrl: string | null; description: string | null }> = {};
   for (const row of rows) {
     // slug format: "edition-01" → key "01"
     const num = row.slug.replace(/^edition-/, "");
     const details = row.details as Record<string, string>;
-    embedMap[num] = details.issuu_embed_url ?? null;
+    editionMap[num] = {
+      embedUrl: details.issuu_embed_url ?? null,
+      description: details.description || row.summary || null,
+    };
   }
 
-  res.json(embedMap);
+  res.json(editionMap);
 });
 
 export default router;

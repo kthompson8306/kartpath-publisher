@@ -757,20 +757,22 @@ const issues = [['01', 'Sept 2025', 'The Bergstroms', 'las1-cover.jpg'], ['02', 
 
 // Issuu embed URLs are stored in the DB (digital_edition content items).
 // Staff paste the URL in the CMS — no code change needed per issue.
+type EditionEntry = { embedUrl: string | null; description: string | null };
 function useEditionEmbeds() {
-  return useQuery<Record<string, string | null>>({
+  return useQuery<Record<string, EditionEntry>>({
     queryKey: ['edition-embeds', PUBLICATION_SLUG],
     queryFn: async () => {
       const res = await fetch(`/api/publications/${PUBLICATION_SLUG}/editions`);
       if (!res.ok) return {};
-      return res.json() as Promise<Record<string, string | null>>;
+      return res.json() as Promise<Record<string, EditionEntry>>;
     },
     staleTime: 0,
     refetchOnMount: 'always',
   });
 }
 export function Editions() {
-  return <PageShell seo={{ title: 'Digital Editions — Life Around Senoia Archive', description: 'Read every issue of Life Around Senoia exactly as it was printed, from Issue 01 through Issue 06.', path: '/editions' }}><PageHero kicker="The Archive" title={<>Every issue,<br />flip-through ready</>}>Read Life Around Senoia exactly as it was printed — full-page spreads, ads and all — right in your browser.</PageHero><section><div className="wrap"><div className="featured-reader"><div className="reader-cover"><img src={image('las6-cover.jpg')} alt="Life Around Senoia Issue 6 cover" /></div><div className="reader-copy"><span className="mono-label">Latest Edition · Issue 06</span><h2>Making Room at the Table</h2><p>The Brewington family, the Senoia Optimist Club’s four decades of service, Milo Stupski, and a tribute to Ellis Crook — plus our one-year anniversary as a publication. July–August 2026.</p><Link href="/editions/06" className="btn-sharp honey-button">Open Full Edition <ArrowRight size={14} /></Link></div></div></div></section><section className="on-paper2"><div className="wrap"><SectionHead index="" title="Full Archive" /><div className="archive-grid">{issues.map(([issue, date, title, cover]) => <Link href={'/editions/' + issue} className="issue-card" key={issue}><div className="issue-cover-img"><img src={image(cover)} alt={`Life Around Senoia Issue ${issue} cover`} loading="lazy" /></div><div className="meta"><span className="date">{date}</span><h3>Issue {issue}</h3><p>{title}</p></div></Link>)}</div></div></section></PageShell>;
+  const editionData = useEditionEmbeds();
+  return <PageShell seo={{ title: 'Digital Editions — Life Around Senoia Archive', description: 'Read every issue of Life Around Senoia exactly as it was printed, from Issue 01 through Issue 06.', path: '/editions' }}><PageHero kicker="The Archive" title={<>Every issue,<br />flip-through ready</>}>Read Life Around Senoia exactly as it was printed — full-page spreads, ads and all — right in your browser.</PageHero><section><div className="wrap"><div className="featured-reader"><div className="reader-cover"><img src={image('las6-cover.jpg')} alt="Life Around Senoia Issue 6 cover" /></div><div className="reader-copy"><span className="mono-label">Latest Edition · Issue 06</span><h2>Making Room at the Table</h2><p>The Brewington family, the Senoia Optimist Club’s four decades of service, Milo Stupski, and a tribute to Ellis Crook — plus our one-year anniversary as a publication. July–August 2026.</p><Link href="/editions/06" className="btn-sharp honey-button">Open Full Edition <ArrowRight size={14} /></Link></div></div></div></section><section className="on-paper2"><div className="wrap"><SectionHead index="" title="Full Archive" /><div className="archive-grid">{issues.map(([issue, date, title, cover]) => <Link href={'/editions/' + issue} className="issue-card" key={issue}><div className="issue-cover-img"><img src={image(cover)} alt={`Life Around Senoia Issue ${issue} cover`} loading="lazy" /></div><div className="meta"><span className="date">{date}</span><h3>Issue {issue}</h3><p>{editionData.data?.[issue]?.description ?? title}</p></div></Link>)}</div></div></section></PageShell>;
 }
 
 export function EditionReader() {
@@ -778,7 +780,7 @@ export function EditionReader() {
   const issueIndex = issues.findIndex(([num]) => num === issue);
   const contentQuery = useIssueContent(issue ?? '');
   const embedsQuery = useEditionEmbeds();
-  const issuuEmbedUrl = issue && embedsQuery.data ? (embedsQuery.data[issue] ?? null) : null;
+  const issuuEmbedUrl = issue && embedsQuery.data ? (embedsQuery.data[issue]?.embedUrl ?? null) : null;
 
   if (issueIndex === -1) {
     return <PageShell seo={{ title: 'Edition Not Found — Life Around Senoia', description: 'That edition was not found.', path: '/editions' }}>

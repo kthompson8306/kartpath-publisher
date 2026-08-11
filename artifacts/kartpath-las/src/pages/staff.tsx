@@ -253,6 +253,7 @@ type FormState = Omit<CreateContentItem, 'publicationId' | 'details'> & {
   bizHours: string;
   // digital_edition specific
   issuuEmbedUrl: string;
+  editionDescription: string;
   // cover photo focal point (0–1 range, default 0.5)
   coverFocalX: number;
   coverFocalY: number;
@@ -290,6 +291,7 @@ const EMPTY_FORM: FormState = {
   bizAddress: '',
   bizHours: '',
   issuuEmbedUrl: '',
+  editionDescription: '',
   coverFocalX: 0.5,
   coverFocalY: 0.5,
   pullQuote: '',
@@ -994,6 +996,17 @@ function Editor({
             <div className="space-y-4 rounded border border-[hsl(var(--honey)/.4)] bg-[hsl(var(--honey)/.06)] p-4">
               <p className="font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--brick))]">Digital Edition — Issuu embed</p>
               <label className="block">
+                <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Issue Description <span className="normal-case tracking-normal opacity-60">(shown on public Editions page)</span></span>
+                <textarea
+                  value={form.editionDescription}
+                  onChange={(e) => update('editionDescription', e.target.value)}
+                  rows={3}
+                  placeholder="Featuring the Brewington family, the Senoia Optimist Club, and a tribute to Ellis Crook…"
+                  className="w-full resize-y border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2.5 font-editorial text-base leading-tight outline-none focus:border-[hsl(var(--brick))]"
+                  data-testid="textarea-edition-description"
+                />
+              </label>
+              <label className="block">
                 <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Issuu Embed URL</span>
                 <input
                   type="url"
@@ -1697,7 +1710,7 @@ export default function Staff() {
   const isUnauthorized = userQuery.isError;
   const safePublicationId = publicationId ?? '00000000-0000-0000-0000-000000000000';
   const isAdmin = access?.role === 'publication-admin';
-  const [activeTab, setActiveTab] = useState<'editorial' | 'team' | 'nominations' | 'subscribers' | 'homepage'>('editorial');
+  const [activeTab, setActiveTab] = useState<'editorial' | 'team' | 'nominations' | 'subscribers' | 'homepage' | 'events' | 'business-listings' | 'editions'>('editorial');
   const [status, setStatus] = useState<'' | EditorialStatus>('');
   const [contentType, setContentType] = useState<'' | ContentType>('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -1709,8 +1722,7 @@ export default function Staff() {
   const listParams = useMemo(() => ({
     publicationId: safePublicationId,
     ...(status ? { status } : {}),
-    ...(contentType ? { contentType } : {}),
-  }), [safePublicationId, status, contentType]);
+  }), [safePublicationId, status]);
   const listQuery = useListContentItems(listParams, {
     query: { enabled: Boolean(publicationId), queryKey: getListContentItemsQueryKey(listParams), retry: false },
   });
@@ -1724,6 +1736,12 @@ export default function Staff() {
   const deleteMutation = useDeleteContentItem();
 
   const items = listQuery.data ?? [];
+  const editorialItems = items
+    .filter((i) => i.contentType !== 'event' && i.contentType !== 'business-listing' && i.contentType !== 'digital_edition')
+    .filter((i) => !contentType || i.contentType === contentType);
+  const eventItems = items.filter((i) => i.contentType === 'event');
+  const listingItems = items.filter((i) => i.contentType === 'business-listing');
+  const editionItems = items.filter((i) => i.contentType === 'digital_edition');
   const selectedItem = detailQuery.data ?? items.find((item) => item.id === selectedId);
   const busy = createMutation.isPending || updateMutation.isPending || publishMutation.isPending || deleteMutation.isPending;
 
@@ -1783,6 +1801,7 @@ export default function Staff() {
         bizAddress: ct === 'business-listing' ? (d.address ?? '') : '',
         bizHours: d.hours ?? '',
         issuuEmbedUrl: d.issuu_embed_url ?? '',
+        editionDescription: d.description ?? '',
         pullQuote: item.pullQuote ?? '',
       });
       setEditorError('');
@@ -1804,6 +1823,9 @@ export default function Staff() {
     setEditorError('');
     setFeedback('');
   };
+
+  const beginCreateEvent = () => { setSelectedId(null); setIsCreating(true); setForm({ ...EMPTY_FORM, contentType: EditorialContentType.event }); setEditorError(''); setFeedback(''); };
+  const beginCreateListing = () => { setSelectedId(null); setIsCreating(true); setForm({ ...EMPTY_FORM, contentType: EditorialContentType['business-listing'] }); setEditorError(''); setFeedback(''); };
 
   const selectItem = (item: ContentItem) => {
     setIsCreating(false);
@@ -1833,7 +1855,7 @@ export default function Staff() {
 
   const bodyForSave = () => {
     if (!publicationId) return null;
-    if (!form.title.trim() || !form.slug.trim() || !form.summary.trim()) {
+    if (!form.title.trim() || !form.slug.trim() || (form.contentType !== 'digital_edition' && !form.summary.trim())) {
       setEditorError('Headline, slug, and standfirst are required.');
       return null;
     }
@@ -1879,6 +1901,7 @@ export default function Staff() {
     } else if (ct === 'digital_edition') {
       details = {
         ...(form.issuuEmbedUrl.trim() && { issuu_embed_url: form.issuuEmbedUrl.trim() }),
+        ...(form.editionDescription.trim() && { description: form.editionDescription.trim() }),
       };
     } else {
       if (!form.body.trim()) { setEditorError('Headline, slug, standfirst, and story body are required.'); return null; }
@@ -1984,58 +2007,23 @@ export default function Staff() {
               <div className="bg-[hsl(var(--card))] px-4 py-4 sm:px-5"><p className="font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Published</p><p className="mt-2 font-display text-3xl font-semibold text-[hsl(var(--pine-2))]" data-testid="text-published-count">{items.filter((item) => item.status === EditorialStatus.published).length}</p></div>
               <div className="bg-[hsl(var(--card))] px-4 py-4 sm:px-5"><p className="font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Access</p><p className="mt-2 font-display text-3xl font-semibold capitalize" data-testid="text-staff-role">{access?.role || 'Staff'}</p></div>
             </div>
-            {feedback && activeTab === 'editorial' && <div className="mt-5 flex items-center gap-2 border-l-2 border-[hsl(var(--pine-2))] bg-[hsl(var(--pine-2)/.07)] px-3 py-2 font-ui text-xs text-[hsl(var(--pine-2))]" role="status" data-testid="status-staff-feedback"><Check size={15} /> {feedback}</div>}
+            {feedback && ['editorial', 'events', 'business-listings', 'editions'].includes(activeTab) && <div className="mt-5 flex items-center gap-2 border-l-2 border-[hsl(var(--pine-2))] bg-[hsl(var(--pine-2)/.07)] px-3 py-2 font-ui text-xs text-[hsl(var(--pine-2))]" role="status" data-testid="status-staff-feedback"><Check size={15} /> {feedback}</div>}
 
-            {/* Tab switcher — Team tab only for publication-admin */}
-            {isAdmin && (
-              <div className="mt-7 flex gap-px border-b border-[hsl(var(--border))]" role="tablist">
-                <button
-                  role="tab"
-                  aria-selected={activeTab === 'editorial'}
-                  onClick={() => setActiveTab('editorial')}
-                  className={`px-4 pb-3 font-ui text-[10px] font-bold uppercase tracking-[.13em] transition-colors ${activeTab === 'editorial' ? 'border-b-2 border-[hsl(var(--brick))] text-[hsl(var(--brick))]' : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'}`}
-                  data-testid="tab-editorial"
-                >
-                  Editorial
-                </button>
-                <button
-                  role="tab"
-                  aria-selected={activeTab === 'team'}
-                  onClick={() => setActiveTab('team')}
-                  className={`px-4 pb-3 font-ui text-[10px] font-bold uppercase tracking-[.13em] transition-colors ${activeTab === 'team' ? 'border-b-2 border-[hsl(var(--brick))] text-[hsl(var(--brick))]' : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'}`}
-                  data-testid="tab-team"
-                >
-                  Team
-                </button>
-                <button
-                  role="tab"
-                  aria-selected={activeTab === 'nominations'}
-                  onClick={() => setActiveTab('nominations')}
-                  className={`px-4 pb-3 font-ui text-[10px] font-bold uppercase tracking-[.13em] transition-colors ${activeTab === 'nominations' ? 'border-b-2 border-[hsl(var(--brick))] text-[hsl(var(--brick))]' : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'}`}
-                  data-testid="tab-nominations"
-                >
-                  Nominations
-                </button>
-                <button
-                  role="tab"
-                  aria-selected={activeTab === 'subscribers'}
-                  onClick={() => setActiveTab('subscribers')}
-                  className={`px-4 pb-3 font-ui text-[10px] font-bold uppercase tracking-[.13em] transition-colors ${activeTab === 'subscribers' ? 'border-b-2 border-[hsl(var(--brick))] text-[hsl(var(--brick))]' : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'}`}
-                  data-testid="tab-subscribers"
-                >
-                  Subscribers
-                </button>
-                <button
-                  role="tab"
-                  aria-selected={activeTab === 'homepage'}
-                  onClick={() => setActiveTab('homepage')}
-                  className={`px-4 pb-3 font-ui text-[10px] font-bold uppercase tracking-[.13em] transition-colors ${activeTab === 'homepage' ? 'border-b-2 border-[hsl(var(--brick))] text-[hsl(var(--brick))]' : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'}`}
-                  data-testid="tab-homepage"
-                >
-                  Homepage
-                </button>
-              </div>
-            )}
+            {/* Tab switcher — admin-only tabs nested inside */}
+            <div className="mt-7 flex gap-px overflow-x-auto border-b border-[hsl(var(--border))]" role="tablist">
+              <button role="tab" aria-selected={activeTab === 'editorial'} onClick={() => { cancelEditor(); setActiveTab('editorial'); }} className={`shrink-0 px-4 pb-3 font-ui text-[10px] font-bold uppercase tracking-[.13em] transition-colors ${activeTab === 'editorial' ? 'border-b-2 border-[hsl(var(--brick))] text-[hsl(var(--brick))]' : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'}`} data-testid="tab-editorial">Editorial</button>
+              <button role="tab" aria-selected={activeTab === 'events'} onClick={() => { cancelEditor(); setActiveTab('events'); }} className={`shrink-0 px-4 pb-3 font-ui text-[10px] font-bold uppercase tracking-[.13em] transition-colors ${activeTab === 'events' ? 'border-b-2 border-[hsl(var(--brick))] text-[hsl(var(--brick))]' : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'}`} data-testid="tab-events">Events</button>
+              <button role="tab" aria-selected={activeTab === 'business-listings'} onClick={() => { cancelEditor(); setActiveTab('business-listings'); }} className={`shrink-0 px-4 pb-3 font-ui text-[10px] font-bold uppercase tracking-[.13em] transition-colors ${activeTab === 'business-listings' ? 'border-b-2 border-[hsl(var(--brick))] text-[hsl(var(--brick))]' : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'}`} data-testid="tab-business-listings">Listings</button>
+              <button role="tab" aria-selected={activeTab === 'editions'} onClick={() => { cancelEditor(); setActiveTab('editions'); }} className={`shrink-0 px-4 pb-3 font-ui text-[10px] font-bold uppercase tracking-[.13em] transition-colors ${activeTab === 'editions' ? 'border-b-2 border-[hsl(var(--brick))] text-[hsl(var(--brick))]' : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'}`} data-testid="tab-editions">Editions</button>
+              {isAdmin && (
+                <>
+                  <button role="tab" aria-selected={activeTab === 'team'} onClick={() => { cancelEditor(); setActiveTab('team'); }} className={`shrink-0 px-4 pb-3 font-ui text-[10px] font-bold uppercase tracking-[.13em] transition-colors ${activeTab === 'team' ? 'border-b-2 border-[hsl(var(--brick))] text-[hsl(var(--brick))]' : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'}`} data-testid="tab-team">Team</button>
+                  <button role="tab" aria-selected={activeTab === 'nominations'} onClick={() => { cancelEditor(); setActiveTab('nominations'); }} className={`shrink-0 px-4 pb-3 font-ui text-[10px] font-bold uppercase tracking-[.13em] transition-colors ${activeTab === 'nominations' ? 'border-b-2 border-[hsl(var(--brick))] text-[hsl(var(--brick))]' : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'}`} data-testid="tab-nominations">Nominations</button>
+                  <button role="tab" aria-selected={activeTab === 'subscribers'} onClick={() => { cancelEditor(); setActiveTab('subscribers'); }} className={`shrink-0 px-4 pb-3 font-ui text-[10px] font-bold uppercase tracking-[.13em] transition-colors ${activeTab === 'subscribers' ? 'border-b-2 border-[hsl(var(--brick))] text-[hsl(var(--brick))]' : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'}`} data-testid="tab-subscribers">Subscribers</button>
+                  <button role="tab" aria-selected={activeTab === 'homepage'} onClick={() => { cancelEditor(); setActiveTab('homepage'); }} className={`shrink-0 px-4 pb-3 font-ui text-[10px] font-bold uppercase tracking-[.13em] transition-colors ${activeTab === 'homepage' ? 'border-b-2 border-[hsl(var(--brick))] text-[hsl(var(--brick))]' : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'}`} data-testid="tab-homepage">Homepage</button>
+                </>
+              )}
+            </div>
 
             {activeTab === 'team' && isAdmin && user && publicationId && (
               <TeamPanel publicationId={publicationId} currentUserId={user.id} />
@@ -2053,6 +2041,97 @@ export default function Staff() {
               <HomepageTab publicationId={publicationId} publicationSlug={access.publicationSlug} />
             )}
 
+            {activeTab === 'events' && publicationId && (
+              <div className="mt-7 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(400px,.74fr)]">
+                <section aria-label="Events library" data-testid="section-events-library">
+                  <div className="mb-4 flex items-end justify-between gap-4">
+                    <div><SectionKicker>Events</SectionKicker><h2 className="mt-1 font-display text-3xl font-semibold tracking-[-.04em]">Upcoming &amp; past events</h2></div>
+                    <div className="flex gap-3">
+                      <button type="button" onClick={() => void listQuery.refetch()} className="inline-flex items-center gap-2 font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--brick))]"><RefreshCw size={13} className={listQuery.isFetching ? 'animate-spin' : ''} /> Refresh</button>
+                      <button type="button" onClick={beginCreateEvent} className="inline-flex items-center gap-2 bg-[hsl(var(--primary))] px-3 py-1.5 font-ui text-[10px] font-bold uppercase tracking-[.12em] text-[hsl(var(--primary-foreground))]" data-testid="button-create-event"><FilePlus2 size={13} /> New event</button>
+                    </div>
+                  </div>
+                  {listQuery.isPending && <div className="mt-4 space-y-px border border-[hsl(var(--border))] bg-[hsl(var(--border))]">{[1, 2, 3].map((r) => <div key={r} className="h-28 animate-pulse bg-[hsl(var(--card))]" />)}</div>}
+                  {!listQuery.isPending && !listQuery.isError && eventItems.length === 0 && <div className="mt-4"><EmptyList filtered={false} onCreate={beginCreateEvent} /></div>}
+                  {!listQuery.isPending && !listQuery.isError && eventItems.length > 0 && <div className="mt-4 overflow-hidden border border-[hsl(var(--border))] bg-[hsl(var(--border))]" data-testid="list-event-items">{eventItems.map((item) => <ContentRow key={item.id} item={item} selected={item.id === selectedId} onSelect={() => selectItem(item)} onPublish={() => publish(item)} onDelete={() => remove(item)} busy={busy} />)}</div>}
+                </section>
+                <section aria-label="Event editor" className="lg:sticky lg:top-5" data-testid="section-event-editor">
+                  {detailQuery.isPending && selectedId && !isCreating && <div className="min-h-[520px] animate-pulse border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6"><div className="h-3 w-24 bg-[hsl(var(--muted))]" /><div className="mt-5 h-10 w-3/4 bg-[hsl(var(--muted))]" /></div>}
+                  {(!detailQuery.isPending || isCreating) && <Editor selectedId={selectedId} isCreating={isCreating} item={selectedItem} form={form} setForm={setForm} onCancel={cancelEditor} onSave={save} onPublish={() => selectedItem && publish(selectedItem)} onDelete={() => selectedItem && remove(selectedItem)} saving={busy} error={editorError} publicationId={safePublicationId} />}
+                </section>
+              </div>
+            )}
+
+            {activeTab === 'business-listings' && publicationId && (
+              <div className="mt-7 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(400px,.74fr)]">
+                <section aria-label="Business listings library" data-testid="section-listings-library">
+                  <div className="mb-4 flex items-end justify-between gap-4">
+                    <div><SectionKicker>Business Directory</SectionKicker><h2 className="mt-1 font-display text-3xl font-semibold tracking-[-.04em]">Business listings</h2></div>
+                    <div className="flex gap-3">
+                      <button type="button" onClick={() => void listQuery.refetch()} className="inline-flex items-center gap-2 font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--brick))]"><RefreshCw size={13} className={listQuery.isFetching ? 'animate-spin' : ''} /> Refresh</button>
+                      <button type="button" onClick={beginCreateListing} className="inline-flex items-center gap-2 bg-[hsl(var(--primary))] px-3 py-1.5 font-ui text-[10px] font-bold uppercase tracking-[.12em] text-[hsl(var(--primary-foreground))]" data-testid="button-create-listing"><FilePlus2 size={13} /> New listing</button>
+                    </div>
+                  </div>
+                  {listQuery.isPending && <div className="mt-4 space-y-px border border-[hsl(var(--border))] bg-[hsl(var(--border))]">{[1, 2, 3].map((r) => <div key={r} className="h-28 animate-pulse bg-[hsl(var(--card))]" />)}</div>}
+                  {!listQuery.isPending && !listQuery.isError && listingItems.length === 0 && <div className="mt-4"><EmptyList filtered={false} onCreate={beginCreateListing} /></div>}
+                  {!listQuery.isPending && !listQuery.isError && listingItems.length > 0 && <div className="mt-4 overflow-hidden border border-[hsl(var(--border))] bg-[hsl(var(--border))]" data-testid="list-listing-items">{listingItems.map((item) => <ContentRow key={item.id} item={item} selected={item.id === selectedId} onSelect={() => selectItem(item)} onPublish={() => publish(item)} onDelete={() => remove(item)} busy={busy} />)}</div>}
+                </section>
+                <section aria-label="Listing editor" className="lg:sticky lg:top-5" data-testid="section-listing-editor">
+                  {detailQuery.isPending && selectedId && !isCreating && <div className="min-h-[520px] animate-pulse border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6"><div className="h-3 w-24 bg-[hsl(var(--muted))]" /><div className="mt-5 h-10 w-3/4 bg-[hsl(var(--muted))]" /></div>}
+                  {(!detailQuery.isPending || isCreating) && <Editor selectedId={selectedId} isCreating={isCreating} item={selectedItem} form={form} setForm={setForm} onCancel={cancelEditor} onSave={save} onPublish={() => selectedItem && publish(selectedItem)} onDelete={() => selectedItem && remove(selectedItem)} saving={busy} error={editorError} publicationId={safePublicationId} />}
+                </section>
+              </div>
+            )}
+
+            {activeTab === 'editions' && publicationId && (
+              <div className="mt-7 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(400px,.74fr)]">
+                <section aria-label="Digital Editions library" data-testid="section-editions-library">
+                  <div className="mb-4">
+                    <SectionKicker>Digital Editions</SectionKicker>
+                    <h2 className="mt-1 font-display text-3xl font-semibold tracking-[-.04em]">Issue archive</h2>
+                    <p className="mt-2 font-ui text-xs text-[hsl(var(--muted-foreground))]">Select an issue to update its Issuu embed URL, description, or cover photo.</p>
+                  </div>
+                  {listQuery.isPending && <div className="mt-4 space-y-px border border-[hsl(var(--border))] bg-[hsl(var(--border))]">{[1, 2, 3, 4, 5, 6].map((r) => <div key={r} className="h-16 animate-pulse bg-[hsl(var(--card))]" />)}</div>}
+                  {!listQuery.isPending && !listQuery.isError && editionItems.length > 0 && <div className="mt-4 overflow-hidden border border-[hsl(var(--border))] bg-[hsl(var(--border))]" data-testid="list-edition-items">{editionItems.map((item) => <ContentRow key={item.id} item={item} selected={item.id === selectedId} onSelect={() => selectItem(item)} onPublish={() => publish(item)} onDelete={() => remove(item)} busy={busy} />)}</div>}
+                </section>
+                <section aria-label="Edition editor" className="lg:sticky lg:top-5" data-testid="section-edition-editor">
+                  {selectedId && !isCreating ? (
+                    <div className="overflow-hidden border border-[hsl(var(--border))] bg-[hsl(var(--card))]">
+                      <div className="border-b border-[hsl(var(--border))] px-5 py-4 sm:px-6">
+                        <SectionKicker>Edition editor</SectionKicker>
+                        <p className="mt-2 font-ui text-[10px] text-[hsl(var(--muted-foreground))]">Update Issuu embed, description, and cover for this issue.</p>
+                      </div>
+                      <div className="space-y-5 p-5 sm:p-6">
+                        <label className="block">
+                          <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Issue title</span>
+                          <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Making Room at the Table" className="w-full border-0 border-b border-[hsl(var(--input))] bg-transparent px-0 py-2 font-display text-2xl font-semibold tracking-[-.025em] outline-none placeholder:text-[hsl(var(--muted-foreground)/.6)] focus:border-[hsl(var(--brick))]" data-testid="input-edition-title" />
+                        </label>
+                        <label className="block">
+                          <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Issue Description <span className="normal-case tracking-normal opacity-60">(shown on public Editions page)</span></span>
+                          <textarea value={form.editionDescription} onChange={(e) => setForm({ ...form, editionDescription: e.target.value })} rows={3} placeholder="Featuring the Brewington family, the Senoia Optimist Club, and a tribute to Ellis Crook…" className="w-full resize-y border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2.5 font-editorial text-base leading-tight outline-none focus:border-[hsl(var(--brick))]" data-testid="textarea-edition-description" />
+                        </label>
+                        <label className="block">
+                          <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Issuu Embed URL</span>
+                          <input type="url" value={form.issuuEmbedUrl} onChange={(e) => setForm({ ...form, issuuEmbedUrl: e.target.value })} placeholder="https://e.issuu.com/embed.html?d=las-issue-06&u=lifearoundsenoia" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" data-testid="input-edition-issuu-url-2" />
+                          <span className="mt-1.5 block font-ui text-[10px] leading-4 text-[hsl(var(--muted-foreground))]">In Issuu: open document → Share → Embed → copy the <code>src</code> value. Leave blank to show the placeholder.</span>
+                        </label>
+                        <CoverPhotoUploader coverMediaId={form.coverMediaId} existingCoverUrl={selectedItem?.coverUrl} publicationId={safePublicationId} onChange={(mediaId) => setForm({ ...form, coverMediaId: mediaId })} focalX={form.coverFocalX} focalY={form.coverFocalY} onFocalChange={(x, y) => setForm({ ...form, coverFocalX: x, coverFocalY: y })} />
+                      </div>
+                      {editorError && <div className="mx-5 flex items-start gap-2 border border-[hsl(var(--brick)/.4)] bg-[hsl(var(--brick)/.07)] px-3 py-2.5 font-ui text-xs leading-5 text-[hsl(var(--brick))] sm:mx-6" role="alert"><CircleAlert size={15} className="mt-0.5 shrink-0" /> {editorError}</div>}
+                      <div className="flex flex-wrap justify-end gap-2 border-t border-[hsl(var(--border))] px-5 py-4 sm:px-6">
+                        {selectedItem && <button type="button" onClick={() => publish(selectedItem)} disabled={busy} className="inline-flex items-center justify-center gap-2 border border-[hsl(var(--primary))] px-3.5 py-2.5 font-ui text-[10px] font-bold uppercase tracking-[.12em] text-[hsl(var(--primary))] transition-colors hover:bg-[hsl(var(--primary))] hover:text-[hsl(var(--primary-foreground))] disabled:opacity-50" data-testid="button-edition-publish">{selectedItem.status === EditorialStatus.published ? <Undo2 size={14} /> : <Send size={14} />} {selectedItem.status === EditorialStatus.published ? 'Unpublish' : 'Publish'}</button>}
+                        <button type="button" onClick={save} disabled={busy} className="inline-flex items-center justify-center gap-2 bg-[hsl(var(--primary))] px-4 py-2.5 font-ui text-[10px] font-bold uppercase tracking-[.12em] text-[hsl(var(--primary-foreground))] transition-colors hover:bg-[hsl(var(--pine-2))] disabled:cursor-wait disabled:opacity-60" data-testid="button-edition-save">{busy ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save changes</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="border border-dashed border-[hsl(var(--border))] p-8 text-center">
+                      <p className="font-ui text-xs text-[hsl(var(--muted-foreground))]">Select an edition from the list to edit it.</p>
+                    </div>
+                  )}
+                </section>
+              </div>
+            )}
+
             {activeTab === 'editorial' && (
             <div className="mt-7 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(400px,.74fr)]">
               <section aria-label="Content library" data-testid="section-content-library">
@@ -2063,8 +2142,8 @@ export default function Staff() {
                 <FilterBar status={status} contentType={contentType} onStatusChange={(value) => { setStatus(value); setSelectedId(null); setIsCreating(false); }} onTypeChange={(value) => { setContentType(value); setSelectedId(null); setIsCreating(false); }} onCreate={beginCreate} />
                 {listQuery.isPending && <div className="mt-4 space-y-px border border-[hsl(var(--border))] bg-[hsl(var(--border))]" data-testid="status-content-loading">{[1, 2, 3, 4].map((row) => <div key={row} className="h-28 animate-pulse bg-[hsl(var(--card))]" />)}</div>}
                 {listQuery.isError && <div className="mt-4 border border-[hsl(var(--brick)/.4)] bg-[hsl(var(--card))] p-6" data-testid="state-content-error"><CircleAlert size={20} className="text-[hsl(var(--brick))]" /><p className="mt-3 font-display text-2xl font-semibold">The desk could not be reached.</p><p className="mt-2 font-ui text-xs leading-5 text-[hsl(var(--muted-foreground))]">Your publication context is intact. Try loading the records again.</p><button type="button" onClick={() => void listQuery.refetch()} className="mt-5 inline-flex items-center gap-2 border border-[hsl(var(--primary))] px-3 py-2 font-ui text-[10px] font-bold uppercase tracking-[.12em]" data-testid="button-retry-content"><RefreshCw size={13} /> Try again</button></div>}
-                {!listQuery.isPending && !listQuery.isError && items.length === 0 && <div className="mt-4"><EmptyList filtered={Boolean(status || contentType)} onCreate={beginCreate} /></div>}
-                {!listQuery.isPending && !listQuery.isError && items.length > 0 && <div className="mt-4 overflow-hidden border border-[hsl(var(--border))] bg-[hsl(var(--border))]" data-testid="list-content-items">{items.map((item) => <ContentRow key={item.id} item={item} selected={item.id === selectedId} onSelect={() => selectItem(item)} onPublish={() => publish(item)} onDelete={() => remove(item)} busy={busy} />)}</div>}
+                {!listQuery.isPending && !listQuery.isError && editorialItems.length === 0 && <div className="mt-4"><EmptyList filtered={Boolean(status || contentType)} onCreate={beginCreate} /></div>}
+                {!listQuery.isPending && !listQuery.isError && editorialItems.length > 0 && <div className="mt-4 overflow-hidden border border-[hsl(var(--border))] bg-[hsl(var(--border))]" data-testid="list-content-items">{editorialItems.map((item) => <ContentRow key={item.id} item={item} selected={item.id === selectedId} onSelect={() => selectItem(item)} onPublish={() => publish(item)} onDelete={() => remove(item)} busy={busy} />)}</div>}
               </section>
               <section aria-label="Story editor" className="lg:sticky lg:top-5" data-testid="section-content-editor">
                 {detailQuery.isPending && selectedId && !isCreating && <div className="min-h-[520px] animate-pulse border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6" data-testid="status-editor-loading"><div className="h-3 w-24 bg-[hsl(var(--muted))]" /><div className="mt-5 h-10 w-3/4 bg-[hsl(var(--muted))]" /><div className="mt-12 h-28 bg-[hsl(var(--muted))]" /><div className="mt-5 h-48 bg-[hsl(var(--muted))]" /></div>}
