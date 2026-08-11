@@ -491,6 +491,8 @@ const BUSINESS_CATEGORIES = [
   'Home & Garden',
   'Arts & Entertainment',
   'Beauty & Salon',
+  'Churches',
+  'Nonprofits',
   'Other',
 ];
 
