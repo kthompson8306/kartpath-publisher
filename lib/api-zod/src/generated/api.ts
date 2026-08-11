@@ -74,14 +74,14 @@ export const ListPublishedContentItemsParams = zod.object({
 })
 
 export const ListPublishedContentItemsQueryParams = zod.object({
-  "contentType": zod.enum(['featured-family', 'nonprofit-spotlight', 'young-achiever', 'people-around-town', 'pet-of-the-month', 'business-listing', 'event', 'crooks-corner', 'recipe', 'lifestyle-column']).optional(),
+  "contentType": zod.enum(['featured-family', 'nonprofit-spotlight', 'young-achiever', 'people-around-town', 'pet-of-the-month', 'business-listing', 'event', 'crooks-corner', 'recipe', 'lifestyle-column', 'digital_edition']).optional(),
   "issue": zod.coerce.string().optional()
 })
 
 export const ListPublishedContentItemsResponseItem = zod.object({
   "id": zod.string(),
   "publicationId": zod.string(),
-  "contentType": zod.enum(['featured-family', 'nonprofit-spotlight', 'young-achiever', 'people-around-town', 'pet-of-the-month', 'business-listing', 'event', 'crooks-corner', 'recipe', 'lifestyle-column']),
+  "contentType": zod.enum(['featured-family', 'nonprofit-spotlight', 'young-achiever', 'people-around-town', 'pet-of-the-month', 'business-listing', 'event', 'crooks-corner', 'recipe', 'lifestyle-column', 'digital_edition']),
   "status": zod.enum(['draft', 'published']),
   "slug": zod.string(),
   "title": zod.string(),
@@ -175,13 +175,13 @@ export const listContentItemsQueryPublicationIdRegExp = new RegExp('^[0-9a-fA-F]
 export const ListContentItemsQueryParams = zod.object({
   "publicationId": zod.coerce.string().regex(listContentItemsQueryPublicationIdRegExp),
   "status": zod.enum(['draft', 'published']).optional(),
-  "contentType": zod.enum(['featured-family', 'nonprofit-spotlight', 'young-achiever', 'people-around-town', 'pet-of-the-month', 'business-listing', 'event', 'crooks-corner', 'recipe', 'lifestyle-column']).optional()
+  "contentType": zod.enum(['featured-family', 'nonprofit-spotlight', 'young-achiever', 'people-around-town', 'pet-of-the-month', 'business-listing', 'event', 'crooks-corner', 'recipe', 'lifestyle-column', 'digital_edition']).optional()
 })
 
 export const ListContentItemsResponseItem = zod.object({
   "id": zod.string(),
   "publicationId": zod.string(),
-  "contentType": zod.enum(['featured-family', 'nonprofit-spotlight', 'young-achiever', 'people-around-town', 'pet-of-the-month', 'business-listing', 'event', 'crooks-corner', 'recipe', 'lifestyle-column']),
+  "contentType": zod.enum(['featured-family', 'nonprofit-spotlight', 'young-achiever', 'people-around-town', 'pet-of-the-month', 'business-listing', 'event', 'crooks-corner', 'recipe', 'lifestyle-column', 'digital_edition']),
   "status": zod.enum(['draft', 'published']),
   "slug": zod.string(),
   "title": zod.string(),
@@ -217,7 +217,7 @@ export const createContentItemBodySlugRegExp = new RegExp('^[a-z0-9]+(?:-[a-z0-9
 
 export const CreateContentItemBody = zod.object({
   "publicationId": zod.string().regex(createContentItemBodyPublicationIdRegExp),
-  "contentType": zod.enum(['featured-family', 'nonprofit-spotlight', 'young-achiever', 'people-around-town', 'pet-of-the-month', 'business-listing', 'event', 'crooks-corner', 'recipe', 'lifestyle-column']),
+  "contentType": zod.enum(['featured-family', 'nonprofit-spotlight', 'young-achiever', 'people-around-town', 'pet-of-the-month', 'business-listing', 'event', 'crooks-corner', 'recipe', 'lifestyle-column', 'digital_edition']),
   "slug": zod.string().min(1).regex(createContentItemBodySlugRegExp),
   "title": zod.string().min(1),
   "summary": zod.string().min(1),
@@ -232,7 +232,7 @@ export const CreateContentItemBody = zod.object({
 export const CreateContentItemResponse = zod.object({
   "id": zod.string(),
   "publicationId": zod.string(),
-  "contentType": zod.enum(['featured-family', 'nonprofit-spotlight', 'young-achiever', 'people-around-town', 'pet-of-the-month', 'business-listing', 'event', 'crooks-corner', 'recipe', 'lifestyle-column']),
+  "contentType": zod.enum(['featured-family', 'nonprofit-spotlight', 'young-achiever', 'people-around-town', 'pet-of-the-month', 'business-listing', 'event', 'crooks-corner', 'recipe', 'lifestyle-column', 'digital_edition']),
   "status": zod.enum(['draft', 'published']),
   "slug": zod.string(),
   "title": zod.string(),
@@ -273,7 +273,7 @@ export const GetContentItemQueryParams = zod.object({
 export const GetContentItemResponse = zod.object({
   "id": zod.string(),
   "publicationId": zod.string(),
-  "contentType": zod.enum(['featured-family', 'nonprofit-spotlight', 'young-achiever', 'people-around-town', 'pet-of-the-month', 'business-listing', 'event', 'crooks-corner', 'recipe', 'lifestyle-column']),
+  "contentType": zod.enum(['featured-family', 'nonprofit-spotlight', 'young-achiever', 'people-around-town', 'pet-of-the-month', 'business-listing', 'event', 'crooks-corner', 'recipe', 'lifestyle-column', 'digital_edition']),
   "status": zod.enum(['draft', 'published']),
   "slug": zod.string(),
   "title": zod.string(),
@@ -315,7 +315,7 @@ export const updateContentItemBodyOneSlugRegExp = new RegExp('^[a-z0-9]+(?:-[a-z
 
 export const UpdateContentItemBody = zod.object({
   "publicationId": zod.string().regex(updateContentItemBodyOnePublicationIdRegExp),
-  "contentType": zod.enum(['featured-family', 'nonprofit-spotlight', 'young-achiever', 'people-around-town', 'pet-of-the-month', 'business-listing', 'event', 'crooks-corner', 'recipe', 'lifestyle-column']),
+  "contentType": zod.enum(['featured-family', 'nonprofit-spotlight', 'young-achiever', 'people-around-town', 'pet-of-the-month', 'business-listing', 'event', 'crooks-corner', 'recipe', 'lifestyle-column', 'digital_edition']),
   "slug": zod.string().min(1).regex(updateContentItemBodyOneSlugRegExp),
   "title": zod.string().min(1),
   "summary": zod.string().min(1),
@@ -330,7 +330,7 @@ export const UpdateContentItemBody = zod.object({
 export const UpdateContentItemResponse = zod.object({
   "id": zod.string(),
   "publicationId": zod.string(),
-  "contentType": zod.enum(['featured-family', 'nonprofit-spotlight', 'young-achiever', 'people-around-town', 'pet-of-the-month', 'business-listing', 'event', 'crooks-corner', 'recipe', 'lifestyle-column']),
+  "contentType": zod.enum(['featured-family', 'nonprofit-spotlight', 'young-achiever', 'people-around-town', 'pet-of-the-month', 'business-listing', 'event', 'crooks-corner', 'recipe', 'lifestyle-column', 'digital_edition']),
   "status": zod.enum(['draft', 'published']),
   "slug": zod.string(),
   "title": zod.string(),
@@ -392,7 +392,7 @@ export const PublishContentItemBody = zod.object({
 export const PublishContentItemResponse = zod.object({
   "id": zod.string(),
   "publicationId": zod.string(),
-  "contentType": zod.enum(['featured-family', 'nonprofit-spotlight', 'young-achiever', 'people-around-town', 'pet-of-the-month', 'business-listing', 'event', 'crooks-corner', 'recipe', 'lifestyle-column']),
+  "contentType": zod.enum(['featured-family', 'nonprofit-spotlight', 'young-achiever', 'people-around-town', 'pet-of-the-month', 'business-listing', 'event', 'crooks-corner', 'recipe', 'lifestyle-column', 'digital_edition']),
   "status": zod.enum(['draft', 'published']),
   "slug": zod.string(),
   "title": zod.string(),
@@ -635,7 +635,7 @@ export const GetPublishedArticleParams = zod.object({
 export const GetPublishedArticleResponse = zod.object({
   "id": zod.string(),
   "publicationId": zod.string(),
-  "contentType": zod.enum(['featured-family', 'nonprofit-spotlight', 'young-achiever', 'people-around-town', 'pet-of-the-month', 'business-listing', 'event', 'crooks-corner', 'recipe', 'lifestyle-column']),
+  "contentType": zod.enum(['featured-family', 'nonprofit-spotlight', 'young-achiever', 'people-around-town', 'pet-of-the-month', 'business-listing', 'event', 'crooks-corner', 'recipe', 'lifestyle-column', 'digital_edition']),
   "status": zod.enum(['draft', 'published']),
   "slug": zod.string(),
   "title": zod.string(),
