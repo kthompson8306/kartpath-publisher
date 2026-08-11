@@ -242,7 +242,7 @@ router.patch("/nominations/:id", requireStaff, async (req, res): Promise<void> =
 
 router.post("/publications/:slug/submissions/business", submissionRateLimit, async (req, res): Promise<void> => {
   const { slug } = req.params;
-  const { businessName, category, phone, website, facebookUrl, instagramUrl, description, submitterName, submitterEmail } =
+  const { businessName, category, address, phone, website, facebookUrl, instagramUrl, description, submitterName, submitterEmail } =
     req.body as Record<string, unknown>;
 
   if (
@@ -270,6 +270,7 @@ router.post("/publications/:slug/submissions/business", submissionRateLimit, asy
     submitterName: submitterName.trim(),
     submitterEmail: (submitterEmail as string).toLowerCase().trim(),
   };
+  if (typeof address === "string" && address.trim()) details.address = address.trim();
   if (typeof phone === "string" && phone.trim()) details.phone = phone.trim();
   if (typeof website === "string" && website.trim()) details.website = website.trim();
   if (typeof facebookUrl === "string" && facebookUrl.trim()) details.facebook_url = facebookUrl.trim();
@@ -297,6 +298,7 @@ router.post("/publications/:slug/submissions/business", submissionRateLimit, asy
 <table cellpadding="6" style="border-collapse:collapse;font-family:sans-serif;font-size:14px">
   <tr><td><strong>Business Name</strong></td><td>${title}</td></tr>
   <tr><td><strong>Category</strong></td><td>${category.trim()}</td></tr>
+  ${details.address ? `<tr><td><strong>Address</strong></td><td>${details.address}</td></tr>` : ""}
   ${details.phone ? `<tr><td><strong>Phone</strong></td><td>${details.phone}</td></tr>` : ""}
   ${details.website ? `<tr><td><strong>Website</strong></td><td><a href="${details.website}">${details.website}</a></td></tr>` : ""}
   ${details.facebook_url ? `<tr><td><strong>Facebook</strong></td><td><a href="${details.facebook_url}">${details.facebook_url}</a></td></tr>` : ""}

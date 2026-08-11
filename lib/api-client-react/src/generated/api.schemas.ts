@@ -336,6 +336,7 @@ export interface SubmitBusinessInput {
   businessName: string;
   /** @minLength 1 */
   category: string;
+  address?: string;
   phone?: string;
   website?: string;
   facebookUrl?: string;
