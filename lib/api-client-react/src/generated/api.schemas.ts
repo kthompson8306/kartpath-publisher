@@ -338,6 +338,8 @@ export interface SubmitBusinessInput {
   category: string;
   phone?: string;
   website?: string;
+  facebookUrl?: string;
+  instagramUrl?: string;
   description?: string;
   /** @minLength 1 */
   submitterName: string;

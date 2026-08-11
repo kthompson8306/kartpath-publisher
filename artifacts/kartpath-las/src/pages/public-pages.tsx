@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { ArrowLeft, ArrowRight, ArrowUpRight, Menu, Search, X } from 'lucide-react';
+import { FaFacebook, FaInstagram } from 'react-icons/fa6';
 import { Link, useParams } from 'wouter';
 import { getGetPublishedArticleQueryKey, getGetPublicationBySlugQueryKey, getListPublishedContentItemsQueryKey, useGetPublicationBySlug, useGetPublishedArticle, useListPublishedContentItems, useSubmitBusinessListing, useSubmitEventSubmission, useSubscribeToPublication, useSubmitNomination } from '@workspace/api-client-react';
 import type { ContentItem, EditorialContentType } from '@workspace/api-client-react';
@@ -523,6 +524,8 @@ export function BusinessSubmitPage() {
                   category,
                   phone: (fd.get('phone') as string) || undefined,
                   website: (fd.get('website') as string) || undefined,
+                  facebookUrl: (fd.get('facebookUrl') as string) || undefined,
+                  instagramUrl: (fd.get('instagramUrl') as string) || undefined,
                   description: (fd.get('description') as string) || undefined,
                   submitterName: fd.get('submitterName') as string,
                   submitterEmail: fd.get('submitterEmail') as string,
@@ -540,6 +543,8 @@ export function BusinessSubmitPage() {
                 {showOther && <label className="full">Specify your category *<input required type="text" name="otherCategory" placeholder="e.g. Photography Studio" /></label>}
                 <label>Phone<input type="tel" name="phone" placeholder="770-555-0000" /></label>
                 <label>Website<input type="url" name="website" placeholder="https://yourbusiness.com" /></label>
+                <label>Facebook URL <span style={{ fontWeight: 400, opacity: 0.65 }}>(optional)</span><input type="url" name="facebookUrl" placeholder="https://facebook.com/yourbusiness" /></label>
+                <label>Instagram URL <span style={{ fontWeight: 400, opacity: 0.65 }}>(optional)</span><input type="url" name="instagramUrl" placeholder="https://instagram.com/yourbusiness" /></label>
                 <label className="full">Short Description<textarea name="description" rows={4} placeholder="Tell us about your business in a few sentences…" /></label>
                 <label>Your Name *<input required type="text" name="submitterName" placeholder="Your full name" /></label>
                 <label>Your Email *<input required type="email" name="submitterEmail" placeholder="you@email.com" /></label>
@@ -736,7 +741,7 @@ export function Directory() {
   }), [category, items, search]);
   return <PageShell seo={{ title: 'Business Directory — Life Around Senoia', description: 'Find published storefronts, services, restaurants, and local businesses across Senoia, Georgia.', path: '/directory' }}>
     <PageHero kicker="Business Directory" title={<>Every storefront and<br />service on Main Street</>}>Published businesses and services from Life Around Senoia.</PageHero>
-    <section><div className="wrap"><div className="dir-controls"><label className="dir-search"><Search size={17} /><input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search businesses or categories..." aria-label="Search businesses" /></label><div className="filter-pills">{categories.map((cat) => <button type="button" className={`filter-pill ${category === cat ? 'active' : ''}`} onClick={() => setCategory(cat)} key={cat}>{cat}</button>)}</div></div><PublicContentState query={contentQuery} emptyMessage="No businesses are published right now." /><div className="biz-grid">{filtered.map((item) => <article className="biz-card" key={item.id} data-testid={`public-published-${item.slug}`}><span className="cat">{item.details.category ?? 'Business Listing'}</span><h2>{item.title}</h2><p className="contact">{item.summary}<br />{item.details.phone ?? item.details.website ?? ''}</p>{item.body && <p>{item.body}</p>}</article>)}</div>{!contentQuery.isPending && !contentQuery.isError && contentQuery.data?.length && filtered.length === 0 ? <div className="empty-state">No businesses match that search. Try another category or phrase.</div> : null}</div></section>
+    <section><div className="wrap"><div className="dir-controls"><label className="dir-search"><Search size={17} /><input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search businesses or categories..." aria-label="Search businesses" /></label><div className="filter-pills">{categories.map((cat) => <button type="button" className={`filter-pill ${category === cat ? 'active' : ''}`} onClick={() => setCategory(cat)} key={cat}>{cat}</button>)}</div></div><PublicContentState query={contentQuery} emptyMessage="No businesses are published right now." /><div className="biz-grid">{filtered.map((item) => <article className="biz-card" key={item.id} data-testid={`public-published-${item.slug}`}><span className="cat">{item.details.category ?? 'Business Listing'}</span><h2>{item.title}</h2><p className="contact">{item.summary}<br />{item.details.phone ?? item.details.website ?? ''}</p>{item.body && <p>{item.body}</p>}{(item.details.facebook_url || item.details.instagram_url) && (<div className="biz-social">{item.details.facebook_url && <a href={item.details.facebook_url} target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="biz-social-icon"><FaFacebook /></a>}{item.details.instagram_url && <a href={item.details.instagram_url} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="biz-social-icon biz-social-icon--ig"><FaInstagram /></a>}</div>)}</article>)}</div>{!contentQuery.isPending && !contentQuery.isError && contentQuery.data?.length && filtered.length === 0 ? <div className="empty-state">No businesses match that search. Try another category or phrase.</div> : null}</div></section>
     <section><div className="wrap"><div className="involved-strip"><span className="mono-label">Own a Business in Senoia?</span><h2>Get listed — and get considered for a feature</h2><Link href="/submit/business" className="btn-sharp honey-button">Submit a Business <ArrowRight size={14} /></Link></div></div></section>
   </PageShell>;
 }

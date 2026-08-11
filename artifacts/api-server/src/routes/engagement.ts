@@ -242,7 +242,7 @@ router.patch("/nominations/:id", requireStaff, async (req, res): Promise<void> =
 
 router.post("/publications/:slug/submissions/business", submissionRateLimit, async (req, res): Promise<void> => {
   const { slug } = req.params;
-  const { businessName, category, phone, website, description, submitterName, submitterEmail } =
+  const { businessName, category, phone, website, facebookUrl, instagramUrl, description, submitterName, submitterEmail } =
     req.body as Record<string, unknown>;
 
   if (
@@ -272,6 +272,8 @@ router.post("/publications/:slug/submissions/business", submissionRateLimit, asy
   };
   if (typeof phone === "string" && phone.trim()) details.phone = phone.trim();
   if (typeof website === "string" && website.trim()) details.website = website.trim();
+  if (typeof facebookUrl === "string" && facebookUrl.trim()) details.facebook_url = facebookUrl.trim();
+  if (typeof instagramUrl === "string" && instagramUrl.trim()) details.instagram_url = instagramUrl.trim();
 
   const [item] = await db
     .insert(contentItemsTable)
@@ -297,6 +299,8 @@ router.post("/publications/:slug/submissions/business", submissionRateLimit, asy
   <tr><td><strong>Category</strong></td><td>${category.trim()}</td></tr>
   ${details.phone ? `<tr><td><strong>Phone</strong></td><td>${details.phone}</td></tr>` : ""}
   ${details.website ? `<tr><td><strong>Website</strong></td><td><a href="${details.website}">${details.website}</a></td></tr>` : ""}
+  ${details.facebook_url ? `<tr><td><strong>Facebook</strong></td><td><a href="${details.facebook_url}">${details.facebook_url}</a></td></tr>` : ""}
+  ${details.instagram_url ? `<tr><td><strong>Instagram</strong></td><td><a href="${details.instagram_url}">${details.instagram_url}</a></td></tr>` : ""}
   ${desc ? `<tr><td><strong>Description</strong></td><td>${desc}</td></tr>` : ""}
   <tr><td><strong>Submitted by</strong></td><td>${submitterName.trim()} &lt;${(submitterEmail as string).toLowerCase().trim()}&gt;</td></tr>
 </table>

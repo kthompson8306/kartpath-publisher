@@ -246,6 +246,8 @@ type FormState = Omit<CreateContentItem, 'publicationId' | 'details'> & {
   bizCategory: string;
   bizPhone: string;
   bizWebsite: string;
+  bizFacebook: string;
+  bizInstagram: string;
   bizAddress: string;
   bizHours: string;
   // cover photo focal point (0–1 range, default 0.5)
@@ -280,6 +282,8 @@ const EMPTY_FORM: FormState = {
   bizCategory: '',
   bizPhone: '',
   bizWebsite: '',
+  bizFacebook: '',
+  bizInstagram: '',
   bizAddress: '',
   bizHours: '',
   coverFocalX: 0.5,
@@ -961,6 +965,14 @@ function Editor({
                 <label className="block">
                   <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Website</span>
                   <input type="url" value={form.bizWebsite} onChange={(e) => update('bizWebsite', e.target.value)} placeholder="https://…" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" data-testid="input-biz-website" />
+                </label>
+                <label className="block">
+                  <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Facebook URL <span className="opacity-50">(optional)</span></span>
+                  <input type="url" value={form.bizFacebook} onChange={(e) => update('bizFacebook', e.target.value)} placeholder="https://facebook.com/yourbusiness" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" data-testid="input-biz-facebook" />
+                </label>
+                <label className="block">
+                  <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Instagram URL <span className="opacity-50">(optional)</span></span>
+                  <input type="url" value={form.bizInstagram} onChange={(e) => update('bizInstagram', e.target.value)} placeholder="https://instagram.com/yourbusiness" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" data-testid="input-biz-instagram" />
                 </label>
               </div>
               <label className="block">
@@ -1740,6 +1752,8 @@ export default function Staff() {
         bizCategory: d.category ?? '',
         bizPhone: d.phone ?? '',
         bizWebsite: d.website ?? '',
+        bizFacebook: d.facebook_url ?? '',
+        bizInstagram: d.instagram_url ?? '',
         bizAddress: ct === 'business-listing' ? (d.address ?? '') : '',
         bizHours: d.hours ?? '',
         pullQuote: item.pullQuote ?? '',
@@ -1830,6 +1844,8 @@ export default function Staff() {
         category: form.bizCategory,
         phone: form.bizPhone.trim(),
         website: form.bizWebsite.trim(),
+        ...(form.bizFacebook.trim() && { facebook_url: form.bizFacebook.trim() }),
+        ...(form.bizInstagram.trim() && { instagram_url: form.bizInstagram.trim() }),
         address: form.bizAddress.trim(),
         hours: form.bizHours.trim(),
       };
