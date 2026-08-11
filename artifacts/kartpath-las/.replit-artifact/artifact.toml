@@ -16,12 +16,9 @@ run = "pnpm --filter @workspace/kartpath-las run dev"
 
 [services.production]
 build = [ "pnpm", "--filter", "@workspace/kartpath-las", "run", "build" ]
-serve = "static"
-publicDir = "artifacts/kartpath-las/dist/public"
 
-[[services.production.rewrites]]
-from = "/*"
-to = "/index.html"
+[services.production.run]
+args = [ "node", "--enable-source-maps", "artifacts/kartpath-las/dist/server.mjs" ]
 
 [services.env]
 PORT = "23775"
