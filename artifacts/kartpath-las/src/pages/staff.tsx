@@ -2356,12 +2356,10 @@ export default function Staff() {
                           <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Featured family / person name</span>
                           <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="The Johnson Family" className="w-full border-0 border-b border-[hsl(var(--input))] bg-transparent px-0 py-2 font-display text-2xl font-semibold tracking-[-.025em] outline-none placeholder:text-[hsl(var(--muted-foreground)/.6)] focus:border-[hsl(var(--brick))]" data-testid="input-edition-title" />
                         </label>
-                        {isCreating && (
-                          <label className="block">
-                            <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Publish period <span className="normal-case tracking-normal opacity-60">(e.g. Sept–Oct 2026)</span></span>
-                            <input value={form.summary} onChange={(e) => setForm({ ...form, summary: e.target.value })} placeholder="Sept–Oct 2026" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" data-testid="input-edition-date" />
-                          </label>
-                        )}
+                        <label className="block">
+                          <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Publish period <span className="normal-case tracking-normal opacity-60">(e.g. Sept–Oct 2026)</span></span>
+                          <input value={form.summary} onChange={(e) => setForm({ ...form, summary: e.target.value })} placeholder="Sept–Oct 2026" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" data-testid="input-edition-date" />
+                        </label>
                         <label className="block">
                           <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Editorial headline <span className="normal-case tracking-normal opacity-60">(optional — shown in featured reader on homepage &amp; archive)</span></span>
                           <input value={form.editionEditorialTitle} onChange={(e) => setForm({ ...form, editionEditorialTitle: e.target.value })} placeholder="Making Room at the Table" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-display text-sm outline-none focus:border-[hsl(var(--brick))]" data-testid="input-edition-editorial-title" />
