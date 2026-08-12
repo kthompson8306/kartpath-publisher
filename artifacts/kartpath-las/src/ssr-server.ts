@@ -14,16 +14,21 @@
 import express, { type Request, type Response, type NextFunction } from 'express';
 import path from 'node:path';
 import { readFileSync } from 'node:fs';
-import { db, contentItemsTable, mediaAssetsTable } from '@workspace/db';
+import { db, contentItemsTable, mediaAssetsTable, publicationsTable } from '@workspace/db';
 import { and, eq, desc, ne } from 'drizzle-orm';
 
 // __dirname is injected by the esbuild banner in build-server.mjs
 declare const __dirname: string;
 
-const DIST_PUBLIC   = path.join(__dirname, 'public');
-const PORT          = Number(process.env.PORT) || 23775;
-const PUBLICATION_ID = '5b418195-3aa3-4771-a89b-9fd4329b6c1d';
-const SITE_NAME     = 'Life Around Senoia';
+const DIST_PUBLIC        = path.join(__dirname, 'public');
+const PORT               = Number(process.env.PORT) || 23775;
+const PUBLICATION_SLUG   = process.env.PUBLICATION_SLUG ?? 'life-around-senoia';
+const SITE_NAME          = 'Life Around Senoia';
+
+// Resolved at startup — see boot() below.  Declared here so route handlers can
+// reference it as a module-level binding; it is guaranteed to be set before any
+// request is served because we only call app.listen() after a successful lookup.
+let PUBLICATION_ID: string;
 
 // ─── Section ↔ content-type maps ─────────────────────────────────────────────
 
@@ -471,8 +476,38 @@ app.get('/{*path}', (_req: Request, res: Response): void => {
 
 // ─── Boot ─────────────────────────────────────────────────────────────────────
 
-loadViteAssets();
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`[ssr] Life Around Senoia SSR server on port ${PORT}`);
-  console.log(`[ssr] Static files: ${DIST_PUBLIC}`);
+async function boot(): Promise<void> {
+  // 1. Resolve publication ID from slug — fail loudly rather than silently
+  //    serving empty pages if the DB was reset or the slug is wrong.
+  const [pub] = await db
+    .select({ id: publicationsTable.id })
+    .from(publicationsTable)
+    .where(eq(publicationsTable.slug, PUBLICATION_SLUG))
+    .limit(1);
+
+  if (!pub) {
+    console.error(
+      `[ssr] FATAL: no publication found with slug "${PUBLICATION_SLUG}". ` +
+      `Check the PUBLICATION_SLUG environment variable or run the database seed. ` +
+      `Refusing to start — every article page would silently return empty content.`,
+    );
+    process.exit(1);
+  }
+
+  PUBLICATION_ID = pub.id;
+  console.log(`[ssr] Publication resolved: "${PUBLICATION_SLUG}" → ${PUBLICATION_ID}`);
+
+  // 2. Load Vite asset tags from the built index.html
+  loadViteAssets();
+
+  // 3. Start listening
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`[ssr] Life Around Senoia SSR server on port ${PORT}`);
+    console.log(`[ssr] Static files: ${DIST_PUBLIC}`);
+  });
+}
+
+boot().catch((err: unknown) => {
+  console.error('[ssr] Boot failed:', err);
+  process.exit(1);
 });

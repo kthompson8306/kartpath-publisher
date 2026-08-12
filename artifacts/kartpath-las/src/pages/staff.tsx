@@ -882,6 +882,32 @@ function Editor({
               {form.metaDescription.length}/160
             </span>
           </div>
+          {form.metaDescription.length === 0 && form.summary.trim() && (() => {
+            const text = form.summary.trim();
+            let preview = text;
+            if (text.length > 160) {
+              const candidate = text.slice(0, 156);
+              const lastSentence = Math.max(
+                candidate.lastIndexOf('. '),
+                candidate.lastIndexOf('! '),
+                candidate.lastIndexOf('? '),
+                candidate.lastIndexOf('.\n'),
+              );
+              if (lastSentence >= 50) {
+                preview = text.slice(0, lastSentence + 1).trim();
+              } else {
+                const lastSpace = text.slice(0, 153).lastIndexOf(' ');
+                preview = lastSpace >= 50
+                  ? text.slice(0, lastSpace).trim() + '…'
+                  : text.slice(0, 157).trim() + '…';
+              }
+            }
+            return (
+              <p className="mt-1.5 font-ui text-[11px] leading-snug text-[hsl(var(--muted-foreground)/.55)]" data-testid="meta-description-preview">
+                <span className="mr-1.5 font-meta text-[9px] uppercase tracking-[.1em]">Google will see:</span>{preview}
+              </p>
+            );
+          })()}
         </label>
         <label className="block">
           <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Story body</span>
