@@ -38,6 +38,7 @@ export const contentItemsTable = pgTable(
     summary: text("summary").notNull(),
     body: text("body").notNull(),
     pullQuote: text("pull_quote"),
+    metaDescription: text("meta_description"),
     details: jsonb("details").$type<Record<string, string>>().notNull(),
     coverMediaId: uuid("cover_media_id"),
     coverFocalX: doublePrecision("cover_focal_x").notNull().default(0.5),

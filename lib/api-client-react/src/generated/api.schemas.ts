@@ -147,6 +147,8 @@ export interface ContentItem {
   body: string;
   /** @nullable */
   pullQuote?: string | null;
+  /** @nullable */
+  metaDescription?: string | null;
   details: ContentItemDetails;
   /** @nullable */
   coverMediaId: string | null;
@@ -189,6 +191,11 @@ export interface CreateContentItem {
   body: string;
   /** @nullable */
   pullQuote?: string | null;
+  /**
+   * @nullable
+   * @maxLength 160
+   */
+  metaDescription?: string | null;
   details: CreateContentItemDetails;
   /** @nullable */
   coverMediaId: string | null;

@@ -262,6 +262,8 @@ type FormState = Omit<CreateContentItem, 'publicationId' | 'details'> & {
   coverFocalY: number;
   // pull quote for homepage rotation
   pullQuote: string;
+  // search engine meta description (blank = auto-generated at render time)
+  metaDescription: string;
 };
 
 const EMPTY_FORM: FormState = {
@@ -298,6 +300,7 @@ const EMPTY_FORM: FormState = {
   coverFocalX: 0.5,
   coverFocalY: 0.5,
   pullQuote: '',
+  metaDescription: '',
 };
 
 function Initials({ name }: { name: string }) {
@@ -467,6 +470,8 @@ function ContentRow({
               <span className="size-0.5 rounded-full bg-[hsl(var(--border))]" />
               <span>{isPublished ? formatDate(item.publishedAt) : `Edited ${formatDate(item.updatedAt)}`}</span>
               {item.coverUrl && <><span className="size-0.5 rounded-full bg-[hsl(var(--border))]" /><span className="text-[hsl(var(--pine-2))]">Photo ✓</span></>}
+              <span className="size-0.5 rounded-full bg-[hsl(var(--border))]" />
+              {item.metaDescription ? <span className="text-[hsl(var(--pine-2))]">meta ✓</span> : <span className="opacity-40">auto meta</span>}
             </div>
           </div>
         </div>
@@ -850,6 +855,33 @@ function Editor({
         <label className="block">
           <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Pull quote <span className="normal-case tracking-normal opacity-60">(optional — shown in homepage quote rotation)</span></span>
           <input value={form.pullQuote} onChange={(event) => update('pullQuote', event.target.value)} maxLength={220} placeholder="A memorable sentence from this piece…" className="h-10 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-editorial text-base outline-none focus:border-[hsl(var(--brick))]" data-testid="input-content-pull-quote" />
+        </label>
+        <label className="block">
+          <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">
+            SEO description <span className="normal-case tracking-normal opacity-60">(optional — auto-generated from standfirst when blank)</span>
+          </span>
+          <div className="relative">
+            <textarea
+              value={form.metaDescription}
+              onChange={(event) => update('metaDescription', event.target.value.slice(0, 160))}
+              rows={2}
+              maxLength={160}
+              placeholder="1–2 sentences for search engines and social cards. Written for Google, not the magazine."
+              className="w-full resize-none border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2.5 pr-14 font-ui text-sm leading-snug outline-none focus:border-[hsl(var(--brick))]"
+              data-testid="textarea-content-meta-description"
+            />
+            <span className={`pointer-events-none absolute bottom-2.5 right-3 font-meta text-[9px] tabular-nums transition-colors ${
+              form.metaDescription.length === 0
+                ? 'text-[hsl(var(--muted-foreground)/.4)]'
+                : form.metaDescription.length >= 120 && form.metaDescription.length <= 155
+                ? 'text-[hsl(var(--pine-2))]'
+                : form.metaDescription.length > 155
+                ? 'text-[hsl(var(--honey))]'
+                : 'text-[hsl(var(--muted-foreground))]'
+            }`}>
+              {form.metaDescription.length}/160
+            </span>
+          </div>
         </label>
         <label className="block">
           <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Story body</span>
@@ -1881,6 +1913,7 @@ export default function Staff() {
         issuuEmbedUrl: d.issuu_embed_url ?? '',
         editionDescription: d.description ?? '',
         pullQuote: item.pullQuote ?? '',
+        metaDescription: item.metaDescription ?? '',
       });
       setEditorError('');
     }
@@ -1996,6 +2029,7 @@ export default function Staff() {
       body: form.body.trim(),
       details,
       pullQuote: form.pullQuote.trim() || null,
+      metaDescription: form.metaDescription.trim() || null,
       coverMediaId: form.coverMediaId || null,
       coverFocalX: form.coverFocalX,
       coverFocalY: form.coverFocalY,

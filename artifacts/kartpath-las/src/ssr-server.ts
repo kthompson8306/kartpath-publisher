@@ -160,6 +160,54 @@ function bodyToParagraphs(body: string): string {
     .join('\n        ');
 }
 
+// ─── Meta description fallback ───────────────────────────────────────────────
+
+/**
+ * Return the best available meta description for a content item.
+ *
+ * Priority:
+ *   1. metaDescription field (staff-written, already ≤160 chars via UI)
+ *   2. Auto-generated from summary — truncated cleanly to ≤160 chars, never
+ *      mid-sentence and never mid-word.
+ *
+ * The algorithm guarantees the result is always ≤160 characters, ends on a
+ * complete sentence wherever possible, and never ends mid-word otherwise.
+ */
+function generateMetaDescription(
+  metaDescription: string | null | undefined,
+  summary: string,
+): string {
+  // 1. Prefer the deliberate field when present
+  const deliberate = metaDescription?.trim();
+  if (deliberate) return deliberate;
+
+  // 2. Summary fits as-is
+  const text = summary.trim();
+  if (text.length <= 160) return text;
+
+  // 3. Find the last sentence boundary ≤ 155 chars
+  const candidate = text.slice(0, 156);
+  const lastSentence = Math.max(
+    candidate.lastIndexOf('. '),
+    candidate.lastIndexOf('! '),
+    candidate.lastIndexOf('? '),
+    candidate.lastIndexOf('.\n'),
+  );
+  if (lastSentence >= 50) {
+    // include the punctuation character itself (index + 1)
+    return text.slice(0, lastSentence + 1).trim();
+  }
+
+  // 4. No sentence boundary — find last word boundary ≤ 152 chars
+  const lastSpace = text.slice(0, 153).lastIndexOf(' ');
+  if (lastSpace >= 50) {
+    return text.slice(0, lastSpace).trim() + '…';
+  }
+
+  // 5. Hard cap (extremely unlikely — requires a 153-char word)
+  return text.slice(0, 157).trim() + '…';
+}
+
 // ─── JSON-LD safe serialisation ──────────────────────────────────────────────
 
 /**
@@ -200,7 +248,7 @@ function buildJsonLd(
       '@context': 'https://schema.org',
       '@type':    'Recipe',
       name:        item.title,
-      description: item.summary,
+      description: generateMetaDescription(item.metaDescription, item.summary),
       datePublished: item.publishedAt?.toISOString() ?? item.createdAt.toISOString(),
       dateModified:  item.updatedAt.toISOString(),
       author:    org,
@@ -217,7 +265,7 @@ function buildJsonLd(
       '@context': 'https://schema.org',
       '@type':    'LocalBusiness',
       name:        item.title,
-      description: item.summary,
+      description: generateMetaDescription(item.metaDescription, item.summary),
       url:         canonicalUrl,
       ...(d.address ? { address: { '@type': 'PostalAddress', streetAddress: d.address } } : {}),
       ...(d.phone   ? { telephone: d.phone   } : {}),
@@ -231,7 +279,7 @@ function buildJsonLd(
       '@context': 'https://schema.org',
       '@type':    'Article',
       headline:    item.title,
-      description: item.summary,
+      description: generateMetaDescription(item.metaDescription, item.summary),
       datePublished: item.publishedAt?.toISOString() ?? item.createdAt.toISOString(),
       dateModified:  item.updatedAt.toISOString(),
       author:    org,
@@ -258,7 +306,7 @@ function buildHtml(
   const canonicalUrl = `${siteOrigin}/${section}/${item.slug}`;
   const jsonLd       = buildJsonLd(item, coverUrl, canonicalUrl, siteOrigin);
   const pageTitle    = `${esc(item.title)} — ${SITE_NAME}`;
-  const descMeta     = esc(item.summary);
+  const descMeta     = esc(generateMetaDescription(item.metaDescription, item.summary));
   const ogImage      = coverUrl ? `${siteOrigin}${coverUrl}` : '';
   const sectionLabel = SECTION_LABELS[section] ?? 'Stories';
 
