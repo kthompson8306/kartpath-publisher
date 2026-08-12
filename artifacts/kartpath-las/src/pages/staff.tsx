@@ -259,6 +259,7 @@ type FormState = Omit<CreateContentItem, 'publicationId' | 'details'> & {
   // digital_edition specific
   issuuEmbedUrl: string;
   editionDescription: string;
+  editionEditorialTitle: string;
   // cover photo focal point (0–1 range, default 0.5)
   coverFocalX: number;
   coverFocalY: number;
@@ -301,6 +302,7 @@ const EMPTY_FORM: FormState = {
   businessDescription: '',
   issuuEmbedUrl: '',
   editionDescription: '',
+  editionEditorialTitle: '',
   coverFocalX: 0.5,
   coverFocalY: 0.5,
   pullQuote: '',
@@ -2008,6 +2010,7 @@ export default function Staff() {
         bizHours: d.hours ?? '',
         issuuEmbedUrl: d.issuu_embed_url ?? '',
         editionDescription: d.description ?? '',
+        editionEditorialTitle: d.editorial_title ?? '',
         pullQuote: item.pullQuote ?? '',
         metaDescription: item.metaDescription ?? '',
         listingTier: (item.listingTier as 'standard' | 'premium') ?? 'standard',
@@ -2035,6 +2038,16 @@ export default function Staff() {
 
   const beginCreateEvent = () => { setSelectedId(null); setIsCreating(true); setForm({ ...EMPTY_FORM, contentType: EditorialContentType.event }); setEditorError(''); setFeedback(''); };
   const beginCreateListing = () => { setSelectedId(null); setIsCreating(true); setForm({ ...EMPTY_FORM, contentType: EditorialContentType['business-listing'] }); setEditorError(''); setFeedback(''); };
+  const beginCreateEdition = () => {
+    const nums = editionItems.map((e) => parseInt(e.slug.replace('edition-', ''), 10)).filter((n) => !isNaN(n));
+    const max = nums.length > 0 ? Math.max(...nums) : 0;
+    const nextSlug = `edition-${String(max + 1).padStart(2, '0')}`;
+    setSelectedId(null);
+    setIsCreating(true);
+    setForm({ ...EMPTY_FORM, contentType: EditorialContentType.digital_edition, slug: nextSlug });
+    setEditorError('');
+    setFeedback('');
+  };
 
   const selectItem = (item: ContentItem) => {
     setIsCreating(false);
@@ -2108,9 +2121,14 @@ export default function Staff() {
         hours: form.bizHours.trim(),
       };
     } else if (ct === 'digital_edition') {
+      if (isCreating && !/^edition-\d{2,}$/.test(form.slug.trim())) {
+        setEditorError('Edition slug must follow the format edition-NN (e.g. edition-07).');
+        return null;
+      }
       details = {
         ...(form.issuuEmbedUrl.trim() && { issuu_embed_url: form.issuuEmbedUrl.trim() }),
         ...(form.editionDescription.trim() && { description: form.editionDescription.trim() }),
+        ...(form.editionEditorialTitle.trim() && { editorial_title: form.editionEditorialTitle.trim() }),
       };
     } else {
       if (!form.body.trim()) { setEditorError('Headline, slug, standfirst, and story body are required.'); return null; }
@@ -2307,46 +2325,68 @@ export default function Staff() {
             {activeTab === 'editions' && publicationId && (
               <div className="mt-7 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(400px,.74fr)]">
                 <section aria-label="Digital Editions library" data-testid="section-editions-library">
-                  <div className="mb-4">
-                    <SectionKicker>Digital Editions</SectionKicker>
-                    <h2 className="mt-1 font-display text-3xl font-semibold tracking-[-.04em]">Issue archive</h2>
-                    <p className="mt-2 font-ui text-xs text-[hsl(var(--muted-foreground))]">Select an issue to update its Issuu embed URL, description, or cover photo.</p>
+                  <div className="mb-4 flex items-end justify-between gap-4">
+                    <div>
+                      <SectionKicker>Digital Editions</SectionKicker>
+                      <h2 className="mt-1 font-display text-3xl font-semibold tracking-[-.04em]">Issue archive</h2>
+                    </div>
+                    <div className="flex gap-3">
+                      <button type="button" onClick={() => void listQuery.refetch()} className="inline-flex items-center gap-2 font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--brick))]"><RefreshCw size={13} className={listQuery.isFetching ? 'animate-spin' : ''} /> Refresh</button>
+                      <button type="button" onClick={beginCreateEdition} className="inline-flex items-center gap-2 bg-[hsl(var(--primary))] px-3 py-1.5 font-ui text-[10px] font-bold uppercase tracking-[.12em] text-[hsl(var(--primary-foreground))]" data-testid="button-create-edition"><FilePlus2 size={13} /> New Edition</button>
+                    </div>
                   </div>
                   {listQuery.isPending && <div className="mt-4 space-y-px border border-[hsl(var(--border))] bg-[hsl(var(--border))]">{[1, 2, 3, 4, 5, 6].map((r) => <div key={r} className="h-16 animate-pulse bg-[hsl(var(--card))]" />)}</div>}
                   {!listQuery.isPending && !listQuery.isError && editionItems.length > 0 && <div className="mt-4 overflow-hidden border border-[hsl(var(--border))] bg-[hsl(var(--border))]" data-testid="list-edition-items">{editionItems.map((item) => <ContentRow key={item.id} item={item} selected={item.id === selectedId} onSelect={() => selectItem(item)} onPublish={() => publish(item)} onDelete={() => remove(item)} busy={busy} />)}</div>}
                 </section>
                 <section aria-label="Edition editor" className="lg:sticky lg:top-5" data-testid="section-edition-editor">
-                  {selectedId && !isCreating ? (
+                  {(selectedId && !isCreating) || (isCreating && form.contentType === EditorialContentType.digital_edition) ? (
                     <div className="overflow-hidden border border-[hsl(var(--border))] bg-[hsl(var(--card))]">
                       <div className="border-b border-[hsl(var(--border))] px-5 py-4 sm:px-6">
                         <SectionKicker>Edition editor</SectionKicker>
-                        <p className="mt-2 font-ui text-[10px] text-[hsl(var(--muted-foreground))]">Update Issuu embed, description, and cover for this issue.</p>
+                        <p className="mt-2 font-ui text-[10px] text-[hsl(var(--muted-foreground))]">{isCreating ? 'Fill in the details below, then save as a draft. Publish once the Issuu embed URL is ready.' : 'Update Issuu embed, description, cover, and headline for this issue.'}</p>
                       </div>
                       <div className="space-y-5 p-5 sm:p-6">
+                        {isCreating && (
+                          <label className="block">
+                            <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Slug <span className="normal-case tracking-normal opacity-60">(must match edition-NN format)</span></span>
+                            <input value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} placeholder="edition-07" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" data-testid="input-edition-slug" />
+                          </label>
+                        )}
                         <label className="block">
-                          <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Issue title</span>
-                          <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Making Room at the Table" className="w-full border-0 border-b border-[hsl(var(--input))] bg-transparent px-0 py-2 font-display text-2xl font-semibold tracking-[-.025em] outline-none placeholder:text-[hsl(var(--muted-foreground)/.6)] focus:border-[hsl(var(--brick))]" data-testid="input-edition-title" />
+                          <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Featured family / person name</span>
+                          <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="The Johnson Family" className="w-full border-0 border-b border-[hsl(var(--input))] bg-transparent px-0 py-2 font-display text-2xl font-semibold tracking-[-.025em] outline-none placeholder:text-[hsl(var(--muted-foreground)/.6)] focus:border-[hsl(var(--brick))]" data-testid="input-edition-title" />
+                        </label>
+                        {isCreating && (
+                          <label className="block">
+                            <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Publish period <span className="normal-case tracking-normal opacity-60">(e.g. Sept–Oct 2026)</span></span>
+                            <input value={form.summary} onChange={(e) => setForm({ ...form, summary: e.target.value })} placeholder="Sept–Oct 2026" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" data-testid="input-edition-date" />
+                          </label>
+                        )}
+                        <label className="block">
+                          <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Editorial headline <span className="normal-case tracking-normal opacity-60">(optional — shown in featured reader on homepage &amp; archive)</span></span>
+                          <input value={form.editionEditorialTitle} onChange={(e) => setForm({ ...form, editionEditorialTitle: e.target.value })} placeholder="Making Room at the Table" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-display text-sm outline-none focus:border-[hsl(var(--brick))]" data-testid="input-edition-editorial-title" />
                         </label>
                         <label className="block">
-                          <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Issue Description <span className="normal-case tracking-normal opacity-60">(shown on public Editions page)</span></span>
+                          <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Issue description <span className="normal-case tracking-normal opacity-60">(shown on public Editions page)</span></span>
                           <textarea value={form.editionDescription} onChange={(e) => setForm({ ...form, editionDescription: e.target.value })} rows={3} placeholder="Featuring the Brewington family, the Senoia Optimist Club, and a tribute to Ellis Crook…" className="w-full resize-y border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2.5 font-editorial text-base leading-tight outline-none focus:border-[hsl(var(--brick))]" data-testid="textarea-edition-description" />
                         </label>
                         <label className="block">
-                          <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Issuu Embed URL</span>
-                          <input type="url" value={form.issuuEmbedUrl} onChange={(e) => setForm({ ...form, issuuEmbedUrl: e.target.value })} placeholder="https://e.issuu.com/embed.html?d=las-issue-06&u=lifearoundsenoia" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" data-testid="input-edition-issuu-url-2" />
+                          <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Issuu Embed URL <span className="normal-case tracking-normal text-[hsl(var(--brick))] opacity-80">(required to publish)</span></span>
+                          <input type="url" value={form.issuuEmbedUrl} onChange={(e) => setForm({ ...form, issuuEmbedUrl: e.target.value })} placeholder="https://e.issuu.com/embed.html?d=las-issue-07&u=lifearoundsenoia" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" data-testid="input-edition-issuu-url-2" />
                           <span className="mt-1.5 block font-ui text-[10px] leading-4 text-[hsl(var(--muted-foreground))]">In Issuu: open document → Share → Embed → copy the <code>src</code> value. Leave blank to show the placeholder.</span>
                         </label>
-                        <CoverPhotoUploader coverMediaId={form.coverMediaId} existingCoverUrl={selectedItem?.coverUrl} publicationId={safePublicationId} onChange={(mediaId) => setForm({ ...form, coverMediaId: mediaId })} focalX={form.coverFocalX} focalY={form.coverFocalY} onFocalChange={(x, y) => setForm({ ...form, coverFocalX: x, coverFocalY: y })} />
+                        <CoverPhotoUploader coverMediaId={form.coverMediaId} existingCoverUrl={isCreating ? null : selectedItem?.coverUrl} publicationId={safePublicationId} onChange={(mediaId) => setForm({ ...form, coverMediaId: mediaId })} focalX={form.coverFocalX} focalY={form.coverFocalY} onFocalChange={(x, y) => setForm({ ...form, coverFocalX: x, coverFocalY: y })} />
                       </div>
                       {editorError && <div className="mx-5 flex items-start gap-2 border border-[hsl(var(--brick)/.4)] bg-[hsl(var(--brick)/.07)] px-3 py-2.5 font-ui text-xs leading-5 text-[hsl(var(--brick))] sm:mx-6" role="alert"><CircleAlert size={15} className="mt-0.5 shrink-0" /> {editorError}</div>}
                       <div className="flex flex-wrap justify-end gap-2 border-t border-[hsl(var(--border))] px-5 py-4 sm:px-6">
-                        {selectedItem && <button type="button" onClick={() => publish(selectedItem)} disabled={busy} className="inline-flex items-center justify-center gap-2 border border-[hsl(var(--primary))] px-3.5 py-2.5 font-ui text-[10px] font-bold uppercase tracking-[.12em] text-[hsl(var(--primary))] transition-colors hover:bg-[hsl(var(--primary))] hover:text-[hsl(var(--primary-foreground))] disabled:opacity-50" data-testid="button-edition-publish">{selectedItem.status === EditorialStatus.published ? <Undo2 size={14} /> : <Send size={14} />} {selectedItem.status === EditorialStatus.published ? 'Unpublish' : 'Publish'}</button>}
-                        <button type="button" onClick={save} disabled={busy} className="inline-flex items-center justify-center gap-2 bg-[hsl(var(--primary))] px-4 py-2.5 font-ui text-[10px] font-bold uppercase tracking-[.12em] text-[hsl(var(--primary-foreground))] transition-colors hover:bg-[hsl(var(--pine-2))] disabled:cursor-wait disabled:opacity-60" data-testid="button-edition-save">{busy ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save changes</button>
+                        {isCreating && <button type="button" onClick={cancelEditor} disabled={busy} className="inline-flex items-center justify-center gap-2 border border-[hsl(var(--border))] px-3.5 py-2.5 font-ui text-[10px] font-bold uppercase tracking-[.12em] text-[hsl(var(--muted-foreground))] transition-colors hover:border-[hsl(var(--brick))] hover:text-[hsl(var(--brick))] disabled:opacity-50">Cancel</button>}
+                        {!isCreating && selectedItem && <button type="button" onClick={() => publish(selectedItem)} disabled={busy} className="inline-flex items-center justify-center gap-2 border border-[hsl(var(--primary))] px-3.5 py-2.5 font-ui text-[10px] font-bold uppercase tracking-[.12em] text-[hsl(var(--primary))] transition-colors hover:bg-[hsl(var(--primary))] hover:text-[hsl(var(--primary-foreground))] disabled:opacity-50" data-testid="button-edition-publish">{selectedItem.status === EditorialStatus.published ? <Undo2 size={14} /> : <Send size={14} />} {selectedItem.status === EditorialStatus.published ? 'Unpublish' : 'Publish'}</button>}
+                        <button type="button" onClick={save} disabled={busy} className="inline-flex items-center justify-center gap-2 bg-[hsl(var(--primary))] px-4 py-2.5 font-ui text-[10px] font-bold uppercase tracking-[.12em] text-[hsl(var(--primary-foreground))] transition-colors hover:bg-[hsl(var(--pine-2))] disabled:cursor-wait disabled:opacity-60" data-testid="button-edition-save">{busy ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} {isCreating ? 'Create draft' : 'Save changes'}</button>
                       </div>
                     </div>
                   ) : (
                     <div className="border border-dashed border-[hsl(var(--border))] p-8 text-center">
-                      <p className="font-ui text-xs text-[hsl(var(--muted-foreground))]">Select an edition from the list to edit it.</p>
+                      <p className="font-ui text-xs text-[hsl(var(--muted-foreground))]">Select an edition from the list to edit it, or create a new one.</p>
                     </div>
                   )}
                 </section>

@@ -325,6 +325,9 @@ export function PublicHome() {
   });
   const items = query.data ?? [];
   const curation = pubQuery.data?.settings?.homepageCuration;
+  const editionsQuery = usePublishedEditions();
+  const latestEdition = (editionsQuery.data ?? []).at(-1) ?? null;
+  const latestCover = latestEdition ? editionCover(latestEdition) : null;
 
   // Build a pool: pinned items first (in stated order), then fill with remaining items of that type.
   const buildPool = (pinnedIds: string[], typeFilter: (i: ContentItem) => boolean, limit: number): ContentItem[] => {
@@ -355,7 +358,7 @@ export function PublicHome() {
     <div className="marquee-band"><div className="marquee-track"><span>SENOIA, GEORGIA</span><span>ALIVE AFTER FIVE — SEPT 18, OCT 16, NOV 20</span><span>FARMERS MARKET EVERY SATURDAY</span><span>SENOIA, GEORGIA</span></div></div>
     <div className="wrap"><SectionHead index="01" title="Latest Published Stories" link={{ label: 'View All', href: '/people' }} /><div className="published-home-grid">{latest.map((item) => <Link href={item.contentType === 'nonprofit-spotlight' ? '/nonprofit' : item.contentType === 'business-listing' ? '/directory' : item.contentType === 'event' ? '/events' : '/people'} className="spread-side-item" key={item.id} data-testid={`public-published-${item.slug}`}><span className="tag">{item.contentType.replaceAll('-', ' ')}</span><h3>{item.title}</h3><p>{item.summary}</p></Link>)}{!query.isPending && latest.length === 0 && <PublicContentState query={query} emptyMessage="No editorial stories are published right now." />}</div><SectionHead index="02" title="Explore the Publication" /><div className="index-rail">{[['01', 'People', 'Published families, young achievers, and pets', '/people'], ['02', 'Nonprofit', 'Published organizations holding this town together', '/nonprofit'], ['03', 'Lifestyle', 'History, home cooking, and local reflection', '/lifestyle'], ['04', 'Events', 'Published events around Senoia', '/events'], ['05', 'Business Directory', 'Published businesses and services', '/directory']].map(([num, title, desc, href]) => <Link href={href} className="index-row" key={num}><span className="idx-num">{num}</span><h3>{title}</h3><span className="idx-desc">{desc}</span><span className="arrow">→</span></Link>)}</div><AdZone label="In-feed placement" /></div>
     <PullQuoteCarousel items={items} />
-    <div className="wrap"><SectionHead index="03" title="Digital Editions" /><div className="edition-promo"><div className="edition-cover" style={{ backgroundImage: `url(${image('las6-cover.jpg')})` }}><span>LAS 06</span></div><div className="edition-copy"><span className="mono-label">Latest Published Edition</span><h2>Issue 06 — The Full Flip-Through</h2><p>The Brewington family, the Senoia Optimist Club, Milo Stupski, and a tribute to Ellis Crook — every page exactly as printed, plus our one-year anniversary as a publication.</p><Link href="/editions" className="btn-sharp honey-button">Open Full Edition <ArrowRight size={14} /></Link></div></div></div>
+    <div className="wrap"><SectionHead index="03" title="Digital Editions" />{latestEdition ? (<div className="edition-promo"><div className="edition-cover" style={latestCover ? { backgroundImage: `url(${latestCover})` } : {}}><span>LAS {latestEdition.issueNum}</span></div><div className="edition-copy"><span className="mono-label">Latest Published Edition</span><h2>Issue {latestEdition.issueNum} — The Full Flip-Through</h2>{latestEdition.description && <p>{latestEdition.description}</p>}<Link href={`/editions/${latestEdition.issueNum}`} className="btn-sharp honey-button">Open Full Edition <ArrowRight size={14} /></Link></div></div>) : null}</div>
     <Newsletter />
   </PageShell>;
 }
