@@ -149,6 +149,9 @@ export interface ContentItem {
   pullQuote?: string | null;
   /** @nullable */
   metaDescription?: string | null;
+  listingTier?: string;
+  /** @nullable */
+  businessDescription?: string | null;
   details: ContentItemDetails;
   /** @nullable */
   coverMediaId: string | null;
@@ -185,9 +188,7 @@ export interface CreateContentItem {
   slug: string;
   /** @minLength 1 */
   title: string;
-  /** @minLength 1 */
   summary: string;
-  /** @minLength 1 */
   body: string;
   /** @nullable */
   pullQuote?: string | null;
@@ -196,6 +197,9 @@ export interface CreateContentItem {
    * @maxLength 160
    */
   metaDescription?: string | null;
+  listingTier?: string;
+  /** @nullable */
+  businessDescription?: string | null;
   details: CreateContentItemDetails;
   /** @nullable */
   coverMediaId: string | null;

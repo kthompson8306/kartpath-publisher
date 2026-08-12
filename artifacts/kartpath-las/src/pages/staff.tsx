@@ -254,6 +254,8 @@ type FormState = Omit<CreateContentItem, 'publicationId' | 'details'> & {
   bizInstagram: string;
   bizAddress: string;
   bizHours: string;
+  listingTier: 'standard' | 'premium';
+  businessDescription: string;
   // digital_edition specific
   issuuEmbedUrl: string;
   editionDescription: string;
@@ -295,6 +297,8 @@ const EMPTY_FORM: FormState = {
   bizInstagram: '',
   bizAddress: '',
   bizHours: '',
+  listingTier: 'standard',
+  businessDescription: '',
   issuuEmbedUrl: '',
   editionDescription: '',
   coverFocalX: 0.5,
@@ -848,6 +852,7 @@ function Editor({
             <input value={form.slug} onChange={(event) => update('slug', event.target.value.toLowerCase().replace(/[^a-z0-9-]+/g, '-'))} placeholder="story-slug" className="h-10 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" data-testid="input-content-slug" />
           </label>
         </div>
+        {form.contentType !== 'business-listing' && (<>
         <label className="block">
           <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Standfirst</span>
           <textarea value={form.summary} onChange={(event) => update('summary', event.target.value)} rows={3} placeholder="The short read on why this matters here." className="w-full resize-y border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2.5 font-editorial text-lg leading-tight outline-none focus:border-[hsl(var(--brick))]" data-testid="textarea-content-summary" />
@@ -856,6 +861,7 @@ function Editor({
           <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Pull quote <span className="normal-case tracking-normal opacity-60">(optional — shown in homepage quote rotation)</span></span>
           <input value={form.pullQuote} onChange={(event) => update('pullQuote', event.target.value)} maxLength={220} placeholder="A memorable sentence from this piece…" className="h-10 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-editorial text-base outline-none focus:border-[hsl(var(--brick))]" data-testid="input-content-pull-quote" />
         </label>
+        </>)}
         <label className="block">
           <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">
             SEO description <span className="normal-case tracking-normal opacity-60">(optional — auto-generated from standfirst when blank)</span>
@@ -909,10 +915,12 @@ function Editor({
             );
           })()}
         </label>
+        {form.contentType !== 'business-listing' && (
         <label className="block">
           <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Story body</span>
           <textarea value={form.body} onChange={(event) => update('body', event.target.value)} rows={9} placeholder="Write the full story here." className="w-full resize-y border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2.5 font-editorial text-lg leading-[1.35] outline-none focus:border-[hsl(var(--brick))]" data-testid="textarea-content-body" />
         </label>
+        )}
         {/* ── Structured editors for new content types ─────────────────── */}
         {(() => {
           const ct = form.contentType;
@@ -1034,7 +1042,26 @@ function Editor({
 
           if (ct === 'business-listing') return (
             <div className="space-y-4 rounded border border-[hsl(var(--honey)/.4)] bg-[hsl(var(--honey)/.06)] p-4">
-              <p className="font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--brick))]">Business Listing fields</p>
+              {/* Header row with tier dropdown */}
+              <div className="flex items-center justify-between gap-4">
+                <p className="font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--brick))]">Business Listing fields</p>
+                <label className="flex items-center gap-2 shrink-0">
+                  <span className="font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Tier</span>
+                  <span className="relative">
+                    <select
+                      value={form.listingTier}
+                      onChange={(e) => update('listingTier', e.target.value as 'standard' | 'premium')}
+                      className="h-8 appearance-none border border-[hsl(var(--input))] bg-[hsl(var(--background))] pl-2.5 pr-7 font-ui text-xs outline-none focus:border-[hsl(var(--brick))]"
+                      data-testid="select-listing-tier"
+                    >
+                      <option value="standard">Standard</option>
+                      <option value="premium">★ Premium</option>
+                    </select>
+                    <ChevronDown size={12} className="pointer-events-none absolute right-2 top-2 text-[hsl(var(--muted-foreground))]" />
+                  </span>
+                </label>
+              </div>
+              {/* Standard fields — always shown */}
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="block">
                   <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Category</span>
@@ -1071,6 +1098,44 @@ function Editor({
                 <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Hours</span>
                 <textarea value={form.bizHours} onChange={(e) => update('bizHours', e.target.value)} rows={3} placeholder={'Mon–Fri  9am–5pm\nSat  10am–3pm\nSun  Closed'} className="w-full resize-y border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2.5 font-meta text-xs leading-5 outline-none focus:border-[hsl(var(--brick))]" data-testid="textarea-biz-hours" />
               </label>
+              {/* Premium-only fields */}
+              {form.listingTier === 'premium' && (
+                <div className="space-y-4 rounded border border-[hsl(var(--pine)/.35)] bg-[hsl(var(--pine)/.05)] p-3.5">
+                  <p className="font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--pine-2))]">★ Premium features</p>
+                  <label className="block">
+                    <div className="mb-1.5 flex items-center justify-between gap-2">
+                      <span className="font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">
+                        Business Description <span className="normal-case tracking-normal opacity-60">(150–250 words recommended)</span>
+                      </span>
+                      <span className={`shrink-0 font-meta text-[9px] tabular-nums transition-colors ${(() => {
+                        const wc = form.businessDescription.trim() ? form.businessDescription.trim().split(/\s+/).length : 0;
+                        if (wc === 0) return 'text-[hsl(var(--muted-foreground)/.4)]';
+                        if (wc >= 150 && wc <= 250) return 'text-[hsl(var(--pine-2))]';
+                        if (wc > 250) return 'text-[hsl(var(--honey))]';
+                        return 'text-[hsl(var(--muted-foreground))]';
+                      })()}`}>
+                        {form.businessDescription.trim() ? form.businessDescription.trim().split(/\s+/).length : 0} words
+                      </span>
+                    </div>
+                    <textarea
+                      value={form.businessDescription}
+                      onChange={(e) => update('businessDescription', e.target.value)}
+                      rows={7}
+                      placeholder="Describe what makes your business special — your story, what you offer, and why Senoia customers choose you. Aim for 150–250 words."
+                      className="w-full resize-y border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2.5 font-editorial text-base leading-snug outline-none focus:border-[hsl(var(--brick))]"
+                      data-testid="textarea-biz-description"
+                    />
+                    {(() => {
+                      const wc = form.businessDescription.trim() ? form.businessDescription.trim().split(/\s+/).length : 0;
+                      if (wc === 0) return null;
+                      if (wc >= 150 && wc <= 250) return <p className="mt-1 font-ui text-[10px] text-[hsl(var(--pine-2))]">Good length — within the 150–250 word sweet spot.</p>;
+                      if (wc < 150) return <p className="mt-1 font-ui text-[10px] text-[hsl(var(--muted-foreground))]">A bit short — consider adding more to tell the full story.</p>;
+                      return <p className="mt-1 font-ui text-[10px] text-[hsl(var(--honey))]">Getting long — consider trimming to under 250 words.</p>;
+                    })()}
+                  </label>
+                  <p className="font-ui text-[10px] leading-4 text-[hsl(var(--muted-foreground)/.7)]">Logo / hero image and gallery are managed in the sections below once the listing is saved.</p>
+                </div>
+              )}
             </div>
           );
 
@@ -1146,18 +1211,23 @@ function Editor({
             </>
           );
         })()}
-        {/* ── Cover photo (always shown) ─────────────────────────────────── */}
-        <CoverPhotoUploader
-          coverMediaId={form.coverMediaId}
-          existingCoverUrl={item?.coverUrl}
-          publicationId={publicationId}
-          onChange={(mediaId) => update('coverMediaId', mediaId)}
-          focalX={form.coverFocalX}
-          focalY={form.coverFocalY}
-          onFocalChange={(x, y) => setForm({ ...form, coverFocalX: x, coverFocalY: y })}
-        />
-        {/* ── Gallery (existing articles only) ─────────────────────────── */}
-        {selectedId && !isCreating && (
+        {/* ── Cover photo / Business logo (hidden for standard listings) ─ */}
+        {(form.contentType !== 'business-listing' || form.listingTier === 'premium') && (<>
+          {form.contentType === 'business-listing' && (
+            <p className="px-5 font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))] sm:px-6">Business Logo / Hero Image</p>
+          )}
+          <CoverPhotoUploader
+            coverMediaId={form.coverMediaId}
+            existingCoverUrl={item?.coverUrl}
+            publicationId={publicationId}
+            onChange={(mediaId) => update('coverMediaId', mediaId)}
+            focalX={form.coverFocalX}
+            focalY={form.coverFocalY}
+            onFocalChange={(x, y) => setForm({ ...form, coverFocalX: x, coverFocalY: y })}
+          />
+        </>)}
+        {/* ── Gallery (premium business listings + all other types) ──── */}
+        {selectedId && !isCreating && (form.contentType !== 'business-listing' || form.listingTier === 'premium') && (
           <GalleryManager contentItemId={selectedId} publicationId={publicationId} />
         )}
         </div>
@@ -1940,6 +2010,8 @@ export default function Staff() {
         editionDescription: d.description ?? '',
         pullQuote: item.pullQuote ?? '',
         metaDescription: item.metaDescription ?? '',
+        listingTier: (item.listingTier as 'standard' | 'premium') ?? 'standard',
+        businessDescription: item.businessDescription ?? '',
       });
       setEditorError('');
     }
@@ -1992,7 +2064,7 @@ export default function Staff() {
 
   const bodyForSave = () => {
     if (!publicationId) return null;
-    if (!form.title.trim() || !form.slug.trim() || (form.contentType !== 'digital_edition' && !form.summary.trim())) {
+    if (!form.title.trim() || !form.slug.trim() || (form.contentType !== 'digital_edition' && form.contentType !== 'business-listing' && !form.summary.trim())) {
       setEditorError('Headline, slug, and standfirst are required.');
       return null;
     }
@@ -2046,16 +2118,19 @@ export default function Staff() {
       if (!parsed) return null;
       details = form.issue.trim() ? { ...parsed, issue: form.issue.trim() } : parsed;
     }
+    const isBiz = ct === 'business-listing';
     return {
       publicationId,
       contentType: form.contentType,
       slug: form.slug.trim(),
       title: form.title.trim(),
-      summary: form.summary.trim(),
-      body: form.body.trim(),
+      summary: isBiz ? '' : form.summary.trim(),
+      body: isBiz ? '' : form.body.trim(),
       details,
-      pullQuote: form.pullQuote.trim() || null,
+      pullQuote: isBiz ? null : (form.pullQuote.trim() || null),
       metaDescription: form.metaDescription.trim() || null,
+      listingTier: form.listingTier,
+      businessDescription: isBiz ? (form.businessDescription.trim() || null) : null,
       coverMediaId: form.coverMediaId || null,
       coverFocalX: form.coverFocalX,
       coverFocalY: form.coverFocalY,
