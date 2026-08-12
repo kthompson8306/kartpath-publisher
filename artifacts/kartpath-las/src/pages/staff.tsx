@@ -531,10 +531,44 @@ function CoverPhotoUploader({
   const [uploadState, setUploadState] = useState<UploadState>('idle');
   const [uploadError, setUploadError] = useState('');
   const [localPreview, setLocalPreview] = useState<string | null>(null);
-  const [isFocalDragging, setIsFocalDragging] = useState(false);
+  const [imgRendered, setImgRendered] = useState<{ w: number; h: number } | null>(null);
+  const focalDragRef = useRef<{ startX: number; startY: number; startFocalX: number; startFocalY: number; imgW: number; imgH: number } | null>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const onFocalChangeRef = useRef(onFocalChange);
+  onFocalChangeRef.current = onFocalChange;
   const [isFileDragging, setIsFileDragging] = useState(false);
 
   const displayUrl = localPreview ?? existingCoverUrl ?? null;
+
+  // Reset rendered size when image swaps
+  useEffect(() => { setImgRendered(null); }, [displayUrl]);
+
+  // Window-level mouse listeners — handles drag even when pointer leaves the picker
+  useEffect(() => {
+    const CROP_RATIO = 16 / 9;
+    const onMove = (e: MouseEvent) => {
+      const drag = focalDragRef.current;
+      if (!drag) return;
+      const { startX, startY, startFocalX, startFocalY, imgW, imgH } = drag;
+      const imgRatio = imgW / imgH;
+      let newFX = startFocalX, newFY = startFocalY;
+      if (imgRatio > CROP_RATIO + 0.001) {
+        const overflowX = imgW - imgH * CROP_RATIO;
+        newFX = Math.max(0, Math.min(1, startFocalX + (e.clientX - startX) / overflowX));
+      } else if (imgRatio < CROP_RATIO - 0.001) {
+        const overflowY = imgH - imgW / CROP_RATIO;
+        newFY = Math.max(0, Math.min(1, startFocalY + (e.clientY - startY) / overflowY));
+      }
+      onFocalChangeRef.current(Math.round(newFX * 1000) / 1000, Math.round(newFY * 1000) / 1000);
+    };
+    const onUp = () => { focalDragRef.current = null; };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+  }, []);
 
   const handleFileChange = async (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -623,60 +657,91 @@ function CoverPhotoUploader({
       <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--muted-foreground))]">Cover photo <span className="normal-case tracking-normal">(optional)</span></span>
 
       {displayUrl ? (
-        <div
-          className="relative mb-2 aspect-[16/9] max-h-48 cursor-crosshair select-none overflow-hidden border border-[hsl(var(--input))] bg-[hsl(var(--muted))]"
-          onMouseDown={(e) => {
-            e.preventDefault();
-            setIsFocalDragging(true);
-            const rect = e.currentTarget.getBoundingClientRect();
-            onFocalChange(
-              Math.round(Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)) * 1000) / 1000,
-              Math.round(Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height)) * 1000) / 1000,
-            );
-          }}
-          onMouseMove={(e) => {
-            if (!isFocalDragging) return;
-            const rect = e.currentTarget.getBoundingClientRect();
-            onFocalChange(
-              Math.round(Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)) * 1000) / 1000,
-              Math.round(Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height)) * 1000) / 1000,
-            );
-          }}
-          onMouseUp={() => setIsFocalDragging(false)}
-          onMouseLeave={() => setIsFocalDragging(false)}
-          data-testid="focal-picker"
-        >
-          <img src={displayUrl} alt="Cover photo preview" className="size-full object-cover" data-testid="img-cover-preview" />
-          {/* Focal-point crosshair */}
-          <div
-            className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2"
-            style={{ left: `${focalX * 100}%`, top: `${focalY * 100}%` }}
-            data-testid="focal-crosshair"
-          >
-            <div className="relative size-8">
-              <div className="absolute left-0 top-1/2 h-px w-full -translate-y-1/2 bg-white shadow-[0_0_2px_rgba(0,0,0,0.9)]" />
-              <div className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-white shadow-[0_0_2px_rgba(0,0,0,0.9)]" />
-              <div className="absolute left-1/2 top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-[0_0_3px_rgba(0,0,0,0.9)]" />
+        <div className="mb-2">
+          {/* Full-image crop picker — shows the complete uncropped source photo.
+              A 16:9 live-area box overlaid on top shows exactly what will render
+              on the public site. Drag the box to reframe. */}
+          <div className="relative flex w-full justify-center overflow-hidden border border-[hsl(var(--input))] bg-black select-none">
+            <div className="relative" data-testid="focal-picker">
+              <img
+                ref={imgRef}
+                src={displayUrl}
+                alt="Cover photo preview"
+                draggable={false}
+                onLoad={() => {
+                  const img = imgRef.current;
+                  if (img) setImgRendered({ w: img.clientWidth, h: img.clientHeight });
+                }}
+                style={{ display: 'block', maxWidth: '100%', maxHeight: '288px' }}
+                data-testid="img-cover-preview"
+              />
+              {imgRendered && (() => {
+                const CROP_RATIO = 16 / 9;
+                const { w: iw, h: ih } = imgRendered;
+                const imgRatio = iw / ih;
+                let bw: number, bh: number, bl: number, bt: number;
+                const hasHOverflow = imgRatio > CROP_RATIO + 0.001;
+                const hasVOverflow = imgRatio < CROP_RATIO - 0.001;
+                if (hasHOverflow) {
+                  bh = ih; bw = Math.round(ih * CROP_RATIO); bl = Math.round((iw - bw) * focalX); bt = 0;
+                } else if (hasVOverflow) {
+                  bw = iw; bh = Math.round(iw / CROP_RATIO); bl = 0; bt = Math.round((ih - bh) * focalY);
+                } else {
+                  bw = iw; bh = ih; bl = 0; bt = 0;
+                }
+                const canDrag = hasHOverflow || hasVOverflow;
+                return (
+                  <>
+                    {/* Dark vignette outside the live area */}
+                    {bt > 0 && <div className="pointer-events-none absolute left-0 right-0 top-0 bg-black/55" style={{ height: bt }} />}
+                    {bt + bh < ih && <div className="pointer-events-none absolute left-0 right-0 bg-black/55" style={{ top: bt + bh, bottom: 0 }} />}
+                    {bl > 0 && <div className="pointer-events-none absolute bg-black/55" style={{ left: 0, top: bt, width: bl, height: bh }} />}
+                    {bl + bw < iw && <div className="pointer-events-none absolute bg-black/55" style={{ left: bl + bw, top: bt, right: 0, height: bh }} />}
+                    {/* Live-area box — drag to reframe */}
+                    <div
+                      className="absolute border-2 border-white"
+                      style={{
+                        left: bl, top: bt, width: bw, height: bh,
+                        cursor: canDrag ? 'grab' : 'default',
+                        boxShadow: '0 0 0 1px rgba(0,0,0,0.4)',
+                      }}
+                      onMouseDown={canDrag ? (e) => {
+                        e.preventDefault();
+                        focalDragRef.current = { startX: e.clientX, startY: e.clientY, startFocalX: focalX, startFocalY: focalY, imgW: iw, imgH: ih };
+                      } : undefined}
+                      data-testid="focal-picker-box"
+                    >
+                      {/* Rule-of-thirds guides */}
+                      <div className="pointer-events-none absolute left-1/3 top-0 bottom-0 w-px bg-white/25" />
+                      <div className="pointer-events-none absolute left-2/3 top-0 bottom-0 w-px bg-white/25" />
+                      <div className="pointer-events-none absolute top-1/3 left-0 right-0 h-px bg-white/25" />
+                      <div className="pointer-events-none absolute top-2/3 left-0 right-0 h-px bg-white/25" />
+                      {canDrag && (
+                        <div className="pointer-events-none absolute bottom-1.5 left-1/2 -translate-x-1/2">
+                          <span className="whitespace-nowrap rounded bg-black/60 px-2 py-0.5 font-ui text-[8px] uppercase tracking-[.1em] text-white/90">Drag to reframe</span>
+                        </div>
+                      )}
+                    </div>
+                    {/* File-drag overlay */}
+                    {isFileDragging && (
+                      <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-[hsl(var(--brick)/.35)]">
+                        <span className="rounded bg-black/60 px-3 py-1.5 font-ui text-[10px] uppercase tracking-[.12em] text-white">Drop to replace cover</span>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           </div>
-          {/* Hint */}
-          <div className="pointer-events-none absolute bottom-1.5 left-1/2 -translate-x-1/2">
-            <span className="whitespace-nowrap rounded bg-black/60 px-2 py-0.5 font-ui text-[8px] uppercase tracking-[.1em] text-white/90">Click or drag · set focal point</span>
-          </div>
-          {/* File-drag overlay */}
-          {isFileDragging && (
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-[hsl(var(--brick)/.35)]">
-              <span className="rounded bg-black/60 px-3 py-1.5 font-ui text-[10px] uppercase tracking-[.12em] text-white">Drop to replace cover</span>
-            </div>
-          )}
+          {/* Remove button — sits below the picker, not overlaid on the image */}
           <button
             type="button"
-            onClick={(e) => { e.stopPropagation(); setLocalPreview(null); onChange(null); setUploadState('idle'); }}
-            className="absolute right-2 top-2 grid size-6 place-items-center bg-[hsl(var(--background)/.8)] text-[hsl(var(--brick))] transition-colors hover:bg-[hsl(var(--brick))] hover:text-white"
+            onClick={() => { setLocalPreview(null); setImgRendered(null); onChange(null); setUploadState('idle'); }}
+            className="mt-1 inline-flex items-center gap-1 font-ui text-[9px] uppercase tracking-[.1em] text-[hsl(var(--brick))] transition-colors hover:opacity-70"
             aria-label="Remove cover photo"
             data-testid="button-remove-cover"
           >
-            <X size={12} />
+            <X size={10} /> Remove photo
           </button>
         </div>
       ) : (
