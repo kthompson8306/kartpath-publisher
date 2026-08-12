@@ -190,8 +190,9 @@ router.get("/publications/:slug/content-items/:articleSlug", async (req, res): P
   );
 });
 
-// GET /publications/:slug/editions — returns { [issueNum]: { embedUrl, description } }
+// GET /publications/:slug/editions — returns published editions as a sorted array.
 // Used by the public EditionReader and Editions archive to fetch per-issue data.
+// Only status='published' editions are returned; draft editions are never exposed here.
 router.get("/publications/:slug/editions", async (req, res): Promise<void> => {
   const params = GetPublicationBySlugParams.safeParse(req.params);
   if (!params.success) {
@@ -206,28 +207,50 @@ router.get("/publications/:slug/editions", async (req, res): Promise<void> => {
   }
 
   const rows = await db
-    .select({ slug: contentItemsTable.slug, details: contentItemsTable.details, summary: contentItemsTable.summary })
+    .select({
+      slug: contentItemsTable.slug,
+      title: contentItemsTable.title,
+      summary: contentItemsTable.summary,
+      details: contentItemsTable.details,
+      mediaObjectPath: mediaAssetsTable.objectPath,
+    })
     .from(contentItemsTable)
+    .leftJoin(
+      mediaAssetsTable,
+      and(
+        eq(contentItemsTable.coverMediaId, mediaAssetsTable.id),
+        eq(mediaAssetsTable.status, "ready"),
+      ),
+    )
     .where(
       and(
         eq(contentItemsTable.publicationId, result.publication.id),
         eq(contentItemsTable.contentType, "digital_edition"),
+        eq(contentItemsTable.status, "published"),
       ),
-    );
+    )
+    .orderBy(asc(contentItemsTable.slug));
 
-  // Return { "01": { embedUrl: "https://...", description: "..." }, "02": { embedUrl: null, description: null }, ... }
-  const editionMap: Record<string, { embedUrl: string | null; description: string | null }> = {};
-  for (const row of rows) {
-    // slug format: "edition-01" → key "01"
-    const num = row.slug.replace(/^edition-/, "");
+  const editions = rows.map((row) => {
     const details = row.details as Record<string, string>;
-    editionMap[num] = {
+    // slug format: "edition-01" → issueNum "01"
+    const issueNum = row.slug.replace(/^edition-/, "");
+    const coverUrl = row.mediaObjectPath
+      ? `/api/storage/objects${row.mediaObjectPath.replace(/^\/objects/, "")}`
+      : null;
+    return {
+      issueNum,
+      title: row.title,
+      editorialTitle: details.editorial_title ?? null,
+      date: row.summary ?? "",
+      coverFilename: details.cover_filename ?? null,
+      coverUrl,
       embedUrl: details.issuu_embed_url ?? null,
-      description: details.description || row.summary || null,
+      description: details.description ?? null,
     };
-  }
+  });
 
-  res.json(editionMap);
+  res.json(editions);
 });
 
 export default router;

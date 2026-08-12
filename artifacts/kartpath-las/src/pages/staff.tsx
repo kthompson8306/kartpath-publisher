@@ -2167,6 +2167,14 @@ export default function Staff() {
   const publish = (item: ContentItem) => {
     if (!publicationId) return;
     const nextStatus = item.status === EditorialStatus.published ? EditorialStatus.draft : EditorialStatus.published;
+    // Guard: a digital edition cannot be published without a saved Issuu embed URL.
+    if (item.contentType === 'digital_edition' && nextStatus === EditorialStatus.published) {
+      const det = (item.details ?? {}) as Record<string, string>;
+      if (!det.issuu_embed_url?.trim()) {
+        setEditorError('An Issuu embed URL is required before publishing this edition. Paste the URL in the editor below and save first.');
+        return;
+      }
+    }
     setFeedback('');
     publishMutation.mutate({ id: item.id, data: { publicationId, status: nextStatus } }, {
       onSuccess: () => {

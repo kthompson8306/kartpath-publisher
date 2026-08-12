@@ -753,47 +753,133 @@ export function Directory() {
   </PageShell>;
 }
 
-const issues = [['01', 'Sept 2025', 'The Bergstroms', 'las1-cover.jpg'], ['02', 'Nov–Dec 2025', 'Joe & Dawn McGee', 'las2-cover.jpg'], ['03', 'Winter 2026', 'The Crooks of Senoia', 'las3-cover.jpg'], ['04', 'Spring 2026', 'The Jenkins Family', 'las4-cover.jpg'], ['05', 'May–Jun 2026', 'The Bartels Family', 'las5-cover.jpg'], ['06', 'Jul–Aug 2026', 'The Brewingtons', 'las6-cover.jpg']] as const;
+// CMS-driven edition data — fetched from the API, no hardcoded issue list.
+// The API only returns status='published' editions, sorted by slug (issue number).
+type PublicEdition = {
+  issueNum: string;
+  title: string;
+  editorialTitle: string | null;
+  date: string;
+  coverFilename: string | null;
+  coverUrl: string | null;
+  embedUrl: string | null;
+  description: string | null;
+};
 
-// Issuu embed URLs are stored in the DB (digital_edition content items).
-// Staff paste the URL in the CMS — no code change needed per issue.
-type EditionEntry = { embedUrl: string | null; description: string | null };
-function useEditionEmbeds() {
-  return useQuery<Record<string, EditionEntry>>({
-    queryKey: ['edition-embeds', PUBLICATION_SLUG],
+function usePublishedEditions() {
+  return useQuery<PublicEdition[]>({
+    queryKey: ['published-editions', PUBLICATION_SLUG],
     queryFn: async () => {
       const res = await fetch(`/api/publications/${PUBLICATION_SLUG}/editions`);
-      if (!res.ok) return {};
-      return res.json() as Promise<Record<string, EditionEntry>>;
+      if (!res.ok) return [];
+      return res.json() as Promise<PublicEdition[]>;
     },
     staleTime: 0,
     refetchOnMount: 'always',
   });
 }
+
+/** Returns the best available cover URL: object-storage upload first, then Vite static asset. */
+function editionCover(ed: PublicEdition): string | null {
+  if (ed.coverUrl) return ed.coverUrl;
+  if (ed.coverFilename) return image(ed.coverFilename);
+  return null;
+}
+
 export function Editions() {
-  const editionData = useEditionEmbeds();
-  return <PageShell seo={{ title: 'Digital Editions — Life Around Senoia Archive', description: 'Read every issue of Life Around Senoia exactly as it was printed, from Issue 01 through Issue 06.', path: '/editions' }}><PageHero kicker="The Archive" title={<>Every issue,<br />flip-through ready</>}>Read Life Around Senoia exactly as it was printed — full-page spreads, ads and all — right in your browser.</PageHero><section><div className="wrap"><div className="featured-reader"><div className="reader-cover"><img src={image('las6-cover.jpg')} alt="Life Around Senoia Issue 6 cover" /></div><div className="reader-copy"><span className="mono-label">Latest Edition · Issue 06</span><h2>Making Room at the Table</h2><p>The Brewington family, the Senoia Optimist Club’s four decades of service, Milo Stupski, and a tribute to Ellis Crook — plus our one-year anniversary as a publication. July–August 2026.</p><Link href="/editions/06" className="btn-sharp honey-button">Open Full Edition <ArrowRight size={14} /></Link></div></div></div></section><section className="on-paper2"><div className="wrap"><SectionHead index="" title="Full Archive" /><div className="archive-grid">{issues.map(([issue, date, title, cover]) => <Link href={'/editions/' + issue} className="issue-card" key={issue}><div className="issue-cover-img"><img src={image(cover)} alt={`Life Around Senoia Issue ${issue} cover`} loading="lazy" /></div><div className="meta"><span className="date">{date}</span><h3>Issue {issue}</h3><p>{editionData.data?.[issue]?.description ?? title}</p></div></Link>)}</div></div></section></PageShell>;
+  const editionsQuery = usePublishedEditions();
+  const editions = editionsQuery.data ?? [];
+  const latestEdition = editions.length > 0 ? editions[editions.length - 1] : null;
+
+  return (
+    <PageShell seo={{ title: 'Digital Editions — Life Around Senoia Archive', description: 'Read every issue of Life Around Senoia exactly as it was printed — full-page spreads, ads and all.', path: '/editions' }}>
+      <PageHero kicker="The Archive" title={<>Every issue,<br />flip-through ready</>}>
+        Read Life Around Senoia exactly as it was printed — full-page spreads, ads and all — right in your browser.
+      </PageHero>
+      <section>
+        <div className="wrap">
+          {latestEdition ? (
+            <div className="featured-reader">
+              <div className="reader-cover">
+                {editionCover(latestEdition) && <img src={editionCover(latestEdition)!} alt={`Life Around Senoia Issue ${latestEdition.issueNum} cover`} />}
+              </div>
+              <div className="reader-copy">
+                <span className="mono-label">Latest Edition · Issue {latestEdition.issueNum}</span>
+                <h2>{latestEdition.editorialTitle ?? latestEdition.title}</h2>
+                {latestEdition.description && <p>{latestEdition.description}</p>}
+                <Link href={`/editions/${latestEdition.issueNum}`} className="btn-sharp honey-button">Open Full Edition <ArrowRight size={14} /></Link>
+              </div>
+            </div>
+          ) : editionsQuery.isPending ? (
+            <div style={{ padding: '64px 0', textAlign: 'center' }}>
+              <p style={{ font: '700 .72rem var(--mono)', letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--ink-soft)' }}>Loading editions…</p>
+            </div>
+          ) : null}
+        </div>
+      </section>
+      {editions.length > 0 && (
+        <section className="on-paper2">
+          <div className="wrap">
+            <SectionHead index="" title="Full Archive" />
+            <div className="archive-grid">
+              {editions.map((ed) => {
+                const cover = editionCover(ed);
+                return (
+                  <Link href={`/editions/${ed.issueNum}`} className="issue-card" key={ed.issueNum}>
+                    <div className="issue-cover-img">
+                      {cover && <img src={cover} alt={`Life Around Senoia Issue ${ed.issueNum} cover`} loading="lazy" />}
+                    </div>
+                    <div className="meta">
+                      <span className="date">{ed.date}</span>
+                      <h3>Issue {ed.issueNum}</h3>
+                      <p>{ed.description ?? ed.title}</p>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
+    </PageShell>
+  );
 }
 
 export function EditionReader() {
   const { issue } = useParams<{ issue: string }>();
-  const issueIndex = issues.findIndex(([num]) => num === issue);
+  const editionsQuery = usePublishedEditions();
   const contentQuery = useIssueContent(issue ?? '');
-  const embedsQuery = useEditionEmbeds();
-  const issuuEmbedUrl = issue && embedsQuery.data ? (embedsQuery.data[issue]?.embedUrl ?? null) : null;
 
-  if (issueIndex === -1) {
-    return <PageShell seo={{ title: 'Edition Not Found — Life Around Senoia', description: 'That edition was not found.', path: '/editions' }}>
-      <section><div className="wrap" style={{ padding: '80px 0', textAlign: 'center' }}>
-        <p style={{ marginBottom: 20, font: '1rem var(--ui)', color: 'var(--ink-soft)' }}>That edition doesn't exist.</p>
-        <Link href="/editions" className="btn-sharp honey-button">← Back to Archive <ArrowRight size={14} /></Link>
-      </div></section>
-    </PageShell>;
+  if (editionsQuery.isPending) {
+    return (
+      <PageShell seo={{ title: 'Loading — Life Around Senoia', description: '', path: '/editions' }}>
+        <section><div className="wrap" style={{ padding: '80px 0', textAlign: 'center' }}>
+          <p style={{ font: '700 .72rem var(--mono)', letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--ink-soft)' }}>Loading…</p>
+        </div></section>
+      </PageShell>
+    );
   }
 
-  const [num, date, title, cover] = issues[issueIndex];
-  const prevIssue = issueIndex > 0 ? issues[issueIndex - 1] : null;
-  const nextIssue = issueIndex < issues.length - 1 ? issues[issueIndex + 1] : null;
+  const editions = editionsQuery.data ?? [];
+  const editionIdx = editions.findIndex((e) => e.issueNum === issue);
+
+  if (editionIdx === -1) {
+    return (
+      <PageShell seo={{ title: 'Edition Not Found — Life Around Senoia', description: 'That edition was not found.', path: '/editions' }}>
+        <section><div className="wrap" style={{ padding: '80px 0', textAlign: 'center' }}>
+          <p style={{ marginBottom: 20, font: '1rem var(--ui)', color: 'var(--ink-soft)' }}>That edition doesn't exist.</p>
+          <Link href="/editions" className="btn-sharp honey-button">← Back to Archive <ArrowRight size={14} /></Link>
+        </div></section>
+      </PageShell>
+    );
+  }
+
+  const ed = editions[editionIdx];
+  const prevEdition = editionIdx > 0 ? editions[editionIdx - 1] : null;
+  const nextEdition = editionIdx < editions.length - 1 ? editions[editionIdx + 1] : null;
+  const { issueNum: num, date, title } = ed;
+  const cover = editionCover(ed);
+  const issuuEmbedUrl = ed.embedUrl;
 
   return (
     <PageShell seo={{ title: `Issue ${num} — ${title} — Life Around Senoia`, description: `Read Issue ${num} of Life Around Senoia, featuring ${title}. ${date}. Every published story in one place.`, path: `/editions/${num}` }}>
@@ -804,15 +890,15 @@ export function EditionReader() {
         <div className="wrap" style={{ paddingTop: 0, paddingBottom: 0 }}>
           <div className="featured-reader" style={{ border: 'none' }}>
             <div className="reader-cover">
-              <img src={image(cover)} alt={`Life Around Senoia Issue ${num} cover`} />
+              {cover && <img src={cover} alt={`Life Around Senoia Issue ${num} cover`} />}
             </div>
             <div className="reader-copy">
               <span className="mono-label">Issue {num} · {date}</span>
               <h2>{title}</h2>
               <p>Life Around Senoia — every published story, all in one place.</p>
               <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', marginTop: '8px' }}>
-                {prevIssue && <Link href={'/editions/' + prevIssue[0]} style={{ font: '700 .72rem var(--mono)', letterSpacing: '.09em', textTransform: 'uppercase', color: 'rgba(247,245,238,.5)', textDecoration: 'none' }}>← Issue {prevIssue[0]}</Link>}
-                {nextIssue && <Link href={'/editions/' + nextIssue[0]} style={{ font: '700 .72rem var(--mono)', letterSpacing: '.09em', textTransform: 'uppercase', color: 'var(--honey)', textDecoration: 'none' }}>Issue {nextIssue[0]} →</Link>}
+                {prevEdition && <Link href={`/editions/${prevEdition.issueNum}`} style={{ font: '700 .72rem var(--mono)', letterSpacing: '.09em', textTransform: 'uppercase', color: 'rgba(247,245,238,.5)', textDecoration: 'none' }}>← Issue {prevEdition.issueNum}</Link>}
+                {nextEdition && <Link href={`/editions/${nextEdition.issueNum}`} style={{ font: '700 .72rem var(--mono)', letterSpacing: '.09em', textTransform: 'uppercase', color: 'var(--honey)', textDecoration: 'none' }}>Issue {nextEdition.issueNum} →</Link>}
               </div>
             </div>
           </div>
@@ -845,12 +931,12 @@ export function EditionReader() {
           <PublishedStoryList query={contentQuery} emptyMessage="No stories have been published yet. Check back soon." />
         </div>
       </section>
-      {(prevIssue || nextIssue) && (
+      {(prevEdition || nextEdition) && (
         <section style={{ borderTop: '1px solid var(--line)', background: 'var(--paper)' }}>
           <div className="wrap" style={{ paddingTop: '40px', paddingBottom: '60px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
-            <div>{prevIssue && <Link href={'/editions/' + prevIssue[0]} className="btn-sharp honey-button" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '.82rem' }}>← Issue {prevIssue[0]}: {prevIssue[2]}</Link>}</div>
+            <div>{prevEdition && <Link href={`/editions/${prevEdition.issueNum}`} className="btn-sharp honey-button" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '.82rem' }}>← Issue {prevEdition.issueNum}: {prevEdition.title}</Link>}</div>
             <Link href="/editions" style={{ font: '700 .7rem var(--mono)', textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--ink-soft)', textDecoration: 'none' }}>All Editions</Link>
-            <div>{nextIssue && <Link href={'/editions/' + nextIssue[0]} className="btn-sharp honey-button" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '.82rem' }}>Issue {nextIssue[0]}: {nextIssue[2]} →</Link>}</div>
+            <div>{nextEdition && <Link href={`/editions/${nextEdition.issueNum}`} className="btn-sharp honey-button" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '.82rem' }}>Issue {nextEdition.issueNum}: {nextEdition.title} →</Link>}</div>
           </div>
         </section>
       )}
