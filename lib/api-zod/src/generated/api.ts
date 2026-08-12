@@ -97,6 +97,7 @@ export const ListPublishedContentItemsResponseItem = zod.object({
   "coverAltText": zod.string().nullable(),
   "coverFocalX": zod.number().nullable(),
   "coverFocalY": zod.number().nullable(),
+  "coverZoom": zod.number().nullable(),
   "createdBy": zod.string().nullable(),
   "updatedBy": zod.string().nullable(),
   "publishedAt": zod.coerce.date().nullable(),
@@ -199,6 +200,7 @@ export const ListContentItemsResponseItem = zod.object({
   "coverAltText": zod.string().nullable(),
   "coverFocalX": zod.number().nullable(),
   "coverFocalY": zod.number().nullable(),
+  "coverZoom": zod.number().nullable(),
   "createdBy": zod.string().nullable(),
   "updatedBy": zod.string().nullable(),
   "publishedAt": zod.coerce.date().nullable(),
@@ -234,7 +236,8 @@ export const CreateContentItemBody = zod.object({
   "details": zod.record(zod.string(), zod.string()),
   "coverMediaId": zod.string().nullable(),
   "coverFocalX": zod.number().optional(),
-  "coverFocalY": zod.number().optional()
+  "coverFocalY": zod.number().optional(),
+  "coverZoom": zod.number().optional()
 })
 
 export const CreateContentItemResponse = zod.object({
@@ -256,6 +259,7 @@ export const CreateContentItemResponse = zod.object({
   "coverAltText": zod.string().nullable(),
   "coverFocalX": zod.number().nullable(),
   "coverFocalY": zod.number().nullable(),
+  "coverZoom": zod.number().nullable(),
   "createdBy": zod.string().nullable(),
   "updatedBy": zod.string().nullable(),
   "publishedAt": zod.coerce.date().nullable(),
@@ -300,6 +304,7 @@ export const GetContentItemResponse = zod.object({
   "coverAltText": zod.string().nullable(),
   "coverFocalX": zod.number().nullable(),
   "coverFocalY": zod.number().nullable(),
+  "coverZoom": zod.number().nullable(),
   "createdBy": zod.string().nullable(),
   "updatedBy": zod.string().nullable(),
   "publishedAt": zod.coerce.date().nullable(),
@@ -341,7 +346,8 @@ export const UpdateContentItemBody = zod.object({
   "details": zod.record(zod.string(), zod.string()),
   "coverMediaId": zod.string().nullable(),
   "coverFocalX": zod.number().optional(),
-  "coverFocalY": zod.number().optional()
+  "coverFocalY": zod.number().optional(),
+  "coverZoom": zod.number().optional()
 })
 
 export const UpdateContentItemResponse = zod.object({
@@ -363,6 +369,7 @@ export const UpdateContentItemResponse = zod.object({
   "coverAltText": zod.string().nullable(),
   "coverFocalX": zod.number().nullable(),
   "coverFocalY": zod.number().nullable(),
+  "coverZoom": zod.number().nullable(),
   "createdBy": zod.string().nullable(),
   "updatedBy": zod.string().nullable(),
   "publishedAt": zod.coerce.date().nullable(),
@@ -424,6 +431,7 @@ export const PublishContentItemResponse = zod.object({
   "coverAltText": zod.string().nullable(),
   "coverFocalX": zod.number().nullable(),
   "coverFocalY": zod.number().nullable(),
+  "coverZoom": zod.number().nullable(),
   "createdBy": zod.string().nullable(),
   "updatedBy": zod.string().nullable(),
   "publishedAt": zod.coerce.date().nullable(),
@@ -667,6 +675,7 @@ export const GetPublishedArticleResponse = zod.object({
   "coverAltText": zod.string().nullable(),
   "coverFocalX": zod.number().nullable(),
   "coverFocalY": zod.number().nullable(),
+  "coverZoom": zod.number().nullable(),
   "createdBy": zod.string().nullable(),
   "updatedBy": zod.string().nullable(),
   "publishedAt": zod.coerce.date().nullable(),

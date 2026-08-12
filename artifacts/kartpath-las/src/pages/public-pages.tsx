@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { ArrowLeft, ArrowRight, ArrowUpRight, Menu, Search, X } from 'lucide-react';
 import { FaFacebook, FaInstagram } from 'react-icons/fa6';
@@ -957,6 +957,42 @@ export function About() {
 
 // ── Shared article detail page ────────────────────────────────────────────────
 
+/**
+ * Cover photo with zoom support. At zoom=1 uses CSS objectFit:cover (no JS overhead).
+ * At zoom>1 computes an absolute-positioned crop after the image loads — WYSIWYG with
+ * the picker's live-area box (same coverScale × zoom math on both sides).
+ */
+function CoverPhoto({ src, alt, focalX, focalY, zoom, height = 520 }: {
+  src: string; alt: string; focalX: number; focalY: number; zoom: number; height?: number;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [imgStyle, setImgStyle] = useState<React.CSSProperties>({
+    width: '100%', height: `${height}px`, objectFit: 'cover',
+    objectPosition: `${focalX * 100}% ${focalY * 100}%`, display: 'block',
+  });
+  const computeZoom = (img: HTMLImageElement) => {
+    if (zoom <= 1.001) return; // objectFit:cover handles zoom=1 natively
+    const iw = img.naturalWidth, ih = img.naturalHeight;
+    const cw = containerRef.current?.clientWidth ?? window.innerWidth;
+    const ch = height;
+    // coverScale mirrors CSS objectFit:cover: scale so the shorter dimension fills
+    const coverScale = Math.max(cw / iw, ch / ih);
+    const totalScale = coverScale * zoom;
+    const scaledW = iw * totalScale, scaledH = ih * totalScale;
+    setImgStyle({
+      position: 'absolute', display: 'block',
+      width: `${scaledW}px`, height: `${scaledH}px`,
+      left: `${-((scaledW - cw) * focalX)}px`,
+      top: `${-((scaledH - ch) * focalY)}px`,
+    });
+  };
+  return (
+    <div ref={containerRef} style={{ position: 'relative', width: '100%', height: `${height}px`, overflow: 'hidden' }}>
+      <img src={src} alt={alt} style={imgStyle} onLoad={e => computeZoom(e.currentTarget)} />
+    </div>
+  );
+}
+
 function ArticleDetailInner({ pubSlug, slug, sectionLabel, sectionPath }: {
   pubSlug: string;
   slug: string;
@@ -1025,13 +1061,13 @@ function ArticleDetailInner({ pubSlug, slug, sectionLabel, sectionPath }: {
 
     {/* Cover photo */}
     {article.coverUrl && (
-      <div style={{ width: '100%', maxHeight: '520px', overflow: 'hidden' }}>
-        <img
-          src={article.coverUrl}
-          alt={(article as any).coverAltText ?? article.title}
-          style={{ width: '100%', height: '520px', objectFit: 'cover', objectPosition: `${focalX * 100}% ${focalY * 100}%`, display: 'block' }}
-        />
-      </div>
+      <CoverPhoto
+        src={article.coverUrl}
+        alt={(article as any).coverAltText ?? article.title}
+        focalX={focalX}
+        focalY={focalY}
+        zoom={(article as any).coverZoom ?? 1}
+      />
     )}
 
     {/* Article body */}

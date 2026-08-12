@@ -260,9 +260,10 @@ type FormState = Omit<CreateContentItem, 'publicationId' | 'details'> & {
   issuuEmbedUrl: string;
   editionDescription: string;
   editionEditorialTitle: string;
-  // cover photo focal point (0–1 range, default 0.5)
+  // cover photo focal point (0–1 range, default 0.5) and zoom (1 = natural fit, >1 = tighter crop)
   coverFocalX: number;
   coverFocalY: number;
+  coverZoom: number;
   // pull quote for homepage rotation
   pullQuote: string;
   // search engine meta description (blank = auto-generated at render time)
@@ -305,6 +306,7 @@ const EMPTY_FORM: FormState = {
   editionEditorialTitle: '',
   coverFocalX: 0.5,
   coverFocalY: 0.5,
+  coverZoom: 1,
   pullQuote: '',
   metaDescription: '',
 };
@@ -518,6 +520,8 @@ function CoverPhotoUploader({
   focalX,
   focalY,
   onFocalChange,
+  zoom,
+  onZoomChange,
 }: {
   coverMediaId: string | null;
   existingCoverUrl: string | null | undefined;
@@ -526,13 +530,15 @@ function CoverPhotoUploader({
   focalX: number;
   focalY: number;
   onFocalChange: (x: number, y: number) => void;
+  zoom: number;
+  onZoomChange: (z: number) => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadState, setUploadState] = useState<UploadState>('idle');
   const [uploadError, setUploadError] = useState('');
   const [localPreview, setLocalPreview] = useState<string | null>(null);
   const [imgRendered, setImgRendered] = useState<{ w: number; h: number } | null>(null);
-  const focalDragRef = useRef<{ startX: number; startY: number; startFocalX: number; startFocalY: number; imgW: number; imgH: number } | null>(null);
+  const focalDragRef = useRef<{ startX: number; startY: number; startFocalX: number; startFocalY: number; imgW: number; imgH: number; zoom: number } | null>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const onFocalChangeRef = useRef(onFocalChange);
   onFocalChangeRef.current = onFocalChange;
@@ -549,16 +555,15 @@ function CoverPhotoUploader({
     const onMove = (e: MouseEvent) => {
       const drag = focalDragRef.current;
       if (!drag) return;
-      const { startX, startY, startFocalX, startFocalY, imgW, imgH } = drag;
-      const imgRatio = imgW / imgH;
+      const { startX, startY, startFocalX, startFocalY, imgW, imgH, zoom: z } = drag;
+      const baseH = Math.min(imgH, imgW / CROP_RATIO);
+      const bh = baseH / z;
+      const bw = bh * CROP_RATIO;
+      const overflowX = imgW - bw;
+      const overflowY = imgH - bh;
       let newFX = startFocalX, newFY = startFocalY;
-      if (imgRatio > CROP_RATIO + 0.001) {
-        const overflowX = imgW - imgH * CROP_RATIO;
-        newFX = Math.max(0, Math.min(1, startFocalX + (e.clientX - startX) / overflowX));
-      } else if (imgRatio < CROP_RATIO - 0.001) {
-        const overflowY = imgH - imgW / CROP_RATIO;
-        newFY = Math.max(0, Math.min(1, startFocalY + (e.clientY - startY) / overflowY));
-      }
+      if (overflowX > 0.5) newFX = Math.max(0, Math.min(1, startFocalX + (e.clientX - startX) / overflowX));
+      if (overflowY > 0.5) newFY = Math.max(0, Math.min(1, startFocalY + (e.clientY - startY) / overflowY));
       onFocalChangeRef.current(Math.round(newFX * 1000) / 1000, Math.round(newFY * 1000) / 1000);
     };
     const onUp = () => { focalDragRef.current = null; };
@@ -678,18 +683,15 @@ function CoverPhotoUploader({
               {imgRendered && (() => {
                 const CROP_RATIO = 16 / 9;
                 const { w: iw, h: ih } = imgRendered;
-                const imgRatio = iw / ih;
                 let bw: number, bh: number, bl: number, bt: number;
-                const hasHOverflow = imgRatio > CROP_RATIO + 0.001;
-                const hasVOverflow = imgRatio < CROP_RATIO - 0.001;
-                if (hasHOverflow) {
-                  bh = ih; bw = Math.round(ih * CROP_RATIO); bl = Math.round((iw - bw) * focalX); bt = 0;
-                } else if (hasVOverflow) {
-                  bw = iw; bh = Math.round(iw / CROP_RATIO); bl = 0; bt = Math.round((ih - bh) * focalY);
-                } else {
-                  bw = iw; bh = ih; bl = 0; bt = 0;
-                }
-                const canDrag = hasHOverflow || hasVOverflow;
+                const baseH = Math.min(ih, iw / CROP_RATIO);
+                bh = Math.round(baseH / zoom);
+                bw = Math.round(bh * CROP_RATIO);
+                const overflowX = iw - bw;
+                const overflowY = ih - bh;
+                bl = overflowX > 0.5 ? Math.round(overflowX * focalX) : Math.round((iw - bw) / 2);
+                bt = overflowY > 0.5 ? Math.round(overflowY * focalY) : Math.round((ih - bh) / 2);
+                const canDrag = overflowX > 0.5 || overflowY > 0.5;
                 return (
                   <>
                     {/* Dark vignette outside the live area */}
@@ -707,7 +709,7 @@ function CoverPhotoUploader({
                       }}
                       onMouseDown={canDrag ? (e) => {
                         e.preventDefault();
-                        focalDragRef.current = { startX: e.clientX, startY: e.clientY, startFocalX: focalX, startFocalY: focalY, imgW: iw, imgH: ih };
+                        focalDragRef.current = { startX: e.clientX, startY: e.clientY, startFocalX: focalX, startFocalY: focalY, imgW: iw, imgH: ih, zoom };
                       } : undefined}
                       data-testid="focal-picker-box"
                     >
@@ -732,6 +734,39 @@ function CoverPhotoUploader({
                 );
               })()}
             </div>
+          </div>
+          {/* Zoom control */}
+          <div className="mt-2 flex items-center gap-2 px-0.5">
+            <button
+              type="button"
+              aria-label="Zoom out"
+              onClick={() => onZoomChange(Math.max(1, Math.round((zoom - 0.1) * 20) / 20))}
+              className="flex h-5 w-5 shrink-0 items-center justify-center rounded border border-[hsl(var(--input))] font-ui text-sm leading-none text-[hsl(var(--muted-foreground))] transition-colors hover:bg-[hsl(var(--accent))] select-none"
+            >−</button>
+            <input
+              type="range"
+              min={1}
+              max={4}
+              step={0.05}
+              value={zoom}
+              onChange={e => onZoomChange(parseFloat(e.target.value))}
+              className="flex-1 accent-[hsl(var(--brick))]"
+              aria-label="Zoom level"
+            />
+            <button
+              type="button"
+              aria-label="Zoom in"
+              onClick={() => onZoomChange(Math.min(4, Math.round((zoom + 0.1) * 20) / 20))}
+              className="flex h-5 w-5 shrink-0 items-center justify-center rounded border border-[hsl(var(--input))] font-ui text-sm leading-none text-[hsl(var(--muted-foreground))] transition-colors hover:bg-[hsl(var(--accent))] select-none"
+            >+</button>
+            <span className="w-9 shrink-0 text-right font-mono text-[10px] tabular-nums text-[hsl(var(--muted-foreground))]">{zoom.toFixed(2)}×</span>
+            {zoom > 1.001 && (
+              <button
+                type="button"
+                onClick={() => onZoomChange(1)}
+                className="shrink-0 font-ui text-[9px] uppercase tracking-[.1em] text-[hsl(var(--brick))] transition-opacity hover:opacity-70 whitespace-nowrap"
+              >Reset</button>
+            )}
           </div>
           {/* Remove button — sits below the picker, not overlaid on the image */}
           <button
@@ -1291,6 +1326,8 @@ function Editor({
             focalX={form.coverFocalX}
             focalY={form.coverFocalY}
             onFocalChange={(x, y) => setForm({ ...form, coverFocalX: x, coverFocalY: y })}
+            zoom={form.coverZoom}
+            onZoomChange={(z) => setForm({ ...form, coverZoom: z })}
           />
         </>)}
         {/* ── Gallery (premium business listings + all other types) ──── */}
@@ -2050,6 +2087,7 @@ export default function Staff() {
         coverMediaId: item.coverMediaId,
         coverFocalX: (item as any).coverFocalX ?? 0.5,
         coverFocalY: (item as any).coverFocalY ?? 0.5,
+        coverZoom: (item as any).coverZoom ?? 1,
         issue: d.issue ?? '',
         subsection,
         servings: d.servings ?? '',
@@ -2217,6 +2255,7 @@ export default function Staff() {
       coverMediaId: form.coverMediaId || null,
       coverFocalX: form.coverFocalX,
       coverFocalY: form.coverFocalY,
+      coverZoom: form.coverZoom,
     } satisfies CreateContentItem;
   };
 
@@ -2438,7 +2477,7 @@ export default function Staff() {
                           <input type="url" value={form.issuuEmbedUrl} onChange={(e) => setForm({ ...form, issuuEmbedUrl: e.target.value })} placeholder="https://e.issuu.com/embed.html?d=las-issue-07&u=lifearoundsenoia" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" data-testid="input-edition-issuu-url-2" />
                           <span className="mt-1.5 block font-ui text-[10px] leading-4 text-[hsl(var(--muted-foreground))]">In Issuu: open document → Share → Embed → copy the <code>src</code> value. Leave blank to show the placeholder.</span>
                         </label>
-                        <CoverPhotoUploader coverMediaId={form.coverMediaId} existingCoverUrl={isCreating ? null : selectedItem?.coverUrl} publicationId={safePublicationId} onChange={(mediaId) => setForm({ ...form, coverMediaId: mediaId })} focalX={form.coverFocalX} focalY={form.coverFocalY} onFocalChange={(x, y) => setForm({ ...form, coverFocalX: x, coverFocalY: y })} />
+                        <CoverPhotoUploader coverMediaId={form.coverMediaId} existingCoverUrl={isCreating ? null : selectedItem?.coverUrl} publicationId={safePublicationId} onChange={(mediaId) => setForm({ ...form, coverMediaId: mediaId })} focalX={form.coverFocalX} focalY={form.coverFocalY} onFocalChange={(x, y) => setForm({ ...form, coverFocalX: x, coverFocalY: y })} zoom={form.coverZoom} onZoomChange={(z) => setForm({ ...form, coverZoom: z })} />
                       </div>
                       {editorError && <div className="mx-5 flex items-start gap-2 border border-[hsl(var(--brick)/.4)] bg-[hsl(var(--brick)/.07)] px-3 py-2.5 font-ui text-xs leading-5 text-[hsl(var(--brick))] sm:mx-6" role="alert"><CircleAlert size={15} className="mt-0.5 shrink-0" /> {editorError}</div>}
                       <div className="flex flex-wrap justify-end gap-2 border-t border-[hsl(var(--border))] px-5 py-4 sm:px-6">

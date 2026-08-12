@@ -45,6 +45,7 @@ export const contentItemsTable = pgTable(
     coverMediaId: uuid("cover_media_id"),
     coverFocalX: doublePrecision("cover_focal_x").notNull().default(0.5),
     coverFocalY: doublePrecision("cover_focal_y").notNull().default(0.5),
+    coverZoom: doublePrecision("cover_zoom").notNull().default(1),
     createdBy: uuid("created_by").references(() => usersTable.id, {
       onDelete: "set null",
     }),

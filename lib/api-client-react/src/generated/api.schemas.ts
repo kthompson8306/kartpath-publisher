@@ -205,6 +205,7 @@ export interface CreateContentItem {
   coverMediaId: string | null;
   coverFocalX?: number;
   coverFocalY?: number;
+  coverZoom?: number;
 }
 
 export type UpdateContentItem = CreateContentItem;

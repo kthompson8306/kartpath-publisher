@@ -14,3 +14,4 @@
 - [Homepage slideshow architecture](homepage-slideshow.md) — Hero/strip/pull-quote slideshows: pinned-pool curation model, sliding track CSS technique, giant-num lives inside each slide not outside the track.
 - [Business listing tier system](business-listing-tier.md) — listing_tier + business_description are top-level DB columns; summary/body relaxed to min(0) in Zod; dev DB needs manual ALTER after new migrations.
 - [Editions pipeline](editions-pipeline.md) — CMS is now source of truth; API returns published-only array; covers use details.cover_filename (Vite static) or coverUrl (object storage); summary field stores date string.
+- [Cover zoom architecture](cover-zoom-architecture.md) — cover_zoom DB column + api-zod + api.schemas.ts; picker live-area box shrinks as zoom grows; public CoverPhoto component computes coverScale×zoom absolute positioning after onLoad.

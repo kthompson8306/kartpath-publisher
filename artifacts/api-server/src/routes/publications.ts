@@ -33,6 +33,7 @@ function serializeItem(
     coverAltText: mediaAltText,
     coverFocalX: item.coverFocalX ?? 0.5,
     coverFocalY: item.coverFocalY ?? 0.5,
+    coverZoom: item.coverZoom ?? 1,
     createdAt: item.createdAt.toISOString(),
     updatedAt: item.updatedAt.toISOString(),
     publishedAt: item.publishedAt?.toISOString() ?? null,
