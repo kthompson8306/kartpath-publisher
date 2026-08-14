@@ -130,7 +130,7 @@ export function PublicHeader() {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <div className="util-bar"><div className="wrap util-inner"><span><i className="live-dot" />SENOIA, GA · CLEAR, 84°F · VOL. 02</span><span className="util-links"><a href="mailto:kevin@kartpathmedia.com">CONTACT</a><a href="/about">ABOUT</a><a href="#newsletter">SUBSCRIBE</a></span></div></div>
+      <div className="util-bar"><div className="wrap util-inner"><span><i className="live-dot" />SENOIA, GA · CLEAR, 84°F · VOL. 02</span><span className="util-links"><a href="mailto:kevin@kartpathmedia.com">CONTACT</a><a href="/about">ABOUT</a><a href="/advertise">ADVERTISE</a><a href="#newsletter">SUBSCRIBE</a></span></div></div>
       <header className="site-header">
         <nav className="nav-bar" aria-label="Primary navigation">
           <Link href="/" className="brand">LIFE <em>around</em> SENOIA</Link>
