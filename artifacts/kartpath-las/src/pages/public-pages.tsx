@@ -1451,21 +1451,6 @@ export function Advertise() {
         </section>
       )}
 
-      <section>
-        <div className="wrap">
-          <div className="edition-promo advertise-promo">
-            <div className="edition-cover" style={{ backgroundImage: `url(${image('feature-truck.jpg')})` }}><span>FOR HERE</span></div>
-            <div className="edition-copy">
-              <span className="mono-label">Advertising &amp; Partnerships</span>
-              <h2>Get listed — and get considered for a feature</h2>
-              <p>Reach Senoia readers through the bi-monthly magazine, digital publication, and the businesses directory built around the town's real places.</p>
-              <a href={mailtoHref} className="btn-sharp honey-button">Start a conversation <ArrowRight size={14} /></a>
-            </div>
-          </div>
-          <AdZone label="Premium placement" />
-        </div>
-      </section>
-
       {hasReach && (
         <section>
           <div className="wrap">
