@@ -1003,27 +1003,26 @@ export function About() {
         </section>
       )}
 
-      {/* Our Team — hardcoded, CMS-editable in a future update */}
+      {/* Our Team — CMS-driven via about-page content item */}
       <section className="on-paper2">
         <div className="wrap">
           <SectionHead index="" title="Our Team" />
           <div className="team-grid">
-            <article className="team-card">
-              <div className="team-photo" />
-              <div>
-                <h2>Kevin Thompson</h2>
-                <span className="team-role">Publisher &amp; Founder</span>
-                <p>Nearly 20 years in publishing, including work with a niche publisher of nearly 35 enthusiast titles — a journey that led Kevin to launch a business helping publishers and content-driven organizations scale, tell better stories, and grow their communities.</p>
-              </div>
-            </article>
-            <article className="team-card">
-              <div className="team-photo" />
-              <div>
-                <h2>Blake Adams</h2>
-                <span className="team-role">Advertising Director &amp; Managing Partner</span>
-                <p>Born and raised in Fayette and Coweta County, Blake has proudly called Senoia home for over 15 years — active in the local business and creative scene, with a deep passion for connecting people and building things that matter to his hometown.</p>
-              </div>
-            </article>
+            {[
+              { name: details.member1Name, role: details.member1Role, bio: details.member1Bio, photo: details.member1PhotoUrl },
+              { name: details.member2Name, role: details.member2Role, bio: details.member2Bio, photo: details.member2PhotoUrl },
+            ].filter((m) => m.name).map((member) => (
+              <article className="team-card" key={member.name}>
+                {member.photo
+                  ? <img src={member.photo} alt={member.name} className="team-photo" style={{ objectFit: 'cover' }} />
+                  : <div className="team-photo" />}
+                <div>
+                  <h2>{member.name}</h2>
+                  <span className="team-role">{member.role}</span>
+                  <p>{member.bio}</p>
+                </div>
+              </article>
+            ))}
           </div>
           <SectionHead index="" title="What To Expect" />
           <div className="expect-grid">

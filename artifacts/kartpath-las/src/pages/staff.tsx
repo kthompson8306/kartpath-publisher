@@ -264,6 +264,16 @@ type FormState = Omit<CreateContentItem, 'publicationId' | 'details'> & {
   // about-page specific
   kartpathHeadline: string;
   kartpathBody: string;
+  member1Name: string;
+  member1Role: string;
+  member1Bio: string;
+  member1MediaId: string;
+  member1PhotoUrl: string;
+  member2Name: string;
+  member2Role: string;
+  member2Bio: string;
+  member2MediaId: string;
+  member2PhotoUrl: string;
   // cover photo focal point (0–1 range, default 0.5) and zoom (1 = natural fit, >1 = tighter crop)
   coverFocalX: number;
   coverFocalY: number;
@@ -310,6 +320,16 @@ const EMPTY_FORM: FormState = {
   editionEditorialTitle: '',
   kartpathHeadline: '',
   kartpathBody: '',
+  member1Name: '',
+  member1Role: '',
+  member1Bio: '',
+  member1MediaId: '',
+  member1PhotoUrl: '',
+  member2Name: '',
+  member2Role: '',
+  member2Bio: '',
+  member2MediaId: '',
+  member2PhotoUrl: '',
   coverFocalX: 0.5,
   coverFocalY: 0.5,
   coverZoom: 1,
@@ -834,6 +854,82 @@ function CoverPhotoUploader({
   );
 }
 
+// ─── Team photo uploader (simplified — no focal-point/zoom) ─────────────────
+
+function TeamPhotoUploader({
+  label,
+  mediaId,
+  photoUrl,
+  publicationId,
+  onChange,
+}: {
+  label: string;
+  mediaId: string;
+  photoUrl: string;
+  publicationId: string;
+  onChange: (mediaId: string, photoUrl: string) => void;
+}) {
+  const [uploadState, setUploadState] = useState<UploadState>('idle');
+  const [uploadError, setUploadError] = useState('');
+  const [localPreview, setLocalPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const displayUrl = localPreview || photoUrl || null;
+  const busy = uploadState === 'requesting' || uploadState === 'uploading' || uploadState === 'completing';
+
+  const handleFileChange = async (file: File) => {
+    if (!file.type.startsWith('image/')) { setUploadError('Only image files are accepted.'); return; }
+    setUploadError('');
+    try {
+      setUploadState('requesting');
+      const reqRes = await fetch('/api/storage/uploads/request-url', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ publicationId, name: file.name, size: file.size, contentType: file.type }),
+      });
+      if (!reqRes.ok) { const e = (await reqRes.json().catch(() => ({}))) as { error?: string }; throw new Error(e.error ?? `Request failed (${reqRes.status})`); }
+      const { mediaId: newId, uploadURL } = (await reqRes.json()) as { mediaId: string; uploadURL: string };
+
+      setUploadState('uploading');
+      const putRes = await fetch(uploadURL, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
+      if (!putRes.ok) throw new Error(`Upload failed (${putRes.status})`);
+
+      setUploadState('completing');
+      const completeRes = await fetch(`/api/storage/uploads/${newId}/complete`, { method: 'POST', credentials: 'include' });
+      if (!completeRes.ok) { const e = (await completeRes.json().catch(() => ({}))) as { error?: string }; throw new Error(e.error ?? `Finalize failed (${completeRes.status})`); }
+      const { coverUrl: newPhotoUrl } = (await completeRes.json()) as { coverUrl: string };
+
+      setLocalPreview(URL.createObjectURL(file));
+      setUploadState('done');
+      onChange(newId, newPhotoUrl);
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Upload failed — try again.');
+      setUploadState('error');
+    }
+  };
+
+  return (
+    <div>
+      <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">{label}</span>
+      {displayUrl ? (
+        <div className="relative mb-2 inline-block">
+          <img src={displayUrl} alt="Team photo" className="size-24 rounded-sm object-cover" />
+          <button type="button" onClick={() => { setLocalPreview(null); onChange('', ''); setUploadState('idle'); }} className="absolute -right-2 -top-2 grid size-5 place-items-center rounded-full bg-[hsl(var(--brick))] text-white" aria-label="Remove photo"><X size={10} /></button>
+        </div>
+      ) : (
+        <div className="mb-2 flex aspect-square w-24 flex-col items-center justify-center gap-1 border border-dashed border-[hsl(var(--input))] bg-[hsl(var(--card)/.45)]">
+          {busy ? <Loader2 size={16} className="animate-spin text-[hsl(var(--muted-foreground))]" /> : <ImageIcon size={16} className="text-[hsl(var(--muted-foreground)/.4)]" />}
+        </div>
+      )}
+      <label className={`inline-flex cursor-pointer items-center gap-1.5 border border-[hsl(var(--border))] px-2.5 py-1.5 font-ui text-[9px] uppercase tracking-[.12em] transition-colors hover:border-[hsl(var(--brick))] ${busy ? 'cursor-wait opacity-50' : ''}`}>
+        {busy ? <Loader2 size={10} className="animate-spin" /> : <ImageIcon size={10} />}
+        {busy ? 'Uploading…' : mediaId ? 'Replace photo' : 'Upload photo'}
+        <input ref={fileInputRef} type="file" accept="image/*" className="sr-only" disabled={busy} onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleFileChange(f); e.target.value = ''; }} />
+      </label>
+      {uploadError && <p className="mt-1 font-ui text-[10px] text-[hsl(var(--brick))]">{uploadError}</p>}
+    </div>
+  );
+}
+
 // ─── Staff preview ───────────────────────────────────────────────────────────
 
 function StaffPreview({ form, coverUrl }: { form: FormState; coverUrl: string | null }) {
@@ -1281,17 +1377,66 @@ function Editor({
           );
 
           if (ct === 'about-page') return (
-            <div className="space-y-4 rounded border border-[hsl(var(--honey)/.4)] bg-[hsl(var(--honey)/.06)] p-4">
+            <div className="space-y-5 rounded border border-[hsl(var(--honey)/.4)] bg-[hsl(var(--honey)/.06)] p-4">
               <p className="font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--brick))]">About Page fields</p>
-              <p className="font-ui text-[10px] leading-4 text-[hsl(var(--muted-foreground))]">The <strong>Headline</strong> and <strong>Story body</strong> fields above drive the "About Life Around Senoia" section. Fill in the KartPath Media section below.</p>
-              <label className="block">
-                <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">KartPath Media — section headline</span>
-                <input value={form.kartpathHeadline} onChange={(e) => update('kartpathHeadline', e.target.value)} placeholder="About KartPath Media" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" />
-              </label>
-              <label className="block">
-                <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">KartPath Media — body copy <span className="normal-case tracking-normal opacity-60">(separate paragraphs with a blank line)</span></span>
-                <textarea value={form.kartpathBody} onChange={(e) => update('kartpathBody', e.target.value)} rows={8} placeholder="Our mission is simple…" className="w-full resize-y border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2.5 font-meta text-xs leading-5 outline-none focus:border-[hsl(var(--brick))]" />
-              </label>
+              <p className="font-ui text-[10px] leading-4 text-[hsl(var(--muted-foreground))]">The <strong>Headline</strong> and <strong>Story body</strong> fields above drive the "About Life Around Senoia" section. Fill in the KartPath Media and team bio sections below.</p>
+
+              {/* ── KartPath Media section ── */}
+              <div className="space-y-3">
+                <p className="font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">KartPath Media section</p>
+                <label className="block">
+                  <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Section headline</span>
+                  <input value={form.kartpathHeadline} onChange={(e) => update('kartpathHeadline', e.target.value)} placeholder="About KartPath Media" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" />
+                </label>
+                <label className="block">
+                  <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Body copy <span className="normal-case tracking-normal opacity-60">(separate paragraphs with a blank line)</span></span>
+                  <textarea value={form.kartpathBody} onChange={(e) => update('kartpathBody', e.target.value)} rows={6} placeholder="Our mission is simple…" className="w-full resize-y border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2.5 font-meta text-xs leading-5 outline-none focus:border-[hsl(var(--brick))]" />
+                </label>
+              </div>
+
+              <div className="border-t border-[hsl(var(--honey)/.5)]" />
+
+              {/* ── Team member 1 ── */}
+              <div className="space-y-3">
+                <p className="font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Team member 1</p>
+                <TeamPhotoUploader label="Headshot photo" mediaId={form.member1MediaId} photoUrl={form.member1PhotoUrl} publicationId={publicationId} onChange={(mid, url) => setForm({ ...form, member1MediaId: mid, member1PhotoUrl: url })} />
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="block">
+                    <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Name</span>
+                    <input value={form.member1Name} onChange={(e) => update('member1Name', e.target.value)} placeholder="Kevin Thompson" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Title / role</span>
+                    <input value={form.member1Role} onChange={(e) => update('member1Role', e.target.value)} placeholder="Publisher & Founder" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" />
+                  </label>
+                </div>
+                <label className="block">
+                  <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Bio</span>
+                  <textarea value={form.member1Bio} onChange={(e) => update('member1Bio', e.target.value)} rows={3} className="w-full resize-y border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2.5 font-meta text-xs leading-5 outline-none focus:border-[hsl(var(--brick))]" />
+                </label>
+              </div>
+
+              <div className="border-t border-[hsl(var(--honey)/.5)]" />
+
+              {/* ── Team member 2 ── */}
+              <div className="space-y-3">
+                <p className="font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Team member 2</p>
+                <TeamPhotoUploader label="Headshot photo" mediaId={form.member2MediaId} photoUrl={form.member2PhotoUrl} publicationId={publicationId} onChange={(mid, url) => setForm({ ...form, member2MediaId: mid, member2PhotoUrl: url })} />
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="block">
+                    <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Name</span>
+                    <input value={form.member2Name} onChange={(e) => update('member2Name', e.target.value)} placeholder="Blake Adams" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Title / role</span>
+                    <input value={form.member2Role} onChange={(e) => update('member2Role', e.target.value)} placeholder="Advertising Director & Managing Partner" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" />
+                  </label>
+                </div>
+                <label className="block">
+                  <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Bio</span>
+                  <textarea value={form.member2Bio} onChange={(e) => update('member2Bio', e.target.value)} rows={3} className="w-full resize-y border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2.5 font-meta text-xs leading-5 outline-none focus:border-[hsl(var(--brick))]" />
+                </label>
+              </div>
             </div>
           );
 
@@ -2137,6 +2282,16 @@ export default function Staff() {
         editionEditorialTitle: d.editorial_title ?? '',
         kartpathHeadline: d.kartpathHeadline ?? '',
         kartpathBody: d.kartpathBody ?? '',
+        member1Name: d.member1Name ?? '',
+        member1Role: d.member1Role ?? '',
+        member1Bio: d.member1Bio ?? '',
+        member1MediaId: d.member1MediaId ?? '',
+        member1PhotoUrl: d.member1PhotoUrl ?? '',
+        member2Name: d.member2Name ?? '',
+        member2Role: d.member2Role ?? '',
+        member2Bio: d.member2Bio ?? '',
+        member2MediaId: d.member2MediaId ?? '',
+        member2PhotoUrl: d.member2PhotoUrl ?? '',
         pullQuote: item.pullQuote ?? '',
         metaDescription: item.metaDescription ?? '',
         listingTier: (item.listingTier as 'standard' | 'premium') ?? 'standard',
@@ -2252,6 +2407,16 @@ export default function Staff() {
         lasHeadline: form.title.trim(),
         kartpathHeadline: form.kartpathHeadline.trim() || 'About KartPath Media',
         kartpathBody: form.kartpathBody.trim(),
+        member1Name: form.member1Name.trim(),
+        member1Role: form.member1Role.trim(),
+        member1Bio: form.member1Bio.trim(),
+        member1MediaId: form.member1MediaId,
+        member1PhotoUrl: form.member1PhotoUrl,
+        member2Name: form.member2Name.trim(),
+        member2Role: form.member2Role.trim(),
+        member2Bio: form.member2Bio.trim(),
+        member2MediaId: form.member2MediaId,
+        member2PhotoUrl: form.member2PhotoUrl,
       };
     } else if (ct === 'digital_edition') {
       if (isCreating && !/^edition-\d{2,}$/.test(form.slug.trim())) {
