@@ -125,6 +125,7 @@ export const EditorialContentType = {
   'lifestyle-column': 'lifestyle-column',
   'digital_edition': 'digital_edition',
   'about-page': 'about-page',
+  'advertise-page': 'advertise-page',
 } as const;
 
 export type EditorialStatus = typeof EditorialStatus[keyof typeof EditorialStatus];

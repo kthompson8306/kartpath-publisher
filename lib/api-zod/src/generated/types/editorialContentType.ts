@@ -21,4 +21,6 @@ export const EditorialContentType = {
   recipe: 'recipe',
   'lifestyle-column': 'lifestyle-column',
   'digital_edition': 'digital_edition',
+  'about-page': 'about-page',
+  'advertise-page': 'advertise-page',
 } as const;

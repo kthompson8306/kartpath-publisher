@@ -20,6 +20,8 @@ export const editorialContentTypes = [
   "pet-of-the-month",
   "business-listing",
   "event",
+  "about-page",
+  "advertise-page",
 ] as const;
 
 export const editorialStatuses = ["draft", "published"] as const;

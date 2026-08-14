@@ -1392,6 +1392,179 @@ export function ArticleDetail() {
   return <ArticleDetailInner pubSlug={PUBLICATION_SLUG} slug={slug ?? ''} sectionLabel={label} sectionPath={sectionPath} />;
 }
 
+function advParse<T>(s: string | undefined, fallback: T): T {
+  if (!s) return fallback;
+  try { return JSON.parse(s) as T; } catch { return fallback; }
+}
+
 export function Advertise() {
-  return <PageShell seo={{ title: 'Advertise — Life Around Senoia', description: 'Put your business in front of the people who live, work, and spend time around Senoia.', path: '/advertise' }}><PageHero kicker="Partner with the Publication" title={<>A good local business<br />deserves a good local home.</>}>Life Around Senoia is built for the people who make this place work. Talk with our advertising team about print, digital, directory, and story opportunities.</PageHero><section><div className="wrap"><div className="edition-promo advertise-promo"><div className="edition-cover" style={{ backgroundImage: `url(${image('feature-truck.jpg')})` }}><span>FOR HERE</span></div><div className="edition-copy"><span className="mono-label">Advertising &amp; Partnerships</span><h2>Get listed — and get considered for a feature</h2><p>Reach Senoia readers through the bi-monthly magazine, digital publication, and the businesses directory built around the town’s real places.</p><a href="mailto:blake@kartpathmedia.com?subject=Life%20Around%20Senoia%20advertising" className="btn-sharp honey-button">Start a conversation <ArrowRight size={14} /></a></div></div><AdZone label="Premium placement" /></div></section></PageShell>;
+  const advQuery = useGetPublishedArticle(PUBLICATION_SLUG, 'advertise');
+  const item = advQuery.data;
+  const d = (item?.details ?? {}) as Record<string, string>;
+
+  const introHeadline = item?.title || 'Advertise With Life Around Senoia';
+  const introSubhead = item?.summary || 'A KartPath Media Publication';
+  const introParagraphs = (item?.body ?? '').split(/\n\n+/).filter(Boolean);
+
+  const reachHeadline = d.reachHeadline || 'Our Reach';
+  const reachParagraphs = (d.reachBody ?? '').split(/\n\n+/).filter(Boolean);
+  type ReachStat = { label: string; value: string };
+  const reachStats = advParse<ReachStat[]>(d.reachStats, []);
+  const reachClosing = d.reachClosing ?? '';
+
+  type Capability = { title: string; items: string[] };
+  const capabilities = advParse<Capability[]>(d.capabilities, []);
+
+  const specsFileTypes = d.specsFileTypes ?? '';
+  const specsResolution = d.specsResolution ?? '';
+  const specsColor = d.specsColor ?? '';
+  const specsBleed = d.specsBleed ?? '';
+  type AdSize = { size: string; dims: string };
+  const specsSizes = advParse<AdSize[]>(d.specsSizes, []);
+
+  type RateRow = { placement: string; rate: string };
+  const rateCard = advParse<RateRow[]>(d.rateCard, []);
+
+  type ScheduleRow = { issue: string; materialsDue: string; deliveryDate: string };
+  const schedule = advParse<ScheduleRow[]>(d.schedule, []);
+
+  const ctaHeadline = d.ctaHeadline || 'Get Started';
+  const ctaBody = d.ctaBody ?? '';
+  const ctaPhone = d.ctaPhone ?? '';
+  const ctaEmail = d.ctaEmail || 'blake@kartpathmedia.com';
+  const mailtoHref = `mailto:${ctaEmail}?subject=Life%20Around%20Senoia%20advertising`;
+  const seoDescription = item?.metaDescription || item?.summary || 'Put your business in front of the people who live, work, and spend time around Senoia.';
+
+  const hasReach = reachParagraphs.length > 0 || reachStats.length > 0;
+  const hasSpecs = specsSizes.length > 0;
+  const hasRates = rateCard.length > 0;
+
+  return (
+    <PageShell seo={{ title: 'Advertise — Life Around Senoia', description: seoDescription, path: '/advertise' }}>
+      <PageHero kicker="Partner with the Publication" title={introHeadline}>{introSubhead}</PageHero>
+
+      {introParagraphs.length > 0 && (
+        <section>
+          <div className="wrap-narrow">
+            {introParagraphs.map((p, i) => <p key={i} className="font-editorial text-lg leading-relaxed" style={{ marginBottom: '1.25rem' }}>{p}</p>)}
+          </div>
+        </section>
+      )}
+
+      <section>
+        <div className="wrap">
+          <div className="edition-promo advertise-promo">
+            <div className="edition-cover" style={{ backgroundImage: `url(${image('feature-truck.jpg')})` }}><span>FOR HERE</span></div>
+            <div className="edition-copy">
+              <span className="mono-label">Advertising &amp; Partnerships</span>
+              <h2>Get listed — and get considered for a feature</h2>
+              <p>Reach Senoia readers through the bi-monthly magazine, digital publication, and the businesses directory built around the town's real places.</p>
+              <a href={mailtoHref} className="btn-sharp honey-button">Start a conversation <ArrowRight size={14} /></a>
+            </div>
+          </div>
+          <AdZone label="Premium placement" />
+        </div>
+      </section>
+
+      {hasReach && (
+        <section>
+          <div className="wrap">
+            <SectionHead index="" title={reachHeadline} />
+            {reachParagraphs.map((p, i) => <p key={i} className="font-editorial text-lg leading-relaxed adv-reach-body" style={{ marginBottom: '1.25rem' }}>{p}</p>)}
+            {reachStats.length > 0 && (
+              <div className="adv-stats-grid">
+                {reachStats.map((s, i) => (
+                  <div className="adv-stat" key={i}>
+                    <strong className="adv-stat-label">{s.label}</strong>
+                    <span className="adv-stat-value">{s.value}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {reachClosing && <p className="adv-reach-closing">{reachClosing}</p>}
+          </div>
+        </section>
+      )}
+
+      {capabilities.length > 0 && (
+        <section className="on-paper2">
+          <div className="wrap">
+            <SectionHead index="" title="We Can Do It All" />
+            <div className="adv-cap-grid">
+              {capabilities.map((cap, i) => (
+                <div className="adv-cap-card" key={i}>
+                  <h3 className="adv-cap-title">{cap.title}</h3>
+                  {cap.items.filter(Boolean).length > 0 && (
+                    <ul className="adv-cap-list">
+                      {cap.items.filter(Boolean).map((it, j) => <li key={j}>{it}</li>)}
+                    </ul>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {(hasSpecs || hasRates) && (
+        <section>
+          <div className="wrap">
+            <div className="adv-two-col">
+              {hasSpecs && (
+                <div>
+                  <SectionHead index="" title="Print Ad Specs" />
+                  {(specsFileTypes || specsResolution || specsColor || specsBleed) && (
+                    <ul className="adv-specs-meta">
+                      {specsFileTypes && <li><strong>File types:</strong> {specsFileTypes}</li>}
+                      {specsResolution && <li><strong>Resolution:</strong> {specsResolution}</li>}
+                      {specsColor && <li><strong>Color:</strong> {specsColor}</li>}
+                      {specsBleed && <li><strong>Bleed:</strong> {specsBleed}</li>}
+                    </ul>
+                  )}
+                  <table className="adv-table">
+                    <thead><tr><th>Size</th><th>Dimensions</th></tr></thead>
+                    <tbody>{specsSizes.map((r, i) => <tr key={i}><td>{r.size}</td><td className="adv-td-mono">{r.dims}</td></tr>)}</tbody>
+                  </table>
+                </div>
+              )}
+              {hasRates && (
+                <div>
+                  <SectionHead index="" title="Rate Card" />
+                  <table className="adv-table">
+                    <thead><tr><th>Placement</th><th>Rate</th></tr></thead>
+                    <tbody>{rateCard.map((r, i) => <tr key={i}><td>{r.placement}</td><td className="adv-td-rate">{r.rate}</td></tr>)}</tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {schedule.length > 0 && (
+        <section className="on-paper2">
+          <div className="wrap">
+            <SectionHead index="" title="Production Schedule" />
+            <table className="adv-table adv-table--wide">
+              <thead><tr><th>Issue</th><th>Materials Due</th><th>Delivery Date</th></tr></thead>
+              <tbody>{schedule.map((r, i) => <tr key={i}><td className="adv-td-issue">{r.issue}</td><td>{r.materialsDue}</td><td>{r.deliveryDate}</td></tr>)}</tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
+      <section className="adv-cta-section">
+        <div className="wrap-narrow" style={{ textAlign: 'center' }}>
+          <p className="mono-label" style={{ color: 'var(--honey)', marginBottom: '20px' }}>Ready to reach Senoia?</p>
+          <h2 style={{ font: '700 clamp(2rem,5vw,3.2rem)/1.1 var(--disp)', color: 'var(--paper)', marginBottom: '24px' }}>{ctaHeadline}</h2>
+          {ctaBody && <p className="font-editorial" style={{ fontSize: '1.15rem', lineHeight: 1.6, color: 'rgba(247,245,238,.75)', marginBottom: '2rem', maxWidth: '560px', margin: '0 auto 2rem' }}>{ctaBody}</p>}
+          <div className="adv-cta-contact">
+            {ctaPhone && <a href={`tel:${ctaPhone.replace(/[^0-9]/g, '')}`} className="adv-cta-link">{ctaPhone}</a>}
+            {ctaEmail && <a href={`mailto:${ctaEmail}`} className="adv-cta-link">{ctaEmail}</a>}
+          </div>
+          <a href={mailtoHref} className="btn-sharp honey-button" style={{ marginTop: '2.5rem', display: 'inline-flex' }}>Start a conversation <ArrowRight size={14} /></a>
+        </div>
+      </section>
+    </PageShell>
+  );
 }

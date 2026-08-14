@@ -205,6 +205,7 @@ const CONTENT_TYPES = [
   { value: EditorialContentType.recipe, label: 'Recipe', short: 'Recipe' },
   { value: EditorialContentType['lifestyle-column'], label: 'Lifestyle Column', short: 'Lifestyle' },
   { value: EditorialContentType['about-page'], label: 'About Page', short: 'About' },
+  { value: EditorialContentType['advertise-page'], label: 'Advertise Page', short: 'Advertise' },
 ] as const;
 
 type ContentType = (typeof CONTENT_TYPES)[number]['value'];
@@ -293,6 +294,23 @@ type FormState = Omit<CreateContentItem, 'publicationId' | 'details'> & {
   pullQuote: string;
   // search engine meta description (blank = auto-generated at render time)
   metaDescription: string;
+  // advertise-page specific
+  advReachHeadline: string;
+  advReachBody: string;
+  advReachStats: Array<{ label: string; value: string }>;
+  advReachClosing: string;
+  advCapabilities: Array<{ title: string; items: string[] }>;
+  advSpecsFileTypes: string;
+  advSpecsResolution: string;
+  advSpecsColor: string;
+  advSpecsBleed: string;
+  advSpecsSizes: Array<{ size: string; dims: string }>;
+  advRateCard: Array<{ placement: string; rate: string }>;
+  advSchedule: Array<{ issue: string; materialsDue: string; deliveryDate: string }>;
+  advCtaHeadline: string;
+  advCtaBody: string;
+  advCtaPhone: string;
+  advCtaEmail: string;
 };
 
 const EMPTY_FORM: FormState = {
@@ -355,6 +373,22 @@ const EMPTY_FORM: FormState = {
   coverZoom: 1,
   pullQuote: '',
   metaDescription: '',
+  advReachHeadline: '',
+  advReachBody: '',
+  advReachStats: [{ label: '', value: '' }],
+  advReachClosing: '',
+  advCapabilities: [{ title: '', items: [''] }],
+  advSpecsFileTypes: '',
+  advSpecsResolution: '',
+  advSpecsColor: '',
+  advSpecsBleed: '',
+  advSpecsSizes: [{ size: '', dims: '' }],
+  advRateCard: [{ placement: '', rate: '' }],
+  advSchedule: [{ issue: '', materialsDue: '', deliveryDate: '' }],
+  advCtaHeadline: '',
+  advCtaBody: '',
+  advCtaPhone: '',
+  advCtaEmail: '',
 };
 
 function Initials({ name }: { name: string }) {
@@ -1491,6 +1525,150 @@ function Editor({
             </div>
           );
 
+          if (ct === 'advertise-page') return (
+            <div className="space-y-5 rounded border border-[hsl(var(--honey)/.4)] bg-[hsl(var(--honey)/.06)] p-4">
+              <p className="font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--brick))]">Advertise Page fields</p>
+              <p className="font-ui text-[10px] leading-4 text-[hsl(var(--muted-foreground))]">The <strong>Headline</strong> (page title), <strong>Standfirst</strong> (subhead under the hero), and <strong>Story body</strong> fields above control the Intro section. Fill in the remaining sections below.</p>
+
+              {/* ── Our Reach ── */}
+              <div className="space-y-3">
+                <p className="font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Our Reach</p>
+                <label className="block">
+                  <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Section headline</span>
+                  <input value={form.advReachHeadline} onChange={(e) => update('advReachHeadline', e.target.value)} placeholder="Our Reach" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" />
+                </label>
+                <label className="block">
+                  <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Body copy</span>
+                  <textarea value={form.advReachBody} onChange={(e) => update('advReachBody', e.target.value)} rows={4} className="w-full resize-y border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2.5 font-meta text-xs leading-5 outline-none focus:border-[hsl(var(--brick))]" />
+                </label>
+                <div className="space-y-2">
+                  <p className="font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Stats <span className="normal-case tracking-normal opacity-60">(big number left / description right)</span></p>
+                  {form.advReachStats.map((stat, i) => (
+                    <div key={i} className="flex gap-2">
+                      <input value={stat.label} onChange={(e) => { const s = form.advReachStats.map((r, j) => j === i ? { ...r, label: e.target.value } : r); setForm({ ...form, advReachStats: s }); }} placeholder="3,500+" className="h-8 w-28 border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-2 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" />
+                      <input value={stat.value} onChange={(e) => { const s = form.advReachStats.map((r, j) => j === i ? { ...r, value: e.target.value } : r); setForm({ ...form, advReachStats: s }); }} placeholder="copies delivered…" className="h-8 flex-1 border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-2 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" />
+                      <button type="button" onClick={() => { const s = form.advReachStats.filter((_, j) => j !== i); setForm({ ...form, advReachStats: s.length ? s : [{ label: '', value: '' }] }); }} className="h-8 w-8 flex-none border border-[hsl(var(--input))] bg-[hsl(var(--background))] font-mono text-xs text-[hsl(var(--muted-foreground))] hover:border-[hsl(var(--brick))] hover:text-[hsl(var(--brick))]">×</button>
+                    </div>
+                  ))}
+                  <button type="button" onClick={() => setForm({ ...form, advReachStats: [...form.advReachStats, { label: '', value: '' }] })} className="font-meta text-[9px] uppercase tracking-[.1em] text-[hsl(var(--brick))] hover:opacity-70">+ Add stat</button>
+                </div>
+                <label className="block">
+                  <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Closing line <span className="normal-case tracking-normal opacity-60">(italic line shown after stats)</span></span>
+                  <input value={form.advReachClosing} onChange={(e) => update('advReachClosing', e.target.value)} placeholder="This isn't a market you're hoping to reach." className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" />
+                </label>
+              </div>
+
+              <div className="border-t border-[hsl(var(--honey)/.5)]" />
+
+              {/* ── Capabilities ── */}
+              <div className="space-y-3">
+                <p className="font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Capabilities <span className="normal-case tracking-normal opacity-60">("We Can Do It All")</span></p>
+                <p className="font-ui text-[10px] leading-4 text-[hsl(var(--muted-foreground))]">Each row is a service category title plus bullet items — one item per line in the text box.</p>
+                {form.advCapabilities.map((cap, i) => (
+                  <div key={i} className="space-y-2 rounded border border-[hsl(var(--border))] p-3">
+                    <div className="flex gap-2">
+                      <input value={cap.title} onChange={(e) => { const c = form.advCapabilities.map((r, j) => j === i ? { ...r, title: e.target.value } : r); setForm({ ...form, advCapabilities: c }); }} placeholder="Programmatic Display" className="h-8 flex-1 border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-2 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" />
+                      <button type="button" onClick={() => { const c = form.advCapabilities.filter((_, j) => j !== i); setForm({ ...form, advCapabilities: c.length ? c : [{ title: '', items: [''] }] }); }} className="h-8 w-8 flex-none border border-[hsl(var(--input))] bg-[hsl(var(--background))] font-mono text-xs text-[hsl(var(--muted-foreground))] hover:border-[hsl(var(--brick))] hover:text-[hsl(var(--brick))]">×</button>
+                    </div>
+                    <textarea value={cap.items.join('\n')} onChange={(e) => { const c = form.advCapabilities.map((r, j) => j === i ? { ...r, items: e.target.value.split('\n') } : r); setForm({ ...form, advCapabilities: c }); }} rows={3} placeholder={'Geotargeting\nDemographic targeting\nKeyword retargeting'} className="w-full resize-y border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2 font-meta text-xs leading-5 outline-none focus:border-[hsl(var(--brick))]" />
+                  </div>
+                ))}
+                <button type="button" onClick={() => setForm({ ...form, advCapabilities: [...form.advCapabilities, { title: '', items: [''] }] })} className="font-meta text-[9px] uppercase tracking-[.1em] text-[hsl(var(--brick))] hover:opacity-70">+ Add capability</button>
+              </div>
+
+              <div className="border-t border-[hsl(var(--honey)/.5)]" />
+
+              {/* ── Print Ad Specs ── */}
+              <div className="space-y-3">
+                <p className="font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Print Ad Specs</p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="block">
+                    <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">File types</span>
+                    <input value={form.advSpecsFileTypes} onChange={(e) => update('advSpecsFileTypes', e.target.value)} placeholder="PDF (fonts embedded) or JPG" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Resolution</span>
+                    <input value={form.advSpecsResolution} onChange={(e) => update('advSpecsResolution', e.target.value)} placeholder="300 DPI" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Color</span>
+                    <input value={form.advSpecsColor} onChange={(e) => update('advSpecsColor', e.target.value)} placeholder="CMYK" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Bleed</span>
+                    <input value={form.advSpecsBleed} onChange={(e) => update('advSpecsBleed', e.target.value)} placeholder='.125" on all sides' className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" />
+                  </label>
+                </div>
+                <p className="font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Size table</p>
+                {form.advSpecsSizes.map((row, i) => (
+                  <div key={i} className="flex gap-2">
+                    <input value={row.size} onChange={(e) => { const s = form.advSpecsSizes.map((r, j) => j === i ? { ...r, size: e.target.value } : r); setForm({ ...form, advSpecsSizes: s }); }} placeholder="Full Page (with bleed)" className="h-8 flex-1 border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-2 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" />
+                    <input value={row.dims} onChange={(e) => { const s = form.advSpecsSizes.map((r, j) => j === i ? { ...r, dims: e.target.value } : r); setForm({ ...form, advSpecsSizes: s }); }} placeholder='8.625" x 11.125"' className="h-8 w-40 border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-2 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" />
+                    <button type="button" onClick={() => { const s = form.advSpecsSizes.filter((_, j) => j !== i); setForm({ ...form, advSpecsSizes: s.length ? s : [{ size: '', dims: '' }] }); }} className="h-8 w-8 flex-none border border-[hsl(var(--input))] bg-[hsl(var(--background))] font-mono text-xs text-[hsl(var(--muted-foreground))] hover:border-[hsl(var(--brick))] hover:text-[hsl(var(--brick))]">×</button>
+                  </div>
+                ))}
+                <button type="button" onClick={() => setForm({ ...form, advSpecsSizes: [...form.advSpecsSizes, { size: '', dims: '' }] })} className="font-meta text-[9px] uppercase tracking-[.1em] text-[hsl(var(--brick))] hover:opacity-70">+ Add size</button>
+              </div>
+
+              <div className="border-t border-[hsl(var(--honey)/.5)]" />
+
+              {/* ── Rate Card ── */}
+              <div className="space-y-3">
+                <p className="font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Rate Card</p>
+                {form.advRateCard.map((row, i) => (
+                  <div key={i} className="flex gap-2">
+                    <input value={row.placement} onChange={(e) => { const r = form.advRateCard.map((x, j) => j === i ? { ...x, placement: e.target.value } : x); setForm({ ...form, advRateCard: r }); }} placeholder="Full Page" className="h-8 flex-1 border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-2 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" />
+                    <input value={row.rate} onChange={(e) => { const r = form.advRateCard.map((x, j) => j === i ? { ...x, rate: e.target.value } : x); setForm({ ...form, advRateCard: r }); }} placeholder="$875" className="h-8 w-24 border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-2 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" />
+                    <button type="button" onClick={() => { const r = form.advRateCard.filter((_, j) => j !== i); setForm({ ...form, advRateCard: r.length ? r : [{ placement: '', rate: '' }] }); }} className="h-8 w-8 flex-none border border-[hsl(var(--input))] bg-[hsl(var(--background))] font-mono text-xs text-[hsl(var(--muted-foreground))] hover:border-[hsl(var(--brick))] hover:text-[hsl(var(--brick))]">×</button>
+                  </div>
+                ))}
+                <button type="button" onClick={() => setForm({ ...form, advRateCard: [...form.advRateCard, { placement: '', rate: '' }] })} className="font-meta text-[9px] uppercase tracking-[.1em] text-[hsl(var(--brick))] hover:opacity-70">+ Add row</button>
+              </div>
+
+              <div className="border-t border-[hsl(var(--honey)/.5)]" />
+
+              {/* ── Production Schedule ── */}
+              <div className="space-y-3">
+                <p className="font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Production Schedule</p>
+                <p className="font-ui text-[10px] leading-4 text-[hsl(var(--muted-foreground))]">Issue name / Materials due / Delivery date — one row per issue.</p>
+                {form.advSchedule.map((row, i) => (
+                  <div key={i} className="flex gap-2">
+                    <input value={row.issue} onChange={(e) => { const s = form.advSchedule.map((r, j) => j === i ? { ...r, issue: e.target.value } : r); setForm({ ...form, advSchedule: s }); }} placeholder="LAS7 (Sep/Oct)" className="h-8 flex-1 border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-2 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" />
+                    <input value={row.materialsDue} onChange={(e) => { const s = form.advSchedule.map((r, j) => j === i ? { ...r, materialsDue: e.target.value } : r); setForm({ ...form, advSchedule: s }); }} placeholder="8/27/2026" className="h-8 w-28 border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-2 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" />
+                    <input value={row.deliveryDate} onChange={(e) => { const s = form.advSchedule.map((r, j) => j === i ? { ...r, deliveryDate: e.target.value } : r); setForm({ ...form, advSchedule: s }); }} placeholder="9/18/2026" className="h-8 w-28 border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-2 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" />
+                    <button type="button" onClick={() => { const s = form.advSchedule.filter((_, j) => j !== i); setForm({ ...form, advSchedule: s.length ? s : [{ issue: '', materialsDue: '', deliveryDate: '' }] }); }} className="h-8 w-8 flex-none border border-[hsl(var(--input))] bg-[hsl(var(--background))] font-mono text-xs text-[hsl(var(--muted-foreground))] hover:border-[hsl(var(--brick))] hover:text-[hsl(var(--brick))]">×</button>
+                  </div>
+                ))}
+                <button type="button" onClick={() => setForm({ ...form, advSchedule: [...form.advSchedule, { issue: '', materialsDue: '', deliveryDate: '' }] })} className="font-meta text-[9px] uppercase tracking-[.1em] text-[hsl(var(--brick))] hover:opacity-70">+ Add issue</button>
+              </div>
+
+              <div className="border-t border-[hsl(var(--honey)/.5)]" />
+
+              {/* ── Contact / CTA ── */}
+              <div className="space-y-3">
+                <p className="font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Contact / CTA</p>
+                <label className="block">
+                  <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">CTA headline</span>
+                  <input value={form.advCtaHeadline} onChange={(e) => update('advCtaHeadline', e.target.value)} placeholder="Get Started" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" />
+                </label>
+                <label className="block">
+                  <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">CTA body</span>
+                  <textarea value={form.advCtaBody} onChange={(e) => update('advCtaBody', e.target.value)} rows={3} placeholder="For more information or to reserve your space, contact Blake Adams today." className="w-full resize-y border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2.5 font-meta text-xs leading-5 outline-none focus:border-[hsl(var(--brick))]" />
+                </label>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="block">
+                    <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Phone</span>
+                    <input value={form.advCtaPhone} onChange={(e) => update('advCtaPhone', e.target.value)} placeholder="678.877.5065" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Email</span>
+                    <input value={form.advCtaEmail} onChange={(e) => update('advCtaEmail', e.target.value)} placeholder="blake@kartpathmedia.com" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" />
+                  </label>
+                </div>
+              </div>
+            </div>
+          );
+
           if (ct === 'lifestyle-column') return (
             <div className="space-y-4 rounded border border-[hsl(var(--honey)/.4)] bg-[hsl(var(--honey)/.06)] p-4">
               <p className="font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--brick))]">Lifestyle Column fields</p>
@@ -2352,6 +2530,22 @@ export default function Staff() {
         footerLogoMediaId: d.footerLogoMediaId ?? '',
         footerLogoUrl: d.footerLogoUrl ?? '',
         kartpathWebsiteUrl: d.kartpathWebsiteUrl ?? '',
+        advReachHeadline: d.reachHeadline ?? '',
+        advReachBody: d.reachBody ?? '',
+        advReachStats: (() => { try { const p = JSON.parse(d.reachStats ?? '[]'); return Array.isArray(p) && p.length ? p as Array<{ label: string; value: string }> : [{ label: '', value: '' }]; } catch { return [{ label: '', value: '' }]; } })(),
+        advReachClosing: d.reachClosing ?? '',
+        advCapabilities: (() => { try { const p = JSON.parse(d.capabilities ?? '[]'); return Array.isArray(p) && p.length ? p as Array<{ title: string; items: string[] }> : [{ title: '', items: [''] }]; } catch { return [{ title: '', items: [''] }]; } })(),
+        advSpecsFileTypes: d.specsFileTypes ?? '',
+        advSpecsResolution: d.specsResolution ?? '',
+        advSpecsColor: d.specsColor ?? '',
+        advSpecsBleed: d.specsBleed ?? '',
+        advSpecsSizes: (() => { try { const p = JSON.parse(d.specsSizes ?? '[]'); return Array.isArray(p) && p.length ? p as Array<{ size: string; dims: string }> : [{ size: '', dims: '' }]; } catch { return [{ size: '', dims: '' }]; } })(),
+        advRateCard: (() => { try { const p = JSON.parse(d.rateCard ?? '[]'); return Array.isArray(p) && p.length ? p as Array<{ placement: string; rate: string }> : [{ placement: '', rate: '' }]; } catch { return [{ placement: '', rate: '' }]; } })(),
+        advSchedule: (() => { try { const p = JSON.parse(d.schedule ?? '[]'); return Array.isArray(p) && p.length ? p as Array<{ issue: string; materialsDue: string; deliveryDate: string }> : [{ issue: '', materialsDue: '', deliveryDate: '' }]; } catch { return [{ issue: '', materialsDue: '', deliveryDate: '' }]; } })(),
+        advCtaHeadline: d.ctaHeadline ?? '',
+        advCtaBody: d.ctaBody ?? '',
+        advCtaPhone: d.ctaPhone ?? '',
+        advCtaEmail: d.ctaEmail ?? '',
         pullQuote: item.pullQuote ?? '',
         metaDescription: item.metaDescription ?? '',
         listingTier: (item.listingTier as 'standard' | 'premium') ?? 'standard',
@@ -2486,6 +2680,25 @@ export default function Staff() {
         footerLogoMediaId: form.footerLogoMediaId,
         footerLogoUrl: form.footerLogoUrl,
         kartpathWebsiteUrl: form.kartpathWebsiteUrl.trim(),
+      };
+    } else if (ct === 'advertise-page') {
+      details = {
+        reachHeadline: form.advReachHeadline.trim(),
+        reachBody: form.advReachBody.trim(),
+        reachStats: JSON.stringify(form.advReachStats.filter((s) => s.label.trim() || s.value.trim())),
+        reachClosing: form.advReachClosing.trim(),
+        capabilities: JSON.stringify(form.advCapabilities.filter((c) => c.title.trim()).map((c) => ({ title: c.title.trim(), items: c.items.map((it) => it.trim()).filter(Boolean) }))),
+        specsFileTypes: form.advSpecsFileTypes.trim(),
+        specsResolution: form.advSpecsResolution.trim(),
+        specsColor: form.advSpecsColor.trim(),
+        specsBleed: form.advSpecsBleed.trim(),
+        specsSizes: JSON.stringify(form.advSpecsSizes.filter((s) => s.size.trim() || s.dims.trim())),
+        rateCard: JSON.stringify(form.advRateCard.filter((r) => r.placement.trim() || r.rate.trim())),
+        schedule: JSON.stringify(form.advSchedule.filter((r) => r.issue.trim())),
+        ctaHeadline: form.advCtaHeadline.trim(),
+        ctaBody: form.advCtaBody.trim(),
+        ctaPhone: form.advCtaPhone.trim(),
+        ctaEmail: form.advCtaEmail.trim(),
       };
     } else if (ct === 'digital_edition') {
       if (isCreating && !/^edition-\d{2,}$/.test(form.slug.trim())) {
