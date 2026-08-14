@@ -1085,7 +1085,7 @@ export function About() {
                   aria-label={expandable ? `Learn more about ${member.name}` : undefined}
                 >
                   {member.photo
-                    ? <img src={member.photo} alt={member.name} className="team-photo" style={{ objectFit: 'cover' }} />
+                    ? <img src={member.photo} alt={member.name} className="team-photo" />
                     : <div className="team-photo" />}
                   <div>
                     <h2>{member.name}</h2>
