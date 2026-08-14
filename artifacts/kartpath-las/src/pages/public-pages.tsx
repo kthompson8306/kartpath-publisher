@@ -167,7 +167,7 @@ export function Footer() {
         )}
       </div>
       <div><h4>Explore</h4>{nav.slice(0, 4).map(([label, href]) => <Link key={href} href={href}>{label}</Link>)}</div>
-      <div><h4>Publication</h4><Link href="/editions">Editions</Link><Link href="/about">About</Link><Link href="/advertise">Advertise</Link></div>
+      <div><h4>Publication</h4><Link href="/editions">Editions</Link><Link href="/about">About</Link><Link href="/advertise">Advertise</Link><Link href="/privacy-policy">Privacy Policy</Link></div>
       <div><h4>Business Directory</h4><Link href="/directory">Browse All</Link><Link href="/advertise">Add a Business</Link></div>
       <div><h4>Contact</h4><a href="mailto:kevin@kartpathmedia.com">kevin@kartpathmedia.com</a><a href="mailto:blake@kartpathmedia.com">blake@kartpathmedia.com</a></div>
     </div>
@@ -1395,6 +1395,108 @@ export function ArticleDetail() {
 function advParse<T>(s: string | undefined, fallback: T): T {
   if (!s) return fallback;
   try { return JSON.parse(s) as T; } catch { return fallback; }
+}
+
+// ── Privacy Policy ────────────────────────────────────────────────────────────
+
+type PrivacyBlock =
+  | { type: 'h2'; text: string }
+  | { type: 'h3'; text: string }
+  | { type: 'p'; text: string }
+  | { type: 'ul'; items: string[] };
+
+function parsePrivacyBody(text: string): PrivacyBlock[] {
+  const lines = text.split('\n');
+  const blocks: PrivacyBlock[] = [];
+  let listBuf: string[] = [];
+  const flush = () => {
+    if (listBuf.length) { blocks.push({ type: 'ul', items: [...listBuf] }); listBuf = []; }
+  };
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (line.startsWith('## ')) { flush(); blocks.push({ type: 'h2', text: line.slice(3) }); }
+    else if (line.startsWith('### ')) { flush(); blocks.push({ type: 'h3', text: line.slice(4) }); }
+    else if (line.startsWith('- ')) { listBuf.push(line.slice(2)); }
+    else if (line === '') { flush(); }
+    else { flush(); blocks.push({ type: 'p', text: line }); }
+  }
+  flush();
+  return blocks;
+}
+
+export function PrivacyPolicy() {
+  const query = useGetPublishedArticle(PUBLICATION_SLUG, 'privacy-policy');
+  const item = query.data;
+  const d = (item?.details ?? {}) as Record<string, string>;
+  const effectiveDate = d.effectiveDate || '';
+  const lastUpdated = d.lastUpdated || '';
+  const blocks = parsePrivacyBody(item?.body ?? '');
+  const seoDescription = item?.metaDescription || 'Privacy Policy for Life Around Senoia, published by KartPath Media LLC. Explains what information we collect, how we use it, and your choices.';
+
+  return (
+    <PageShell seo={{ title: 'Privacy Policy — Life Around Senoia', description: seoDescription, path: '/privacy-policy' }}>
+      <PageHero kicker="Legal" title="Privacy Policy">
+        {effectiveDate ? `Effective ${effectiveDate}` : 'Life Around Senoia · KartPath Media LLC'}
+      </PageHero>
+
+      <section>
+        <div className="wrap-narrow">
+          {/* Date metadata bar */}
+          {(effectiveDate || lastUpdated) && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem', marginBottom: '2rem', paddingBottom: '1.25rem', borderBottom: '1px solid var(--line)' }}>
+              {effectiveDate && (
+                <p style={{ font: '.85rem/1.4 var(--ui)', color: 'var(--ink-soft)', margin: 0 }}>
+                  <strong style={{ color: 'var(--ink)' }}>Effective Date:</strong> {effectiveDate}
+                </p>
+              )}
+              {lastUpdated && (
+                <p style={{ font: '.85rem/1.4 var(--ui)', color: 'var(--ink-soft)', margin: 0 }}>
+                  <strong style={{ color: 'var(--ink)' }}>Last Updated:</strong> {lastUpdated}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Body blocks */}
+          {query.isPending && <p className="font-editorial text-lg opacity-40">Loading…</p>}
+          {blocks.map((block, i) => {
+            if (block.type === 'h2') return (
+              <h2 key={i} style={{ font: '700 1.35rem/1.2 var(--disp)', color: 'var(--pine)', margin: '2.75rem 0 1rem', paddingTop: '1.5rem', borderTop: '2px solid var(--pine-2)', letterSpacing: '-.01em' }}>
+                {block.text}
+              </h2>
+            );
+            if (block.type === 'h3') return (
+              <h3 key={i} style={{ font: '600 1rem/1.3 var(--ui)', color: 'var(--ink)', margin: '1.5rem 0 .35rem', textTransform: 'none', letterSpacing: '0' }}>
+                {block.text}
+              </h3>
+            );
+            if (block.type === 'ul') return (
+              <ul key={i} style={{ listStyle: 'none', padding: 0, margin: '0.75rem 0 1rem' }}>
+                {block.items.map((it, j) => (
+                  <li key={j} style={{ font: '1rem/1.65 var(--editorial)', color: 'var(--ink)', paddingLeft: '1.5rem', position: 'relative', marginBottom: '.5rem' }}>
+                    <span aria-hidden="true" style={{ position: 'absolute', left: 0, top: '.55em', width: '6px', height: '6px', borderRadius: '50%', background: 'var(--brick)', display: 'inline-block' }} />
+                    {it}
+                  </li>
+                ))}
+              </ul>
+            );
+            return (
+              <p key={i} style={{ font: '1rem/1.65 var(--editorial)', color: 'var(--ink)', marginBottom: '1rem' }}>
+                {block.text}
+              </p>
+            );
+          })}
+
+          {/* Trailing date line */}
+          {lastUpdated && blocks.length > 0 && (
+            <div style={{ marginTop: '3rem', paddingTop: '1.25rem', borderTop: '1px solid var(--line)' }}>
+              <p style={{ font: '.8rem var(--ui)', color: 'var(--ink-soft)', margin: 0 }}>Last Updated: {lastUpdated}</p>
+            </div>
+          )}
+        </div>
+      </section>
+    </PageShell>
+  );
 }
 
 export function Advertise() {

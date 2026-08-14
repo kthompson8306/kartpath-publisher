@@ -23,4 +23,5 @@ export const EditorialContentType = {
   'digital_edition': 'digital_edition',
   'about-page': 'about-page',
   'advertise-page': 'advertise-page',
+  'privacy-page': 'privacy-page',
 } as const;

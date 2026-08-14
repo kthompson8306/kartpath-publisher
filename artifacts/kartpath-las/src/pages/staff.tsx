@@ -206,6 +206,7 @@ const CONTENT_TYPES = [
   { value: EditorialContentType['lifestyle-column'], label: 'Lifestyle Column', short: 'Lifestyle' },
   { value: EditorialContentType['about-page'], label: 'About Page', short: 'About' },
   { value: EditorialContentType['advertise-page'], label: 'Advertise Page', short: 'Advertise' },
+  { value: EditorialContentType['privacy-page'], label: 'Privacy Page', short: 'Privacy' },
 ] as const;
 
 type ContentType = (typeof CONTENT_TYPES)[number]['value'];
@@ -311,6 +312,9 @@ type FormState = Omit<CreateContentItem, 'publicationId' | 'details'> & {
   advCtaBody: string;
   advCtaPhone: string;
   advCtaEmail: string;
+  // privacy-page specific
+  privEffectiveDate: string;
+  privLastUpdated: string;
 };
 
 const EMPTY_FORM: FormState = {
@@ -389,6 +393,8 @@ const EMPTY_FORM: FormState = {
   advCtaBody: '',
   advCtaPhone: '',
   advCtaEmail: '',
+  privEffectiveDate: '',
+  privLastUpdated: '',
 };
 
 function Initials({ name }: { name: string }) {
@@ -1669,6 +1675,25 @@ function Editor({
             </div>
           );
 
+          if (ct === 'privacy-page') return (
+            <div className="space-y-5 rounded border border-[hsl(var(--honey)/.4)] bg-[hsl(var(--honey)/.06)] p-4">
+              <p className="font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--brick))]">Privacy Page fields</p>
+              <p className="font-ui text-[10px] leading-4 text-[hsl(var(--muted-foreground))]">
+                The <strong>Story body</strong> field above contains the full policy text. Use <code>## N. Section Title</code> for numbered section headings, <code>### Sub-heading</code> for sub-headings within a section, <code>- item</code> for bullet points, and blank lines between paragraphs.
+              </p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="block">
+                  <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Effective Date</span>
+                  <input value={form.privEffectiveDate} onChange={(e) => update('privEffectiveDate', e.target.value)} placeholder="August 14, 2026" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" />
+                </label>
+                <label className="block">
+                  <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Last Updated</span>
+                  <input value={form.privLastUpdated} onChange={(e) => update('privLastUpdated', e.target.value)} placeholder="August 14, 2026" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" />
+                </label>
+              </div>
+            </div>
+          );
+
           if (ct === 'lifestyle-column') return (
             <div className="space-y-4 rounded border border-[hsl(var(--honey)/.4)] bg-[hsl(var(--honey)/.06)] p-4">
               <p className="font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--brick))]">Lifestyle Column fields</p>
@@ -2546,6 +2571,8 @@ export default function Staff() {
         advCtaBody: d.ctaBody ?? '',
         advCtaPhone: d.ctaPhone ?? '',
         advCtaEmail: d.ctaEmail ?? '',
+        privEffectiveDate: d.effectiveDate ?? '',
+        privLastUpdated: d.lastUpdated ?? '',
         pullQuote: item.pullQuote ?? '',
         metaDescription: item.metaDescription ?? '',
         listingTier: (item.listingTier as 'standard' | 'premium') ?? 'standard',
@@ -2699,6 +2726,11 @@ export default function Staff() {
         ctaBody: form.advCtaBody.trim(),
         ctaPhone: form.advCtaPhone.trim(),
         ctaEmail: form.advCtaEmail.trim(),
+      };
+    } else if (ct === 'privacy-page') {
+      details = {
+        effectiveDate: form.privEffectiveDate.trim(),
+        lastUpdated: form.privLastUpdated.trim(),
       };
     } else if (ct === 'digital_edition') {
       if (isCreating && !/^edition-\d{2,}$/.test(form.slug.trim())) {

@@ -22,6 +22,7 @@ export const editorialContentTypes = [
   "event",
   "about-page",
   "advertise-page",
+  "privacy-page",
 ] as const;
 
 export const editorialStatuses = ["draft", "published"] as const;
