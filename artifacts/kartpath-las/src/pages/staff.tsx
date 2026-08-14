@@ -204,6 +204,7 @@ const CONTENT_TYPES = [
   { value: EditorialContentType['crooks-corner'], label: "Crook's Corner", short: "Crook's" },
   { value: EditorialContentType.recipe, label: 'Recipe', short: 'Recipe' },
   { value: EditorialContentType['lifestyle-column'], label: 'Lifestyle Column', short: 'Lifestyle' },
+  { value: EditorialContentType['about-page'], label: 'About Page', short: 'About' },
 ] as const;
 
 type ContentType = (typeof CONTENT_TYPES)[number]['value'];
@@ -260,6 +261,9 @@ type FormState = Omit<CreateContentItem, 'publicationId' | 'details'> & {
   issuuEmbedUrl: string;
   editionDescription: string;
   editionEditorialTitle: string;
+  // about-page specific
+  kartpathHeadline: string;
+  kartpathBody: string;
   // cover photo focal point (0–1 range, default 0.5) and zoom (1 = natural fit, >1 = tighter crop)
   coverFocalX: number;
   coverFocalY: number;
@@ -304,6 +308,8 @@ const EMPTY_FORM: FormState = {
   issuuEmbedUrl: '',
   editionDescription: '',
   editionEditorialTitle: '',
+  kartpathHeadline: '',
+  kartpathBody: '',
   coverFocalX: 0.5,
   coverFocalY: 0.5,
   coverZoom: 1,
@@ -1274,6 +1280,21 @@ function Editor({
             </div>
           );
 
+          if (ct === 'about-page') return (
+            <div className="space-y-4 rounded border border-[hsl(var(--honey)/.4)] bg-[hsl(var(--honey)/.06)] p-4">
+              <p className="font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--brick))]">About Page fields</p>
+              <p className="font-ui text-[10px] leading-4 text-[hsl(var(--muted-foreground))]">The <strong>Headline</strong> and <strong>Story body</strong> fields above drive the "About Life Around Senoia" section. Fill in the KartPath Media section below.</p>
+              <label className="block">
+                <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">KartPath Media — section headline</span>
+                <input value={form.kartpathHeadline} onChange={(e) => update('kartpathHeadline', e.target.value)} placeholder="About KartPath Media" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" />
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">KartPath Media — body copy <span className="normal-case tracking-normal opacity-60">(separate paragraphs with a blank line)</span></span>
+                <textarea value={form.kartpathBody} onChange={(e) => update('kartpathBody', e.target.value)} rows={8} placeholder="Our mission is simple…" className="w-full resize-y border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2.5 font-meta text-xs leading-5 outline-none focus:border-[hsl(var(--brick))]" />
+              </label>
+            </div>
+          );
+
           if (ct === 'lifestyle-column') return (
             <div className="space-y-4 rounded border border-[hsl(var(--honey)/.4)] bg-[hsl(var(--honey)/.06)] p-4">
               <p className="font-meta text-[9px] uppercase tracking-[.15em] text-[hsl(var(--brick))]">Lifestyle Column fields</p>
@@ -2114,6 +2135,8 @@ export default function Staff() {
         issuuEmbedUrl: d.issuu_embed_url ?? '',
         editionDescription: d.description ?? '',
         editionEditorialTitle: d.editorial_title ?? '',
+        kartpathHeadline: d.kartpathHeadline ?? '',
+        kartpathBody: d.kartpathBody ?? '',
         pullQuote: item.pullQuote ?? '',
         metaDescription: item.metaDescription ?? '',
         listingTier: (item.listingTier as 'standard' | 'premium') ?? 'standard',
@@ -2222,6 +2245,13 @@ export default function Staff() {
         ...(form.bizInstagram.trim() && { instagram_url: form.bizInstagram.trim() }),
         address: form.bizAddress.trim(),
         hours: form.bizHours.trim(),
+      };
+    } else if (ct === 'about-page') {
+      if (!form.body.trim()) { setEditorError('LAS section body is required.'); return null; }
+      details = {
+        lasHeadline: form.title.trim(),
+        kartpathHeadline: form.kartpathHeadline.trim() || 'About KartPath Media',
+        kartpathBody: form.kartpathBody.trim(),
       };
     } else if (ct === 'digital_edition') {
       if (isCreating && !/^edition-\d{2,}$/.test(form.slug.trim())) {

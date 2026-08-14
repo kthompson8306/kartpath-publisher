@@ -951,8 +951,129 @@ export function About() {
   const [sent, setSent] = useState(false);
   const [nomError, setNomError] = useState('');
   const nominateMutation = useSubmitNomination();
-  const expectations = [['Featured Family', 'Sharing what makes a local household unique, grounded, and inspiring.'], ['Young Achiever', 'Highlighting a student making an impact in the classroom, on the field, or in the community.'], ['Nonprofit Spotlight', 'Uplifting the organizations making a real difference — and ways you can help.'], ['Pet of the Month', 'Because our furry, feathered, and four-legged friends are family too.'], ['Secret Sauce & Crook’s Corner', 'Reflection and local history — the columns that give the magazine its soul.'], ['Events & Recipes', 'What’s happening downtown and what to serve when you get there.']] as const;
-  return <PageShell seo={{ title: 'About Us — Life Around Senoia', description: 'Meet the people behind Life Around Senoia, a magazine written by the town, for the town.', path: '/about' }}><PageHero kicker="About the Publication" title={<>A magazine written by the town, for the town.</>}>Life Around Senoia is a celebration of community, connection, and the people who make this small town special.</PageHero><section><div className="wrap-narrow quote-block"><p>“We’re both fathers, friends, and participants in our communities. This publication is our way of giving back — of highlighting what’s good, celebrating what’s real, and making sure no one in town feels like a stranger.”</p><span className="mono-label">— Kevin Thompson, Publisher</span></div></section><section className="on-paper2"><div className="wrap"><SectionHead index="" title="Our Team" /><div className="team-grid"><article className="team-card"><div className="team-photo" /><div><h2>Kevin Thompson</h2><span className="team-role">Publisher &amp; Founder</span><p>Nearly 20 years in publishing, including work with a niche publisher of nearly 35 enthusiast titles — a journey that led Kevin to launch a business helping publishers and content-driven organizations scale, tell better stories, and grow their communities.</p></div></article><article className="team-card"><div className="team-photo" /><div><h2>Blake Adams</h2><span className="team-role">Advertising Director &amp; Managing Partner</span><p>Born and raised in Fayette and Coweta County, Blake has proudly called Senoia home for over 15 years — active in the local business and creative scene, with a deep passion for connecting people and building things that matter to his hometown.</p></div></article></div><SectionHead index="" title="What To Expect" /><div className="expect-grid">{expectations.map(([title, body]) => <article className="expect-item" key={title}><h3>{title}</h3><p>{body}</p></article>)}</div></div></section><section className="nominate-section" id="nominate"><div className="wrap"><SectionHead index="" title="Nominate a Story" /><p className="nominate-intro">This magazine is shaped by the community. Nominate a Featured Family, Young Achiever, local business, nonprofit, or Pet of the Month.</p><form className="nominate-form" onSubmit={(e) => { e.preventDefault(); setNomError(''); const fd = new FormData(e.currentTarget); nominateMutation.mutate({ slug: PUBLICATION_SLUG, data: { firstName: fd.get('firstName') as string, lastName: fd.get('lastName') as string, nominatorEmail: fd.get('nominatorEmail') as string, phone: (fd.get('phone') as string) || undefined, city: (fd.get('city') as string) || undefined, category: fd.get('category') as string, story: fd.get('story') as string } }, { onSuccess: () => setSent(true), onError: () => setNomError('Something went wrong. Please try again or email editorial@kartpathmedia.com.') }); }}><label>First Name<input required type="text" name="firstName" /></label><label>Last Name<input required type="text" name="lastName" /></label><label>Email<input required type="email" name="nominatorEmail" /></label><label>Phone<input type="tel" name="phone" /></label><label>City<input type="text" name="city" /></label><label className="full">I'd like to nominate a...<select name="category"><option>Featured Family</option><option>Young Achiever</option><option>Local Business</option><option>Nonprofit</option><option>Pet of the Month</option><option>Community Event</option><option>Other</option></select></label><label className="full">Tell us their story<textarea required name="story" /></label><div className="full">{nomError && <p style={{ color: 'var(--brick)', font: '.88rem var(--ui)', marginBottom: 8 }}>{nomError}</p>}<button className="btn-sharp honey-button" type="submit" disabled={nominateMutation.isPending}>{sent ? 'Nomination received!' : nominateMutation.isPending ? 'Sending…' : 'Submit Nomination'} <ArrowRight size={14} /></button></div></form><p className="nominate-note">Or email <a href="mailto:editorial@kartpathmedia.com">editorial@kartpathmedia.com</a></p></div></section></PageShell>;
+
+  // Fetch the CMS-editable about-page singleton
+  const aboutQuery = useGetPublishedArticle(PUBLICATION_SLUG, 'about');
+  const aboutItem = aboutQuery.data;
+  const details = (aboutItem?.details ?? {}) as Record<string, string>;
+
+  const lasHeadline = details.lasHeadline || aboutItem?.title || 'About Life Around Senoia';
+  const lasParagraphs = (aboutItem?.body ?? '').split(/\n\n+/).filter(Boolean);
+  const kartpathHeadline = details.kartpathHeadline || 'About KartPath Media';
+  const kartpathParagraphs = (details.kartpathBody ?? '').split(/\n\n+/).filter(Boolean);
+
+  const heroSubtitle = aboutItem?.summary || 'Life Around Senoia is a celebration of community, connection, and the people who make this small town special.';
+  const seoDescription = aboutItem?.metaDescription || aboutItem?.summary || 'Meet the people behind Life Around Senoia, a magazine written by the town, for the town.';
+
+  const expectations = [
+    ['Featured Family', 'Sharing what makes a local household unique, grounded, and inspiring.'],
+    ['Young Achiever', 'Highlighting a student making an impact in the classroom, on the field, or in the community.'],
+    ['Nonprofit Spotlight', 'Uplifting the organizations making a real difference — and ways you can help.'],
+    ['Pet of the Month', 'Because our furry, feathered, and four-legged friends are family too.'],
+    ["Secret Sauce & Crook's Corner", 'Reflection and local history — the columns that give the magazine its soul.'],
+    ['Events & Recipes', "What's happening downtown and what to serve when you get there."],
+  ] as const;
+
+  return (
+    <PageShell seo={{ title: 'About Us — Life Around Senoia', description: seoDescription, path: '/about' }}>
+      <PageHero kicker="About the Publication" title={<>A magazine written by the town, for the town.</>}>
+        {heroSubtitle}
+      </PageHero>
+
+      {/* About Life Around Senoia — CMS-driven */}
+      <section>
+        <div className="wrap-narrow">
+          <SectionHead index="" title={lasHeadline} />
+          {aboutQuery.isPending && <p className="font-editorial text-lg opacity-40">Loading…</p>}
+          {lasParagraphs.map((para, i) => (
+            <p key={i} className="font-editorial text-lg leading-relaxed" style={{ marginBottom: '1.25rem' }}>{para}</p>
+          ))}
+        </div>
+      </section>
+
+      {/* About KartPath Media — CMS-driven */}
+      {(kartpathParagraphs.length > 0 || aboutQuery.isPending) && (
+        <section className="on-paper2">
+          <div className="wrap-narrow">
+            <SectionHead index="" title={kartpathHeadline} />
+            {kartpathParagraphs.map((para, i) => (
+              <p key={i} className="font-editorial text-lg leading-relaxed" style={{ marginBottom: '1.25rem' }}>{para}</p>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Our Team — hardcoded, CMS-editable in a future update */}
+      <section className="on-paper2">
+        <div className="wrap">
+          <SectionHead index="" title="Our Team" />
+          <div className="team-grid">
+            <article className="team-card">
+              <div className="team-photo" />
+              <div>
+                <h2>Kevin Thompson</h2>
+                <span className="team-role">Publisher &amp; Founder</span>
+                <p>Nearly 20 years in publishing, including work with a niche publisher of nearly 35 enthusiast titles — a journey that led Kevin to launch a business helping publishers and content-driven organizations scale, tell better stories, and grow their communities.</p>
+              </div>
+            </article>
+            <article className="team-card">
+              <div className="team-photo" />
+              <div>
+                <h2>Blake Adams</h2>
+                <span className="team-role">Advertising Director &amp; Managing Partner</span>
+                <p>Born and raised in Fayette and Coweta County, Blake has proudly called Senoia home for over 15 years — active in the local business and creative scene, with a deep passion for connecting people and building things that matter to his hometown.</p>
+              </div>
+            </article>
+          </div>
+          <SectionHead index="" title="What To Expect" />
+          <div className="expect-grid">
+            {expectations.map(([title, body]) => (
+              <article className="expect-item" key={title}><h3>{title}</h3><p>{body}</p></article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Nominate a Story — form logic unchanged */}
+      <section className="nominate-section" id="nominate">
+        <div className="wrap">
+          <SectionHead index="" title="Nominate a Story" />
+          <p className="nominate-intro">This magazine is shaped by the community. Nominate a Featured Family, Young Achiever, local business, nonprofit, or Pet of the Month.</p>
+          <form className="nominate-form" onSubmit={(e) => {
+            e.preventDefault();
+            setNomError('');
+            const fd = new FormData(e.currentTarget);
+            nominateMutation.mutate({ slug: PUBLICATION_SLUG, data: { firstName: fd.get('firstName') as string, lastName: fd.get('lastName') as string, nominatorEmail: fd.get('nominatorEmail') as string, phone: (fd.get('phone') as string) || undefined, city: (fd.get('city') as string) || undefined, category: fd.get('category') as string, story: fd.get('story') as string } }, { onSuccess: () => setSent(true), onError: () => setNomError('Something went wrong. Please try again or email editorial@kartpathmedia.com.') });
+          }}>
+            <label>First Name<input required type="text" name="firstName" /></label>
+            <label>Last Name<input required type="text" name="lastName" /></label>
+            <label>Email<input required type="email" name="nominatorEmail" /></label>
+            <label>Phone<input type="tel" name="phone" /></label>
+            <label>City<input type="text" name="city" /></label>
+            <label className="full">I'd like to nominate a…
+              <select name="category">
+                <option>Featured Family</option>
+                <option>Young Achiever</option>
+                <option>Local Business</option>
+                <option>Nonprofit</option>
+                <option>Pet of the Month</option>
+                <option>Community Event</option>
+                <option>Other</option>
+              </select>
+            </label>
+            <label className="full">Tell us their story<textarea required name="story" /></label>
+            <div className="full">
+              {nomError && <p style={{ color: 'var(--brick)', font: '.88rem var(--ui)', marginBottom: 8 }}>{nomError}</p>}
+              <button className="btn-sharp honey-button" type="submit" disabled={nominateMutation.isPending}>
+                {sent ? 'Nomination received!' : nominateMutation.isPending ? 'Sending…' : 'Submit Nomination'} <ArrowRight size={14} />
+              </button>
+            </div>
+          </form>
+          <p className="nominate-note">Or email <a href="mailto:editorial@kartpathmedia.com">editorial@kartpathmedia.com</a></p>
+        </div>
+      </section>
+    </PageShell>
+  );
 }
 
 // ── Shared article detail page ────────────────────────────────────────────────
