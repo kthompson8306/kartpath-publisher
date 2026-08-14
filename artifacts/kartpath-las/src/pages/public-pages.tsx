@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { CustomCursor } from '@/components/custom-cursor';
 import type { ReactNode } from 'react';
 import { ArrowLeft, ArrowRight, ArrowUpRight, Menu, Search, X } from 'lucide-react';
 import { FaFacebook, FaInstagram } from 'react-icons/fa6';
@@ -167,7 +168,7 @@ function AdZone({ label = 'Advertisement' }: { label?: string }) {
 }
 
 function PageShell({ children, seo }: { children: ReactNode; seo: SeoProps }) {
-  return <div className="las-site"><Seo {...seo} /><PublicHeader /><main>{children}</main><Footer /></div>;
+  return <div className="las-site"><CustomCursor /><Seo {...seo} /><PublicHeader /><main>{children}</main><Footer /></div>;
 }
 
 function PageHero({ kicker, title, children }: { kicker: string; title: ReactNode; children: ReactNode }) {
