@@ -150,9 +150,22 @@ export function PublicHeader() {
 }
 
 export function Footer() {
+  const aboutQuery = useGetPublishedArticle(PUBLICATION_SLUG, 'about');
+  const d = (aboutQuery.data?.details ?? {}) as Record<string, string>;
+  const footerLogoUrl = d.footerLogoUrl || null;
+  const kartpathUrl = d.kartpathWebsiteUrl || null;
+
   return <footer>
     <div className="footer-grid">
-      <div><div className="brand footer-brand">LIFE <em>around</em> SENOIA</div><p className="footer-tag">A bi-monthly magazine and digital publication for the people, businesses, and stories of Senoia, GA. Published by KartPath Media.</p></div>
+      <div>
+        <div className="brand footer-brand">LIFE <em>around</em> SENOIA</div>
+        <p className="footer-tag">A bi-monthly magazine and digital publication for the people, businesses, and stories of Senoia, GA. Published by KartPath Media.</p>
+        {footerLogoUrl && (
+          kartpathUrl
+            ? <a href={kartpathUrl} target="_blank" rel="noopener noreferrer" className="footer-logo-link"><img src={footerLogoUrl} alt="KartPath Media" className="footer-logo-img" /></a>
+            : <img src={footerLogoUrl} alt="KartPath Media" className="footer-logo-img" />
+        )}
+      </div>
       <div><h4>Explore</h4>{nav.slice(0, 4).map(([label, href]) => <Link key={href} href={href}>{label}</Link>)}</div>
       <div><h4>Publication</h4><Link href="/editions">Editions</Link><Link href="/about">About</Link><Link href="/advertise">Advertise</Link></div>
       <div><h4>Business Directory</h4><Link href="/directory">Browse All</Link><Link href="/advertise">Add a Business</Link></div>
@@ -948,9 +961,56 @@ export function EditionReader() {
   );
 }
 
+// ── Team modal ────────────────────────────────────────────────────────────────
+
+type TeamMemberModal = {
+  name: string;
+  role: string;
+  bio: string;
+  photo: string;
+  expandedPhoto: string;
+  expandedBio: string;
+};
+
+function TeamModal({ member, onClose }: { member: TeamMemberModal; onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = '';
+    };
+  }, [onClose]);
+
+  const displayPhoto = member.expandedPhoto || member.photo;
+  const displayBio = member.expandedBio || member.bio;
+
+  return (
+    <div className="team-modal-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label={`About ${member.name}`}>
+      <div className="team-modal" onClick={(e) => e.stopPropagation()}>
+        <button className="team-modal-close" onClick={onClose} aria-label="Close">
+          <X size={16} />
+        </button>
+        {displayPhoto && <img src={displayPhoto} alt={member.name} className="team-modal-photo" />}
+        <div className="team-modal-body">
+          <div className="team-modal-name-role">
+            <h2>{member.name}</h2>
+            <span className="team-role">{member.role}</span>
+          </div>
+          {displayBio && <p className="team-modal-bio">{displayBio}</p>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export function About() {
   const [sent, setSent] = useState(false);
   const [nomError, setNomError] = useState('');
+  const [activeTeamMember, setActiveTeamMember] = useState<TeamMemberModal | null>(null);
   const nominateMutation = useSubmitNomination();
 
   // Fetch the CMS-editable about-page singleton
@@ -1010,21 +1070,34 @@ export function About() {
           <SectionHead index="" title="Our Team" />
           <div className="team-grid">
             {[
-              { name: details.member1Name, role: details.member1Role, bio: details.member1Bio, photo: details.member1PhotoUrl },
-              { name: details.member2Name, role: details.member2Role, bio: details.member2Bio, photo: details.member2PhotoUrl },
-            ].filter((m) => m.name).map((member) => (
-              <article className="team-card" key={member.name}>
-                {member.photo
-                  ? <img src={member.photo} alt={member.name} className="team-photo" style={{ objectFit: 'cover' }} />
-                  : <div className="team-photo" />}
-                <div>
-                  <h2>{member.name}</h2>
-                  <span className="team-role">{member.role}</span>
-                  <p>{member.bio}</p>
-                </div>
-              </article>
-            ))}
+              { name: details.member1Name, role: details.member1Role, bio: details.member1Bio, photo: details.member1PhotoUrl, expandedPhoto: details.member1ExpandedPhotoUrl ?? '', expandedBio: details.member1ExpandedBio ?? '' },
+              { name: details.member2Name, role: details.member2Role, bio: details.member2Bio, photo: details.member2PhotoUrl, expandedPhoto: details.member2ExpandedPhotoUrl ?? '', expandedBio: details.member2ExpandedBio ?? '' },
+            ].filter((m) => m.name).map((member) => {
+              const expandable = !!(member.expandedPhoto || member.expandedBio);
+              return (
+                <article
+                  className={`team-card${expandable ? ' team-card--clickable' : ''}`}
+                  key={member.name}
+                  onClick={expandable ? () => setActiveTeamMember(member) : undefined}
+                  role={expandable ? 'button' : undefined}
+                  tabIndex={expandable ? 0 : undefined}
+                  onKeyDown={expandable ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveTeamMember(member); } } : undefined}
+                  aria-label={expandable ? `Learn more about ${member.name}` : undefined}
+                >
+                  {member.photo
+                    ? <img src={member.photo} alt={member.name} className="team-photo" style={{ objectFit: 'cover' }} />
+                    : <div className="team-photo" />}
+                  <div>
+                    <h2>{member.name}</h2>
+                    <span className="team-role">{member.role}</span>
+                    <p>{member.bio}</p>
+                    {expandable && <span className="team-card-cta">Read more →</span>}
+                  </div>
+                </article>
+              );
+            })}
           </div>
+          {activeTeamMember && <TeamModal member={activeTeamMember} onClose={() => setActiveTeamMember(null)} />}
           <SectionHead index="" title="What To Expect" />
           <div className="expect-grid">
             {expectations.map(([title, body]) => (

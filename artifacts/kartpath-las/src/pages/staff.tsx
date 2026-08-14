@@ -274,6 +274,17 @@ type FormState = Omit<CreateContentItem, 'publicationId' | 'details'> & {
   member2Bio: string;
   member2MediaId: string;
   member2PhotoUrl: string;
+  // about-page team expanded modal content
+  member1ExpandedMediaId: string;
+  member1ExpandedPhotoUrl: string;
+  member1ExpandedBio: string;
+  member2ExpandedMediaId: string;
+  member2ExpandedPhotoUrl: string;
+  member2ExpandedBio: string;
+  // about-page footer logo
+  footerLogoMediaId: string;
+  footerLogoUrl: string;
+  kartpathWebsiteUrl: string;
   // cover photo focal point (0–1 range, default 0.5) and zoom (1 = natural fit, >1 = tighter crop)
   coverFocalX: number;
   coverFocalY: number;
@@ -330,6 +341,15 @@ const EMPTY_FORM: FormState = {
   member2Bio: '',
   member2MediaId: '',
   member2PhotoUrl: '',
+  member1ExpandedMediaId: '',
+  member1ExpandedPhotoUrl: '',
+  member1ExpandedBio: '',
+  member2ExpandedMediaId: '',
+  member2ExpandedPhotoUrl: '',
+  member2ExpandedBio: '',
+  footerLogoMediaId: '',
+  footerLogoUrl: '',
+  kartpathWebsiteUrl: '',
   coverFocalX: 0.5,
   coverFocalY: 0.5,
   coverZoom: 1,
@@ -1396,6 +1416,19 @@ function Editor({
 
               <div className="border-t border-[hsl(var(--honey)/.5)]" />
 
+              {/* ── Footer logo ── */}
+              <div className="space-y-3">
+                <p className="font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Footer logo</p>
+                <p className="font-ui text-[10px] leading-4 text-[hsl(var(--muted-foreground))]">Upload a white/transparent PNG of the KartPath Media logo — it will appear in the dark site footer. Optionally add a URL to wrap it in a link.</p>
+                <TeamPhotoUploader label="KartPath logo (white / transparent PNG)" mediaId={form.footerLogoMediaId} photoUrl={form.footerLogoUrl} publicationId={publicationId} onChange={(mid, url) => setForm({ ...form, footerLogoMediaId: mid, footerLogoUrl: url })} />
+                <label className="block">
+                  <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">KartPath website URL <span className="normal-case tracking-normal opacity-60">(optional — wraps logo in a link)</span></span>
+                  <input value={form.kartpathWebsiteUrl} onChange={(e) => update('kartpathWebsiteUrl', e.target.value)} placeholder="https://kartpathmedia.com" className="h-9 w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 font-meta text-xs outline-none focus:border-[hsl(var(--brick))]" />
+                </label>
+              </div>
+
+              <div className="border-t border-[hsl(var(--honey)/.5)]" />
+
               {/* ── Team member 1 ── */}
               <div className="space-y-3">
                 <p className="font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Team member 1</p>
@@ -1411,9 +1444,18 @@ function Editor({
                   </label>
                 </div>
                 <label className="block">
-                  <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Bio</span>
+                  <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Bio <span className="normal-case tracking-normal opacity-60">(shown on card)</span></span>
                   <textarea value={form.member1Bio} onChange={(e) => update('member1Bio', e.target.value)} rows={3} className="w-full resize-y border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2.5 font-meta text-xs leading-5 outline-none focus:border-[hsl(var(--brick))]" />
                 </label>
+                {/* Expanded / modal content */}
+                <div className="space-y-3 rounded border border-[hsl(var(--border))] p-3">
+                  <p className="font-meta text-[9px] uppercase tracking-[.12em] text-[hsl(var(--muted-foreground)/.7)]">Modal / expanded view — fill in either field to make card clickable</p>
+                  <TeamPhotoUploader label="Expanded / family photo (shown large in modal)" mediaId={form.member1ExpandedMediaId} photoUrl={form.member1ExpandedPhotoUrl} publicationId={publicationId} onChange={(mid, url) => setForm({ ...form, member1ExpandedMediaId: mid, member1ExpandedPhotoUrl: url })} />
+                  <label className="block">
+                    <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Expanded bio <span className="normal-case tracking-normal opacity-60">(family, background, personal detail)</span></span>
+                    <textarea value={form.member1ExpandedBio} onChange={(e) => update('member1ExpandedBio', e.target.value)} rows={4} placeholder="Kevin grew up in…" className="w-full resize-y border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2.5 font-meta text-xs leading-5 outline-none focus:border-[hsl(var(--brick))]" />
+                  </label>
+                </div>
               </div>
 
               <div className="border-t border-[hsl(var(--honey)/.5)]" />
@@ -1433,9 +1475,18 @@ function Editor({
                   </label>
                 </div>
                 <label className="block">
-                  <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Bio</span>
+                  <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Bio <span className="normal-case tracking-normal opacity-60">(shown on card)</span></span>
                   <textarea value={form.member2Bio} onChange={(e) => update('member2Bio', e.target.value)} rows={3} className="w-full resize-y border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2.5 font-meta text-xs leading-5 outline-none focus:border-[hsl(var(--brick))]" />
                 </label>
+                {/* Expanded / modal content */}
+                <div className="space-y-3 rounded border border-[hsl(var(--border))] p-3">
+                  <p className="font-meta text-[9px] uppercase tracking-[.12em] text-[hsl(var(--muted-foreground)/.7)]">Modal / expanded view — fill in either field to make card clickable</p>
+                  <TeamPhotoUploader label="Expanded / family photo (shown large in modal)" mediaId={form.member2ExpandedMediaId} photoUrl={form.member2ExpandedPhotoUrl} publicationId={publicationId} onChange={(mid, url) => setForm({ ...form, member2ExpandedMediaId: mid, member2ExpandedPhotoUrl: url })} />
+                  <label className="block">
+                    <span className="mb-1.5 block font-meta text-[9px] uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]">Expanded bio <span className="normal-case tracking-normal opacity-60">(family, background, personal detail)</span></span>
+                    <textarea value={form.member2ExpandedBio} onChange={(e) => update('member2ExpandedBio', e.target.value)} rows={4} placeholder="Blake grew up in…" className="w-full resize-y border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 py-2.5 font-meta text-xs leading-5 outline-none focus:border-[hsl(var(--brick))]" />
+                  </label>
+                </div>
               </div>
             </div>
           );
@@ -2292,6 +2343,15 @@ export default function Staff() {
         member2Bio: d.member2Bio ?? '',
         member2MediaId: d.member2MediaId ?? '',
         member2PhotoUrl: d.member2PhotoUrl ?? '',
+        member1ExpandedMediaId: d.member1ExpandedMediaId ?? '',
+        member1ExpandedPhotoUrl: d.member1ExpandedPhotoUrl ?? '',
+        member1ExpandedBio: d.member1ExpandedBio ?? '',
+        member2ExpandedMediaId: d.member2ExpandedMediaId ?? '',
+        member2ExpandedPhotoUrl: d.member2ExpandedPhotoUrl ?? '',
+        member2ExpandedBio: d.member2ExpandedBio ?? '',
+        footerLogoMediaId: d.footerLogoMediaId ?? '',
+        footerLogoUrl: d.footerLogoUrl ?? '',
+        kartpathWebsiteUrl: d.kartpathWebsiteUrl ?? '',
         pullQuote: item.pullQuote ?? '',
         metaDescription: item.metaDescription ?? '',
         listingTier: (item.listingTier as 'standard' | 'premium') ?? 'standard',
@@ -2417,6 +2477,15 @@ export default function Staff() {
         member2Bio: form.member2Bio.trim(),
         member2MediaId: form.member2MediaId,
         member2PhotoUrl: form.member2PhotoUrl,
+        member1ExpandedMediaId: form.member1ExpandedMediaId,
+        member1ExpandedPhotoUrl: form.member1ExpandedPhotoUrl,
+        member1ExpandedBio: form.member1ExpandedBio.trim(),
+        member2ExpandedMediaId: form.member2ExpandedMediaId,
+        member2ExpandedPhotoUrl: form.member2ExpandedPhotoUrl,
+        member2ExpandedBio: form.member2ExpandedBio.trim(),
+        footerLogoMediaId: form.footerLogoMediaId,
+        footerLogoUrl: form.footerLogoUrl,
+        kartpathWebsiteUrl: form.kartpathWebsiteUrl.trim(),
       };
     } else if (ct === 'digital_edition') {
       if (isCreating && !/^edition-\d{2,}$/.test(form.slug.trim())) {
