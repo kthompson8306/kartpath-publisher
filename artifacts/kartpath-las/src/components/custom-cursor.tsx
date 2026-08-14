@@ -33,39 +33,40 @@ export function CustomCursor() {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Bail on touch screens — no mouse, no cursor needed.
     if (typeof window === 'undefined') return;
     if (window.matchMedia('(pointer: coarse)').matches) return;
 
+    // Capture as HTMLDivElement (not HTMLDivElement | null) so TypeScript
+    // accepts it inside all closure callbacks without null-check repetition.
     const el = ref.current;
     if (!el) return;
+    const cursor: HTMLDivElement = el;
 
     let raf = 0;
 
     function onMove(e: MouseEvent) {
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
-        // translate3d keeps positioning on the GPU compositor thread.
-        // translate(-50%,-50%) centers the ring on the cursor tip at any size.
-        el.style.transform = `translate3d(${e.clientX}px,${e.clientY}px,0) translate(-50%,-50%)`;
+        cursor.style.transform =
+          `translate3d(${e.clientX}px,${e.clientY}px,0) translate(-50%,-50%)`;
       });
-      // Make visible on first real mouse movement.
-      if (el.style.opacity === '0') el.style.opacity = '1';
+      if (cursor.style.opacity === '0') cursor.style.opacity = '1';
     }
 
     function onOver(e: MouseEvent) {
-      const t = e.target as Element | null;
-      if (t?.closest(CLICKABLE)) el.classList.add('cursor--on');
+      if ((e.target as Element | null)?.closest(CLICKABLE)) {
+        cursor.classList.add('cursor--on');
+      }
     }
 
     function onOut(e: MouseEvent) {
-      const t = e.target as Element | null;
-      if (t?.closest(CLICKABLE)) el.classList.remove('cursor--on');
+      if ((e.target as Element | null)?.closest(CLICKABLE)) {
+        cursor.classList.remove('cursor--on');
+      }
     }
 
-    // Hide when the pointer leaves the viewport entirely.
-    function onLeave() { el.style.opacity = '0'; }
-    function onEnter() { el.style.opacity = '1'; }
+    function onLeave() { cursor.style.opacity = '0'; }
+    function onEnter() { cursor.style.opacity = '1'; }
 
     document.addEventListener('mousemove', onMove, { passive: true });
     document.addEventListener('mouseover', onOver, { passive: true });
@@ -88,8 +89,6 @@ export function CustomCursor() {
       ref={ref}
       aria-hidden="true"
       className="custom-cursor"
-      // Start invisible; becomes visible on first mousemove so it doesn't
-      // flash at (0,0) before any movement is recorded.
       style={{ opacity: 0 }}
     />
   );
