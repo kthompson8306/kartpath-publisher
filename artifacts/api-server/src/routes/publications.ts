@@ -8,7 +8,7 @@ import {
   ListPublishedContentItemsQueryParams,
   ListPublishedContentItemsResponse,
 } from "@workspace/api-zod";
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 import {
   contentItemGalleryTable,
   contentItemsTable,
@@ -103,7 +103,10 @@ router.get("/publications/:slug/content-items", async (req, res): Promise<void> 
       ),
     )
     .where(and(...conditions))
-    .orderBy(asc(contentItemsTable.publishedAt), asc(contentItemsTable.updatedAt));
+    .orderBy(
+      sql`CAST(${contentItemsTable.details}->>'issue' AS INTEGER) DESC NULLS LAST`,
+      desc(contentItemsTable.publishedAt),
+    );
 
   res.json(
     ListPublishedContentItemsResponse.parse(
