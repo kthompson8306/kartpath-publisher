@@ -20,6 +20,10 @@ build = [ "pnpm", "--filter", "@workspace/kartpath-las", "run", "build" ]
 [services.production.run]
 args = [ "node", "--enable-source-maps", "artifacts/kartpath-las/dist/server.mjs" ]
 
+[services.production.run.env]
+PORT = "8080"
+BASE_PATH = "/"
+
 [services.env]
 PORT = "23775"
 BASE_PATH = "/"
